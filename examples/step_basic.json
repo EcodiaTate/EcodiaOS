@@ -1,0 +1,39 @@
+{
+  "name": "golden-basic",
+  "iterations": 1,
+  "targets": [
+    { "file": "systems/synk/core/tools/registry.py", "export": null }
+  ],
+  "tests": ["tests/**/*.py"],
+  "objective": {
+    "title": "Regression-safe change with full hygiene",
+    "description": "Run unit tests, satisfy contracts, and pass static/security/runtime checks.",
+    "acceptance": {
+      "unit_tests": {
+        "paths": ["tests"]
+      },
+      "contracts": {
+        "must_export": [
+          "systems/synk/core/tools/registry.py::register_tool(name: str, impl) -> None"
+        ],
+        "must_register": [
+          "registry: contains tool 'echo'"
+        ]
+      },
+      "docs": {
+        "files_must_change": []
+      },
+      "perf": {
+        "pytest_duration_seconds": "<=45"
+      }
+    },
+    "runtime": {
+      "import_modules": ["systems", "systems.synk"],
+      "commands": []
+    },
+    "constraints": {
+      "python": ">=3.10",
+      "allowed_new_packages": []
+    }
+  }
+}

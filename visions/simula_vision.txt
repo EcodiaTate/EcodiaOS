@@ -1,0 +1,340 @@
+Alright Tate — here’s a concrete, Python-first, drop-in plan to wire your **Simula** codegen agent + **Qora** graph/memory into a self-maintaining, hygienic, and upgradable system. It’s broken into phases with exact modules, interfaces, and sample code you can paste. I’ve aligned this to your uploaded Simula code and the two reports (World-Model + Simula architecture).
+
+&#x20;&#x20;
+
+---
+
+# 0) Outcomes (what you’ll have when done)
+
+* **World Model** over the repo: AST + symbol tables → **Code Knowledge Graph (Neo4j)** + **vector store**; kept current via git/file watchers. GraphRAG queries yield precise, task-scoped “context dossiers” for the LLM.&#x20;
+* **Simula** gains tools for planning → code → test → static-check → review → governance loops, using DockerSandbox you already ship.&#x20;
+* **Qora** is the live memory/graph/catalog; it stores tools/functions *and* the codebase world model; Simula retrieves + writes via typed tools and “strict” schemas.&#x20;
+* **Continuous hygiene & evolution**: formatting, typing, tests, regression suites, self-upgrade via Governor, with auto-refactor & upgrade proposals.&#x20;
+
+---
+
+# 1) Qora World Model (code memory) — services & schema
+
+## 1.1 Services (new packages)
+
+```
+systems/qora_world/
+  ├─ indexer/                # AST + symbols via LSP/ast + watchers
+  │   ├─ python_indexer.py
+  │   ├─ lsp_client.py
+  │   └─ watcher.py
+  ├─ graph/                  # Neo4j I/O for Code KG
+  │   ├─ schema.py
+  │   ├─ upsert.py
+  │   ├─ subgraph.py
+  │   └─ queries.py
+  ├─ rag/
+  │   ├─ embed.py            # code embeddings
+  │   ├─ store.py            # vector DB adapter (FAISS/Qdrant)
+  │   └─ retrieve.py         # CGRAG/GraphRAG combo
+  ├─ dossier/
+  │   └─ builder.py          # assemble “context dossier” for LLM
+  └─ api/
+      ├─ server.py           # FastAPI
+      └─ routes.py           # /index, /subgraph, /search, /dossier
+```
+
+### Core node/edge schema (Neo4j)
+
+* **Nodes**: `File`, `Module`, `Class`, `Function`, `Method`, `Var`, `Type`, `API`, `DBTable`, `Test`, `Doc`.
+* **Edges**: `IMPORTS`, `DEFINES`, `HAS_METHOD`, `CALLS`, `REFS`, `RETURNS`, `TAKES`, `INHERITS`, `IMPLEMENTS`, `EXPOSES`, `PERSISTS`, `TESTS`, `DOCUMENTS`.
+* **Keep it language-agnostic** by preferring LSP where possible, using `pylsp` for Python and AST fallback.&#x20;
+
+**Cypher upserts (sketch):**
+
+```cypher
+// file
+MERGE (f:File {path:$path})
+SET f.lang = $lang, f.hash = $sha, f.pkg = $pkg;
+
+// function
+MERGE (fn:Function {fqname:$fqname})
+SET fn.name=$name, fn.path=$path, fn.start=$start, fn.end=$end, fn.signature=$sig;
+
+// relationships
+MATCH (f:File {path:$path}),(fn:Function {fqname:$fq})
+MERGE (f)-[:DEFINES]->(fn);
+
+UNWIND $calls AS c
+MATCH (a:Function {fqname:$fq}), (b:Function {fqname:c.callee})
+MERGE (a)-[:CALLS {count:c.count}]->(b);
+```
+
+> Why this structure: it backs **GraphRAG** subgraph retrieval and accurate cross-file linking; it’s the “codebase consciousness” your World Model needs.&#x20;
+
+## 1.2 Indexer (Python example)
+
+```python
+# systems/qora_world/indexer/python_indexer.py
+from __future__ import annotations
+import ast, hashlib, pathlib
+from typing import Dict, Any, List
+from .lsp_client import lsp_symbols_or_none
+from ..graph.upsert import upsert_file, upsert_function_batch
+from ..rag.embed import embed_chunks, add_vectors
+
+def index_python_file(path: str) -> Dict[str, Any]:
+    src = pathlib.Path(path).read_text(encoding="utf-8")
+    sha = hashlib.sha1(src.encode()).hexdigest()
+    tree = ast.parse(src, filename=path)
+
+    # extract functions/classes with spans & signatures
+    fns: List[Dict[str, Any]] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef):
+            sig = f"{node.name}({', '.join(a.arg for a in node.args.args)})"
+            fns.append({
+                "fqname": f"{path}::{node.name}",
+                "name": node.name,
+                "path": path,
+                "start": node.lineno,
+                "end": getattr(node, "end_lineno", node.lineno),
+                "signature": sig,
+                "body": ast.get_source_segment(src, node) or "",
+            })
+
+    upsert_file(path, lang="python", sha=sha, pkg=_pkg_from_path(path))
+    upsert_function_batch(fns, file_path=path)
+    # vectorize bodies for text RAG fallback
+    add_vectors(embed_chunks([(fn["fqname"], fn["body"]) for fn in fns]))
+    return {"indexed": {"file": path, "functions": len(fns)}}
+```
+
+## 1.3 “Context Dossier” (GraphRAG + CGRAG)
+
+```python
+# systems/qora_world/dossier/builder.py
+from __future__ import annotations
+from ..graph.subgraph import subgraph_for_function
+from ..rag.retrieve import cgrag_expand_query, vec_retrieve
+
+def build_dossier(target_fqname: str, intent: str) -> dict:
+    # 1) Graph subgraph: function, parents, callees, callers, types
+    g = subgraph_for_function(target_fqname, hops=1, include_types=True)
+    # 2) CGRAG: expand keywords with LLM then vector retrieve supporting snippets
+    expanded = cgrag_expand_query(intent, seed=[target_fqname])
+    texts = vec_retrieve(expanded, k=12)
+    return {"target": target_fqname, "graph": g, "snippets": texts}
+```
+
+> Dossier = *precise program slice* + semantically relevant context → fed to Simula at generation time. &#x20;
+
+---
+
+# 2) Qora function catalog — fix warnings & harden schema
+
+You reported **UnknownPropertyKeyWarning**: `tool_caps`, `safety_tier`, `tool_agent`, `tool_params_schema`, etc. Add defaults + indexes so Simula’s queries stop warning. (Your Simula orchestrator merges its `TOOL_SPECS` with Qora’s live tool catalog.)&#x20;
+
+**One-shot migration:**
+
+```cypher
+MATCH (fn:SystemFunction)
+SET fn.tool_caps          = coalesce(fn.tool_caps, []),
+    fn.tool_desc          = coalesce(fn.tool_desc, fn.docstring, ""),
+    fn.tool_params_schema = coalesce(fn.tool_params_schema, {}),
+    fn.tool_outputs_schema= coalesce(fn.tool_outputs_schema, {}),
+    fn.tool_agent         = coalesce(fn.tool_agent, "*"),
+    fn.safety_tier        = coalesce(fn.safety_tier, 3),
+    fn.allow_external     = coalesce(fn.allow_external, false);
+
+CREATE INDEX system_fn_uid IF NOT EXISTS FOR (fn:SystemFunction) ON (fn.uid);
+CREATE INDEX system_fn_name IF NOT EXISTS FOR (fn:SystemFunction) ON (fn.tool_name);
+```
+
+> This aligns with Simula’s `execute_system_tool[_strict]` that expects these fields.&#x20;
+
+---
+
+# 3) Simula integrations (tools you’ll add)
+
+You already have: `create_plan`, `update_plan`, `propose_code_evolution`, `submit_code_for_multi_agent_review`, `execute_system_tool[_strict]`, `continue_hierarchical_skill`, `request_skill_repair`. We’ll add **world-model tools** + **quality tools** and wire them into the orchestrator loop.&#x20;
+
+## 3.1 Tool specs (append to `systems/simula/agent/tool_specs.py`)
+
+```python
+# --- World Model / Memory ---
+{
+  "name": "get_context_dossier",
+  "description": "Fetch a GraphRAG+vector dossier for a target symbol or file.",
+  "parameters": {
+    "type":"object",
+    "properties":{
+      "target_fqname":{"type":"string"},
+      "intent":{"type":"string", "description":"What you are trying to do (used for CGRAG expansion)."}
+    },
+    "required":["target_fqname","intent"]
+  },
+  "returns":{"type":"object"}
+},
+{
+  "name": "memory_write",
+  "description": "Persist facts/decisions to the Qora blackboard (global memory).",
+  "parameters": {"type":"object","properties":{"key":{"type":"string"},"value":{"type":"object"}},"required":["key","value"]}
+},
+{
+  "name": "memory_read",
+  "description": "Read a fact from the Qora blackboard.",
+  "parameters": {"type":"object","properties":{"key":{"type":"string"}},"required":["key"]}
+},
+
+# --- Quality / Hygiene ---
+{
+  "name": "generate_tests",
+  "description": "Generate unit/integration tests for a module based on its dossier/spec.",
+  "parameters": {"type":"object","properties":{"module":{"type":"string"},"style":{"type":"string","enum":["pytest"]}}},
+  "returns":{"type":"object"}
+},
+{
+  "name": "run_tests",
+  "description": "Run pytest inside DockerSandbox; return results, coverage, logs.",
+  "parameters": {"type":"object","properties":{"paths":{"type":"array","items":{"type":"string"}},"timeout_sec":{"type":"integer"}},"required":["paths"]}
+},
+{
+  "name": "static_check",
+  "description": "Run mypy and ruff on changed files; return diagnostics.",
+  "parameters": {"type":"object","properties":{"paths":{"type":"array","items":{"type":"string"}}},"required":["paths"]}
+},
+{
+  "name": "apply_refactor",
+  "description": "Apply a semantic refactor patch; verify with tests.",
+  "parameters": {"type":"object","properties":{"diff":{"type":"string"},"verify_paths":{"type":"array","items":{"type":"string"}}},"required":["diff"]}
+}
+```
+
+## 3.2 Tool handlers (add to `systems/simula/agent/tools.py`)
+
+```python
+# World Model
+from systems.qora_world.api.client import get_dossier, bb_write, bb_read
+
+async def get_context_dossier(target_fqname:str, intent:str)->Dict[str,Any]:
+    return await get_dossier(target_fqname, intent=intent)
+
+async def memory_write(key:str, value:Dict[str,Any])->Dict[str,Any]:
+    await bb_write(key, value); return {"status":"success"}
+
+async def memory_read(key:str)->Dict[str,Any]:
+    val = await bb_read(key); return {"status":"success","value":val}
+
+# Quality
+from systems.simula.code_sim.sandbox.sandbox import DockerSandbox
+from systems.simula.code_sim.sandbox.seeds import seed_config
+
+async def run_tests(paths:list[str], timeout_sec:int=900)->Dict[str,Any]:
+    async with DockerSandbox(seed_config()).session() as sess:
+        ok, logs = await sess.run_pytest(paths, timeout=timeout_sec)
+        return {"status":"success" if ok else "failed", "logs":logs}
+
+async def static_check(paths:list[str])->Dict[str,Any]:
+    async with DockerSandbox(seed_config()).session() as sess:
+        mypy = await sess.run_mypy(paths)
+        ruff = await sess.run_ruff(paths)
+        return {"status":"success","mypy":mypy,"ruff":ruff}
+
+async def apply_refactor(diff:str, verify_paths:list[str])->Dict[str,Any]:
+    async with DockerSandbox(seed_config()).session() as sess:
+        applied = await sess.apply_unified_diff(diff)
+        if not applied: return {"status":"error","reason":"apply failed"}
+        ok, logs = await sess.run_pytest(verify_paths, timeout=900)
+        return {"status":"success" if ok else "failed", "logs":logs}
+```
+
+> These plug straight into your **orchestrator** loop (which already dispatches tools by name and updates `latest_observation`).&#x20;
+
+---
+
+# 4) Orchestrator policy (how Simula will *behave*)
+
+Update the LLM prompt/policy (“simula.react.step”) so the agent *always*:
+
+1. **Calls `get_context_dossier`** before editing any file/symbol.
+2. **Writes key decisions** to blackboard (`memory_write`) — e.g., chosen API signatures, naming, config constants.
+3. After patching, **runs** `static_check` → `run_tests` (failing → `apply_refactor` with “Self-Edit” patch diffs) — loop until green.&#x20;
+
+Because your orchestrator already supports planning + tool execution, we only inject **guardrails**:
+
+* If the planned action is “edit X”: *first tool* must be `get_context_dossier(target_fqname="X", intent="…")`.
+* After any `propose_code_evolution`, automatically chain `static_check` and `run_tests` in the same turn before declaring success.
+
+> This encodes the plan→dossier→code→check→test→fix cycle from the Simula architecture report.&#x20;
+
+---
+
+# 5) Hygiene & CI hooks (always-clean repo)
+
+* **Formatting & typing**: add `ruff`, `black`, `mypy` in Docker image; expose `sandbox.run_ruff`, `run_mypy`, `run_black`.
+* **Pre-commit** (repo root): format + type before any commit the agent makes.
+* **Golden tests**: store agent-generated tests under `tests/` and stamp with provenance in docstrings.
+
+**Example (DockerSandbox extension):**
+
+```python
+# systems/simula/code_sim/sandbox/sandbox.py (add)
+async def run_mypy(self, paths:list[str]) -> dict: ...
+async def run_ruff(self, paths:list[str]) -> dict: ...
+async def run_black(self, paths:list[str]) -> dict: ...
+async def run_pytest(self, paths:list[str], timeout:int) -> tuple[bool,dict]: ...
+```
+
+
+
+---
+
+# 6) Self-upgrade & governance (safe evolution)
+
+You already route upgrades through **Governor** (`_submit_for_governance`). Mandate that any self-change proposal:
+
+* Includes: diff, dossier for impacted symbols, static + test results, coverage delta, and simulation/SMT evidence (you already collect).&#x20;
+* Only applied after **Governor** ACK + “multi-agent review” (Atune/Unity path) for non-self tasks.&#x20;
+
+---
+
+# 7) APIs you’ll stand up (FastAPI)
+
+**Qora World Model API** (new):
+
+* `POST /index/file {path}` → indexer
+* `GET /graph/subgraph?fqname=&hops=` → program slice
+* `POST /dossier {target_fqname, intent}` → GraphRAG+vec package
+* `POST /bb/write {key,value}` / `GET /bb/read?key=…` → blackboard
+
+**Simula ↔ Qora client** (`systems/qora_world/api/client.py`) just wraps these.
+
+---
+
+# 8) Concrete “Day 1” code drops (paste-ready)
+
+### A) Tool spec additions (paste into `tool_specs.py`)
+
+*(see §3.1 — copy blocks)*&#x20;
+
+### B) Tool handlers (paste into `tools.py`)
+
+*(see §3.2 — copy blocks)*&#x20;
+
+### C) Orchestrator guardrail (minimal tweak)
+
+In `AgentOrchestrator.run`, after building a plan step that edits a symbol, pre-pend a `get_context_dossier` call *if none exists in prior two turns*; after any successful `propose_code_evolution`, auto-run `static_check` + `run_tests`, and mark plan step `completed` only on green.&#x20;
+
+
+# 10) Success metrics (watch these)
+
+* **Pass\@1 within a plan step** (green on first test run) ≥ 85% by day 45; ≥ 95% by day 90.&#x20;
+* **Static diagnostics**: ruff errors = 0; mypy errors = 0 on changed paths.
+* **Integration stability**: new diffs that require rollback < 2% weekly.
+* **Retrieval quality**: dossier recall of required symbols ≥ 98% on sampled tasks.&#x20;
+
+---
+
+## Why this works (tie-back)
+
+* **World Model (AST+Symbols→KG)** gives true repository awareness; **GraphRAG** yields minimal, correct context.&#x20;
+* **Planner→Coder→Tester loops** with tool use + reflection close the gap to near-100% success.&#x20;
+* **Simula integration** is minimal & idiomatic: just new tools + orchestrator guardrails; your existing DockerSandbox, Synapse hooks, and Governor are reused.&#x20;
+
+If you want, I can generate the **starter package** for `systems/qora_world` (indexer, graph, dossier API) and the **Simula tool patches** as files you can drop in.

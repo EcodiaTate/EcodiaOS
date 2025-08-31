@@ -1,0 +1,28 @@
+# EcodiaOS Switchboard Gate Keys
+# Generated on: 2025-08-20T10:50:57.399464
+
+...
+axon.API_on_demand.enabled
+axon.API_runner.enabled
+evo.conflict_scan.enabled
+evo.evolve_from_conflict.enabled
+evo.human_in_the_loop.enabled
+evo.patrol.enabled
+evo.tool_experiment.enabled
+immune.conflict_ingestor.enabled
+immune.enabled
+simula.codegen.enabled
+synapse.adversary.enabled
+synapse.adversary.interval_sec
+synapse.genesis.enabled
+synapse.genesis.interval_sec
+synapse.ingest.enabled
+synapse.meta_controller.interval_sec
+synapse.offline_learning.enabled
+synapse.offline_learning.interval_sec
+synapse.option_mining.enabled
+synapse.option_mining.interval_sec
+synapse.policy.enabled
+synapse.sentinel_training.enabled
+synapse.sentinel_training.interval_sec
+synapse.train.enabled

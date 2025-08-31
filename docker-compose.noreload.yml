@@ -1,0 +1,21 @@
+# docker-compose.noreload.yml
+services:
+  api:
+    # Build locally; never try to pull ecodiaos:dev from a registry
+    pull_policy: build
+    # Remove the repo bind-mount so frontend churn can't touch /app
+    volumes: []
+    # Pin a non-reload command with a couple of workers
+    command:
+      - bash
+      - -lc
+      - >
+        exec uvicorn api.app:app
+        --host 0.0.0.0
+        --port "${APP_PORT:-8000}"
+        --log-level "${APP_LOG_LEVEL:-info}"
+        --workers "${APP_WORKERS:-2}"
+
+  # keep the daemon OFF for this session unless you really want it
+  synapse_daemon:
+    profiles: ["bg"]   # only starts if you pass --profile bg

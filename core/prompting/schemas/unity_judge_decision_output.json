@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UnityJudgeDecisionOutput",
+  "type": "object",
+  "required": ["action"],
+  "properties": {
+    "action": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "tool_search",
+            "memory_search",
+            "cluster_context_fetch",
+            "vote",
+            "synthesis",
+            "execute_tool",
+            "escalate_conflict",
+            "codegen_job"
+          ]
+        },
+        "query": { "type": "string" },
+        "proposal": { "type": "string" },
+        "cluster_keys": { "type": "array", "items": { "type": "string" } },
+        "per_cluster": { "type": "integer", "minimum": 1 },
+        "result": { "type": "string" },
+        "tool_uid": { "type": "string" },
+        "args": { "type": "object", "additionalProperties": true },
+        "description": { "type": "string" },
+        "severity": { "type": "string" },
+        "spec": { "type": "string" },
+        "targets": {
+          "type": "array",
+          "items": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

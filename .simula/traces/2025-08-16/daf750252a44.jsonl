@@ -1,0 +1,13 @@
+{"type": "job_start", "job": {"agent": "simula", "mode": "autonomous", "task": "Your primary goal is to read the Java properties file located at 'config.properties', \nparse its key-value pairs, and re"}, "ts": "2025-08-16T04:55:15.627720+00:00"}
+{"type": "llm_call", "model": "unknown", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-16T04:55:23.099662+00:00"}
+{"type": "tool_start", "name": "log_conflict", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T04:55:23.126086+00:00"}
+{"type": "tool_end", "name": "log_conflict", "ok": true, "err": null, "extra": {}, "duration_ms": 366.94891999968604, "result": {"_redacted": true}, "ts": "2025-08-16T04:55:23.493040+00:00"}
+{"type": "llm_call", "model": "unknown", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-16T04:55:28.444174+00:00"}
+{"type": "tool_start", "name": "log_event_to_graph", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T04:55:28.467356+00:00"}
+{"type": "tool_end", "name": "log_event_to_graph", "ok": true, "err": null, "extra": {}, "duration_ms": 1109.0718890000062, "result": {"_redacted": true}, "ts": "2025-08-16T04:55:29.576421+00:00"}
+{"type": "llm_call", "model": "unknown", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-16T04:55:33.836139+00:00"}
+{"type": "tool_start", "name": "log_event_to_graph", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T04:55:33.863025+00:00"}
+{"type": "tool_end", "name": "log_event_to_graph", "ok": true, "err": null, "extra": {}, "duration_ms": 209.93075300020791, "result": {"_redacted": true}, "ts": "2025-08-16T04:55:34.072917+00:00"}
+{"type": "llm_call", "model": "unknown", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-16T04:55:39.653343+00:00"}
+{"type": "tool_start", "name": "log_conflict", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T04:55:39.680699+00:00"}
+{"type": "tool_end", "name": "log_conflict", "ok": true, "err": null, "extra": {}, "duration_ms": 1281.8537500002094, "result": {"_redacted": true}, "ts": "2025-08-16T04:55:40.962559+00:00"}

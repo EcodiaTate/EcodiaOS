@@ -1,0 +1,3 @@
+[
+  { "id": "tab-indent", "pattern": "^\t", "message": "Tabs detected; prefer spaces per style.", "when": "added" }
+]

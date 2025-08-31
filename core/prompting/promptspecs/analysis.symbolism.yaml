@@ -1,0 +1,23 @@
+id: analysis.symbolism
+version: 1.0.0
+scope: analysis.symbolism
+identity:
+  agent: "Atune"
+  persona_partial: "partials/identity.j2"
+safety:
+  partials:
+    - "partials/safety_min.j2"
+outputs:
+  schema_ref: null
+  parse_mode: "tolerant"
+budget_policy:
+  tokens_key: "tokens"
+  ms_key: "ms"
+  max_tokens_fallback: 400
+context_lenses:
+  - "equor.identity"
+partials:
+  - "analysis_symbolism"
+ablation_knobs:
+  temperature: [0.2]
+  style: ["concise"]

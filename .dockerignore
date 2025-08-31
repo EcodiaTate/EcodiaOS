@@ -1,0 +1,25 @@
+# VCS / editors
+.git
+.vscode
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+*.pyc
+*.pyo
+*.pyd
+.venv
+config/.env
+.env
+*.log
+*.sqlite*
+.ngrok*
+wheelhouse/
+# Node stuff if present
+node_modules/
+dist/
+build/
+Dockerfile
+docker-coompose.yml
+README.md
+EcodiaOS/
+.collate*

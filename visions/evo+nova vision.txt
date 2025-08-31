@@ -1,0 +1,228 @@
+**CRITICAL INSTRUCTIONS FOR CHATGPT** THESE DOCUMENTS ARE THE ABSOLUTE LOWEST STANDARD. ALWAYS AIM TO IMPLEMENT MORE THAN IS HERE TO ACHEIVE HIGHER COGNITION
+
+
+Conjoined, role-aware blueprint for **Evo ⇄ Nova** that plugs straight into EOS (Atune ingress, Synapse arms, Simula evaluation, Axon actuation, Equor safety, Qora knowledge). Evo metabolises `:Conflict` → EPs; when fixes aren’t “obvious”, Evo ships a **Brief** to Nova; Nova returns scored inventions with evidence; Atune markets pick; Probecraft rolls out.
+
+# PATCH: docs/evo-nova/Evo\_Nova\_Conjoined\_Spec.md
+
+*(full-file drop-in; design spec — no code)*
+
+```markdown
+# Evo ⇄ Nova — Conjoined, Role-Aware, Infra-Aligned (Authoritative v1)
+
+## 0) Charter & Boundaries
+
+- **Evo**: Converts unresolved **:Conflict** into replayable **Evolution Proposals (EPs)** with convergent evidence. If a durable, low-risk remedy is **not obvious**, Evo escalates via an **InnovationBrief** to Nova.
+- **Nova**: Generates **new** strategies/mechanisms/modules; returns vetted, scored **InventionCandidates** + evidence and a **DesignCapsule**. Nova never self-rolls out; it hands winners to Atune/Probecraft.
+- **Neither** chooses winners; selection & budgets belong to **Atune/Synapse**; actuation belongs to **Axon**; final safety belongs to **Equor**.
+
+**System invariants** (non-negotiable): PromptSpec orchestration; headers `x-budget-ms|x-deadline-ts|x-decision-id` honoured; WhyTrace + ReplayCapsules emitted; embeddings are 3072-d; no cross-imports — HTTP + schemas only.
+
+---
+
+## 1) Topology & Flow (end-to-end)
+
+```
+
+AxonEvent → Atune(salience/market) → (task to Evo)
+Evo: ingest → spec-first → hypotheses → (Obviousness Gate)
+if obvious → collect evidence → assemble EP → handover to Atune market
+if NOT obvious → build InnovationBrief → Nova.propose()
+Nova: decompose → playbooks → obligations/proofs → Simula evaluate → Atune auction
+Winners → Probecraft lifecycle (testing → shadow → live) via Axon capability path
+All steps → WhyTrace + ReplayCapsules → Synapse learns (arms, playbooks)
+
+````
+
+**Unity**: only via Atune for high-risk briefs or rollouts.
+
+---
+
+## 2) Surfaces (endpoints; design names only)
+
+### Evo (`api.endpoints.evo.*`)
+- `POST /evo/ingest_conflicts` → `{conflicts:[...]}` → ack + conflict_ids
+- `POST /evo/build_ep` → `{conflict_ids:[...]}`
+- `POST /evo/escalate` → `{conflict_id, brief: InnovationBrief}` → returns `brief_id`
+- `GET /evo/ep/{id}` → EvolutionProposal (EP) dossier (capsule refs)
+- `GET /evo/ledger/{id}` → provenance trail
+
+### Nova (`api.endpoints.nova.*`)
+- `POST /nova/propose` → `InnovationBrief` → `[InventionCandidate]`
+- `POST /nova/evaluate` → candidate(s) → metrics/risks/ablations
+- `POST /nova/auction` → candidates → `{winners, spend}`
+- `POST /nova/rollout` → `CapabilitySpec` → Probecraft ticket
+- `GET /nova/archive/{id}` → DesignCapsule
+- `GET /nova/playbooks` → installed playbooks and knobs
+
+**Headers everywhere**: `x-budget-ms`, `x-deadline-ts`, `x-decision-id`.  
+**Responses** include: `x-cost-ms` and `metrics.cost_ms`.
+
+---
+
+## 3) Canonical Schemas (abridged for shape; JSON-serialisable)
+
+### 3.1 Conflict (Evo input)
+```json
+{
+  "conflict_id":"cf_123",
+  "kind":"failure|disagreement|followup|drift|perf_regression|safety_breach",
+  "severity":"low|medium|high|critical",
+  "context":{"modules":["atune","axon"],"trace_ids":["..."]},
+  "reproducer":{"kind":"unit|integration|sim","capsule_id":"cap_..."},
+  "spec_coverage":{"has_spec":false,"gaps":["temporal","resource"]},
+  "provenance":{"evt":"evt_...","hash":"..."},
+  "embedding":[0.0]
+}
+````
+
+### 3.2 EvolutionProposal (Evo output)
+
+```json
+{
+  "ep_id":"ep_123",
+  "addressed_conflicts":["cf_123","cf_456"],
+  "change_sets":[{"type":"code|config|behaviour","diffs":[...]}],
+  "spec_impact":[{"obligation":"...","pre":"pass|fail|n/a","post":"pass|fail","evidence":["ev_..."]}],
+  "evidence_bundle":{"tests":{...},"fuzz":{...},"proofs":{...},"forecast":{...},"diff_risk":{...}},
+  "risk_envelope":{"blast_radius":"...", "rollback":{"type":"undo","params":{}}},
+  "capsules":["cap_ep_main","cap_ep_fuzz"],
+  "open_questions":["..."],
+  "why_trace":{"decision_id":"...","links":["cap_*"]}
+}
+```
+
+### 3.3 InnovationBrief (Evo → Nova)
+
+```json
+{
+  "brief_id":"brf_123",
+  "source":"evo",
+  "problem":"natural language summary",
+  "context":{"system_parts":["..."],"related_conflicts":["cf_123"]},
+  "constraints":{"risk_tier":"low|med|high","latency_ms":1200,"budget_ms":5000},
+  "success":{"uplift_metric":"actual_utility","target_delta":0.02},
+  "obligations":{"pre":["..."],"post":["..."]},
+  "fallback":{"rollback_contract":{"type":"undo","params":{}}},
+  "hints":{"analogies":["..."],"novelty_priority":0.7}
+}
+```
+
+### 3.4 InventionCandidate (Nova output)
+
+```json
+{
+  "candidate_id":"inv_123",
+  "playbook":"map_elites.search|dreamcoder.library|alphadev.rl|...",
+  "artifact":{"type":"code|dsl|policy|graph","diffs":[...]},
+  "spec":{"mechanism_graph":{...},"capability_spec":{}}},
+  "scores":{"fae":0.0,"novelty":0.0,"risk":0.0,"cost_ms":0},
+  "evidence":{"tests":{...},"ablations":{...},"proofs":{}}},
+  "obligations":{"pre":["..."],"post":["..."]},
+  "rollback_contract":{"type":"undo","params":{}},
+  "provenance":{"seeds":[...],"prompts":[...],"retrieval":["doc_..."],"models":{"embed":"3072d","gen":"..."}}
+}
+```
+
+### 3.5 DesignCapsule (Nova archive)
+
+Inputs (brief, seeds, retrieval), playbook DAG + params, artifacts, evaluation logs, counterfactuals, timings, barcodes (BLAKE3), WhyTrace of invention-level choices. No chain-of-thought.
+
+---
+
+## 4) State Machines
+
+### Evo
+
+`INGEST → SPEC_FIRST → HYPOTHESES → OBVIOUSNESS_GATE → {EVIDENCE|ESCALATE} → DOSSIER → HANDOVER`
+
+* **SPEC\_FIRST**: derive/repair obligations before code change.
+* **OBVIOUSNESS\_GATE** (see §5): decide EVIDENCE vs ESCALATE.
+* **DOSSIER**: assemble EP; attach capsules + rollback.
+
+### Nova
+
+`INTAKE → DECOMPOSE → SYNTHESISE (Playbooks DAG) → PROVE (PCC-lite) → EVALUATE (Simula) → AUCTION (Atune) → ARCHIVE (DesignCapsule) → ROLLOUT (Probecraft ticket)`
+
+---
+
+## 5) The Obviousness Gate (Evo → Nova escalation policy)
+
+**ObviousnessIndex ∈ \[0,1]** computed from:
+
+* **Spec sufficiency** (has obligs? gaps?)
+* **Reproducer minimality** (shrunk & stable?)
+* **Locality score** (small, well-scoped diff likely?)
+* **Novelty heuristic** (conflict embedding far from known fixes?)
+* **Risk tier** (med/high pushes down index)
+* **Historical fixability** (similar conflicts solved locally?)
+
+**Decision**:
+
+* `Index ≥ θ_obvious` → Evo proceeds locally (collect evidence, emit EP).
+* `Index < θ_obvious` or `risk_tier=high` → **escalate** with **InnovationBrief** to Nova.
+* θ is task-class specific, **tuned by Synapse**; WhyTrace logs `{index, features, θ, verdict}`.
+
+---
+
+## 6) Nova Playbooks (families)
+
+* **DreamCoder-style Library Growth** — wake/sleep, reify **MechanismOps**.
+* **Quality-Diversity / MAP-Elites** — explore diverse elites across cost/safety/generalisation axes.
+* **Deliberate Reasoning Trees (ToT + MCTS)** — branch/repair over MechanismSpec.
+* **Reward/Evaluator Synthesis (EUREKA-style)** — generate evaluators that induce behaviour.
+* **Algorithm Discovery (AlphaDev/AlphaTensor tracks)** — constrained RL over instruction/tensor spaces.
+* **Causal Hypothesis Discovery** — propose SCM edges; validate via interventional Simula runs.
+* **PCC-lite Proof Obligations** — typed contracts + lightweight proofs verified pre-promotion.
+
+All playbooks honour `x-budget-ms`; emit **DesignCapsules** with ablations and proofs.
+
+---
+
+## 7) Infra Integration
+
+* **Atune**: receives Evo EPs and Nova candidates as **bids** (`fae, cost_ms, risk, novelty`); runs Pareto/VCG under budget; may escalate to Unity.
+* **Synapse**: budgets (`GET /synapse/tasks/{task_key}/budget`), arm/playbook selection (`POST /synapse/tasks/select_arm`), outcome logging.
+* **Simula**: evaluation harness for tests, ablations, forecasts, counterfactuals; returns metrics/risks.
+* **Axon/Probecraft**: lifecycle (testing→shadow→live) with **CapabilityToken → Reflex → Twin → Conformal → Live** safety chain.
+* **Equor**: capability attestation binding; veto on identity/safety grounds.
+* **Qora**: retrieval & tool manifests for PromptSpec compilation; library of MechanismOps and capsules.
+* **WhyTrace + ReplayCapsule**: every decision legible & exactly replayable (no CoT).
+
+---
+
+## 8) Safety & Rollback
+
+* **Monotone safety**: proposals/inventions may not reduce satisfied obligations unless flagged **exploratory** with expanded envelope.
+* **Rollback rehearsals**: dry-run rollback scripts in EPs/CapabilitySpec; attach proof that rollback is complete & fast.
+* **High-risk**: automatic Atune→Unity gating; Equor veto respected.
+
+---
+
+## 9) Observability & Metrics
+
+* **Evo**: Proposal Quality Index; Conflict burn-down (quality-adjusted); Spec coverage; Replay fidelity; Time-to-Dossier.
+* **Nova**: Candidate Win-Rate by playbook; Uplift vs cost (knee points); Replay determinism; Safety gate pass-rate; Budget adherence.
+
+---
+
+## 10) Done-When Test Gates (block merges)
+
+* **T-EVO-SPEC**: conflicts without specs force spec-first; EP build fails if skipped.
+* **T-EVO-GATE**: same fixtures around the Obviousness Gate yield deterministic escalate/retain given fixed seeds.
+* **T-NOVA-REPLAY**: DesignCapsule replays bit-exact (scores ±ε).
+* **T-NOVA-OBLIG**: obligations/proofs verified before `/nova/rollout`.
+* **T-MARKET-CONSISTENCY**: under fixed seeds, Atune auction returns the same winners for the same bids.
+* **T-UPLIFT-SHADOW**: shadow trial ≥ +2% uplift vs uniform on target metric over 30 ticks.
+* **T-SAFETY-CHAIN**: Reflex→Twin→Conformal enforced on rollout path; rollback rehearsal present.
+* **T-WHY**: WhyTrace reconstructs “why” for any EP/candidate without chain-of-thought.
+
+---
+
+## 11) Example Flow (concise)
+
+* `cf_981` (perf\_regression, medium risk) → Evo derives temporal/resource obligations → ObviousnessIndex=0.31 (<θ=0.55) → **escalate**.
+* Nova runs QD + ToT; produces 3 candidates; Simula shows Candidate B yields +3.1% uplift @ +70ms cost; proofs OK.
+* Atune market selects B; Probecraft → testing ok → shadow 30 ticks pass → live; Axon conforms; Equor attests.
+* Capsules + WhyTrace stamped; Synapse records playbook credit.
+

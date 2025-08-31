@@ -1,0 +1,11 @@
+{"type": "job_start", "job": {"agent": "simula", "mode": "autonomous", "task": "Your primary goal is to read the Java properties file located at 'config.properties', \nparse its key-value pairs, and re"}, "ts": "2025-08-16T07:43:05.209480+00:00"}
+{"type": "llm_call", "model": "unknown", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-16T07:43:13.321883+00:00"}
+{"type": "tool_start", "name": "log_conflict", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T07:43:13.342992+00:00"}
+{"type": "tool_end", "name": "log_conflict", "ok": true, "err": null, "extra": {}, "duration_ms": 259.27618100104155, "result": {"_redacted": true}, "ts": "2025-08-16T07:43:13.602281+00:00"}
+{"type": "llm_call", "model": "unknown", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-16T07:43:17.538741+00:00"}
+{"type": "tool_start", "name": "log_event_to_graph", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T07:43:17.553645+00:00"}
+{"type": "tool_end", "name": "log_event_to_graph", "ok": true, "err": null, "extra": {}, "duration_ms": 1111.9404599994596, "result": {"_redacted": true}, "ts": "2025-08-16T07:43:18.665585+00:00"}
+{"type": "llm_call", "model": "unknown", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-16T07:43:21.605687+00:00"}
+{"type": "tool_start", "name": "log_event_to_graph", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T07:43:21.638265+00:00"}
+{"type": "tool_end", "name": "log_event_to_graph", "ok": true, "err": null, "extra": {}, "duration_ms": 198.5724019996269, "result": {"_redacted": true}, "ts": "2025-08-16T07:43:21.836834+00:00"}
+{"type": "job_end", "status": "ok", "duration_ms": 16707.4377200006, "extra": {}, "ts": "2025-08-16T07:43:21.863185+00:00"}

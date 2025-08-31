@@ -1,0 +1,14 @@
+{"type": "job_start", "job": {"agent": "simula", "mode": "autonomous", "task": "Your primary goal is to read the Java properties file located at 'config.properties', \nparse its key-value pairs, and re"}, "ts": "2025-08-16T07:04:22.293244+00:00"}
+{"type": "llm_call", "model": "unknown", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-16T07:04:32.781882+00:00"}
+{"type": "tool_start", "name": "log_conflict", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T07:04:32.810138+00:00"}
+{"type": "tool_end", "name": "log_conflict", "ok": true, "err": null, "extra": {}, "duration_ms": 17.825843999162316, "result": {"_redacted": true}, "ts": "2025-08-16T07:04:32.827960+00:00"}
+{"type": "llm_call", "model": "unknown", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-16T07:04:42.900105+00:00"}
+{"type": "tool_start", "name": "log_conflict", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T07:04:43.257076+00:00"}
+{"type": "tool_end", "name": "log_conflict", "ok": true, "err": null, "extra": {}, "duration_ms": 21.07995999904233, "result": {"_redacted": true}, "ts": "2025-08-16T07:04:43.278153+00:00"}
+{"type": "llm_call", "model": "unknown", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-16T07:04:52.869349+00:00"}
+{"type": "tool_start", "name": "log_conflict", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T07:04:52.904861+00:00"}
+{"type": "tool_end", "name": "log_conflict", "ok": true, "err": null, "extra": {}, "duration_ms": 21.14406299915572, "result": {"_redacted": true}, "ts": "2025-08-16T07:04:52.926001+00:00"}
+{"type": "llm_call", "model": "unknown", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-16T07:05:05.867184+00:00"}
+{"type": "tool_start", "name": "log_conflict", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T07:05:05.893640+00:00"}
+{"type": "tool_end", "name": "log_conflict", "ok": true, "err": null, "extra": {}, "duration_ms": 20.80996199947549, "result": {"_redacted": true}, "ts": "2025-08-16T07:05:05.914422+00:00"}
+{"type": "llm_call", "model": "unknown", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-16T07:05:14.717651+00:00"}

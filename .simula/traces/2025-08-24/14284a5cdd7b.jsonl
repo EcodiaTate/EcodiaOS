@@ -1,0 +1,2 @@
+{"type": "job_start", "job": {"agent": "simula_v12_governed", "goal": "Add a hello file"}, "ts": "2025-08-24T14:08:03.788858+00:00"}
+{"type": "job_end", "status": "error", "duration_ms": 161452.22520000063, "extra": {"exc": "CancelledError('Cancelled by cancel scope 71ec6311d050')"}, "ts": "2025-08-24T14:10:45.205542+00:00"}

@@ -1,0 +1,2 @@
+{"type": "job_start", "job": {"agent": "simula_v12_governed", "goal": "Refactor the ContextStore to enhance its caching. The `cache_tool` method should support varying TTLs per entry. Impleme"}, "ts": "2025-08-25T08:44:18.500506+00:00"}
+{"type": "job_end", "status": "ok", "duration_ms": 54249.4254760004, "extra": {}, "ts": "2025-08-25T08:45:19.164977+00:00"}

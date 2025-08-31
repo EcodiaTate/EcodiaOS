@@ -1,0 +1,4 @@
+# file: D:\EcodiaOS\core\utils\registries\global_registry.py
+# hypothesis_version: 6.137.1
+
+['Action', 'Attention', 'Atune', 'Axon', 'Contra', 'Contradiction', 'Decision', 'Deliberation', 'Document', 'Eido', 'Ember', 'Emotion', 'Ethics', 'Ethor', 'Event', 'Evo', 'Insight', 'Invention', 'Memory', 'MetaSelf', 'Mythos', 'Nova', 'Orchestration', 'Policy', 'Qora', 'Sensing', 'Simula', 'Simulation', 'Story', 'Symbolism', 'Synk', 'SystemMessage', 'Thread', 'Unity', 'Voice', 'Voxis']

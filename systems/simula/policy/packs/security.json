@@ -1,0 +1,5 @@
+[
+  { "id": "no-subprocess", "pattern": "\\bsubprocess\\b", "message": "Avoid subprocess usage.", "when": "added" },
+  { "id": "no-os-system", "pattern": "\\bos\\.system\\(", "message": "Avoid os.system; use safer APIs.", "when": "added" },
+  { "id": "no-plaintext-keys", "pattern": "(AKIA[0-9A-Z]{16}|aws_secret_access_key|ghp_[A-Za-z0-9]{36})", "message": "Potential secret detected.", "when": "added" }
+]

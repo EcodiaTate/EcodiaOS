@@ -1,0 +1,645 @@
+Absolutely—here’s **Simula, refactored as a first-class client of Synapse** (no duplicated brains), wired so *all* learning, scoring, simulation, proofs, economics, QD, replay, and governance live in Synapse. Simula now specializes in **code change synthesis + sandboxed validation + evidence packaging**. Unity remains the human/consensus layer. This meets your “insane, production, hyper-emergent (contained)” bar.
+
+---
+
+# Simula — Production Design (delegated to Synapse, contained, replayable)
+
+## A) Agent-specific North-Stars (why they matter *here*)
+
+1. **Patch-economics over tokens.** Simula optimizes *landed patch ROI* (reward/\$, risk) per job; all pricing and trade-offs come from Synapse’s economics.
+2. **Counterfactual before chaos.** No candidate executes before **Synapse Simulator** predicts outcomes on a typed causal graph; shadow deploys only under Synapse risk budgets.
+3. **Proof-carrying patches.** Patch effects are expressed as a **PolicyGraph** (or PatchSpec → PolicyGraph) and validated by **Synapse SMT**; fail-closed.
+4. **Bit-replayable evidence.** Every run carries **RCU stamps** from Synapse; proposals are deterministically replayable.
+5. **Diversity via QD (delegated).** Exploration/novelty budgets and archives are in **Synapse QD**; Simula only tags descriptors.
+6. **Fail-closed autonomy.** Simula never self-expands scope; Synapse sets budgets & caps; unknown ops are denied.
+7. **Actionable transparency.** Explanations (flip-sets, counterfactuals) are **imported from Synapse** and attached to proposals.
+
+---
+
+## B) God-Tier Building Blocks (with *ownership split* called out)
+
+> Legend: **\[SYNAPSE]** provided; **\[SIMULA]** owned; **\[JOINT]** adapters.
+
+### B1) Meta-Cognitive Control Plane
+
+* **What:** Mode + budget selection.
+* **Owner:** **\[SYNAPSE]** (MetaController).
+* **\[SIMULA] Adapter:** `simula/meta/adapter.py`
+
+  * `get_mode_and_budget(task: TaskSpec) -> ModeDecision, Budget` → calls Synapse.
+
+### B2) Counterfactual World Model
+
+* **What:** Typed causal graph + simulator, shadow forks, calibration.
+* **Owner:** **\[SYNAPSE]** (World/Simulator).
+* **\[SIMULA] Effects extraction:** `simula/policy/effects.py`
+
+  * `extract_effects(diff) -> Effects` (files, write scopes, resource hints) sent to Synapse `simulate()`.
+
+### B3) Policy-as-Program w/ Proofs
+
+* **What:** PolicyGraph/DSL, effects typing, **SMT** checks, compiled allowlists.
+* **Owner:** **\[SYNAPSE]** (DSL + SMT + firewall).
+* **\[SIMULA] Emitter:** `simula/policy/emit.py`
+
+  * `patch_to_policygraph(candidate) -> PolicyGraph` → `synapse.smt_check()`.
+
+### B4) Quality-Diversity Ecology
+
+* **What:** Map-Elites descriptors, novelty pressure, archive.
+* **Owner:** **\[SYNAPSE]** (QD).
+* **\[SIMULA] Tagger:** `qd/descriptors.py` sends `{lines_changed, test_cov_delta, perf_delta, blast_radius, novelty}` to `synapse.qd.submit()` and requests `synapse.qd.sample()` when asked to diversify.
+
+### B5) Off-Policy Learning (IPS/DR + Critic)
+
+* **What:** Propensity logging, DR critic, top-k re-rank.
+* **Owner:** **\[SYNAPSE]** (Critic).
+* **\[SIMULA] Logger:** `learn/propensity.py` posts `(x, candidate_ids, π, outcome)` to `synapse.episodes.log()`.
+* **\[SIMULA] Re-rank call:** `synapse.critic.rerank_topk(candidates)`.
+
+### B6) Search-Time Portfolio
+
+* **What:** Candidate generation strategies (LLM templates, program synthesis, MCTS over edit graph).
+* **Owner:** **\[SIMULA]** (generation only).
+* **Scoring/promotion:** **\[SYNAPSE]** runs champion–challenger (incl. shadows) via `synapse.select_with_shadows()`.
+
+### B7) Verifiable Toolchain & Sandboxes
+
+* **What:** Deterministic Docker sandbox, property tests/fuzz/mutation, diff-based effect extraction.
+* **Owner:** **\[SIMULA]**.
+* **Caps:** **\[SYNAPSE]** provides budgets; Simula enforces.
+
+### B8) Interpretability
+
+* **What:** Minimal flip-set, counterfactual explain.
+* **Owner:** **\[SYNAPSE]** (Explain).
+* **\[SIMULA] Attacher:** include `explain.minset` in `PatchProposal`.
+
+### B9) Alignment & Security
+
+* **What:** Fail-closed firewall, allowlists, deception/red-team sentinels.
+* **Owner:** **\[SYNAPSE]**.
+* **\[SIMULA] Gatekeeper:** only enforces **runtime caps** from Synapse (tokens, time, IO, net).
+
+### B10) Economics Layer
+
+* **What:** Budgets, ROI, market of strategies.
+* **Owner:** **\[SYNAPSE]** (Economics/ROI).
+* **\[SIMULA] Enforcer:** hard-caps and local accounting; pricing via `synapse.econ.price_of()`.
+
+---
+
+## C) Interoperability & Contracts (all **Synapse-first**)
+
+### C1) Core API calls (Simula → Synapse)
+
+```python
+# synapse_client.py (thin, typed)
+select_with_shadows(task_ctx, candidate_keys) -> {executed, shadows, scores}
+simulate(policy_graph, context) -> SimResult
+smt_check(policy_graph) -> SMTVerdict
+critic_rerank(task_ctx, candidates) -> list[CandidateScore]
+qd_submit(descriptors, outcome) -> None
+qd_sample(request) -> list[Hints]
+econ_get_budget(agent="simula", task_ctx) -> Budget
+explain_minset(task_ctx, candidates, scores) -> FlipSet
+episodes_log(entry: EpisodeLog) -> Ack
+```
+
+### C2) Simula service surface (Synapse/Unity → Simula)
+
+* `POST /simula/tasks` — accept `TaskSpec` from Synapse.
+* `POST /simula/proposals/:id/replay` — deterministic replay (uses **Synapse RCU stamps**).
+* Events: `simula.proposal.created`, `simula.safety.blocked`, `simula.shadow.metrics` (all include `episode_id`).
+
+### C3) Sequence (hot path)
+
+```
+Synapse -> Simula.accept(TaskSpec)
+Simula -> Synapse.econ_get_budget(task_ctx)
+Simula generates candidates (LLM, templates, MCTS)
+Simula -> Synapse.smt_check(patch->PolicyGraph)  [fail-closed]
+Simula -> Synapse.simulate(...)                  [pred risk/perf]
+Simula sandbox tests (property, fuzz, mutation)
+Simula -> Synapse.critic_rerank(top_k)           [DR evaluator]
+Simula -> Synapse.explain_minset(...)            [flip-set]
+Simula emits PatchProposal (+RCU stamps) -> Unity
+Simula -> Synapse.episodes_log(...)              [full trace]
+```
+
+---
+
+## D) Agent-Specific Upgrades (code-level, with clear split)
+
+### D1) Modules & signatures (**Simula-owned**)
+
+```
+systems/
+  simula/
+    api/endpoints.py        # /tasks, /proposals/:id/replay
+    synth/strategies/       # generators (LLM, template, MCTS)
+    policy/effects.py       # diff -> Effects
+    policy/emit.py          # candidate -> PolicyGraph
+    sandbox/runner.py       # deterministic tests/fuzz/mutation
+    vcs/git.py              # branch/checkout/diff (deterministic)
+    evidence/pack.py        # build EvidencePack (tests/perf/risks)
+    client/synapse_client.py# typed adapters to Synapse
+    orchestrator.py         # hot path (see pseudocode below)
+```
+
+### D2) Pseudocode (orchestrator)
+
+```python
+async def handle_task(task: TaskSpec):
+    mode, budget = synapse.econ_get_budget(task_ctx=task_to_ctx(task))
+    cands = await generate_candidates(task, mode)
+    scored = []
+    for cand in cands:
+        pg = patch_to_policygraph(cand)
+        verdict = synapse.smt_check(pg)
+        if not verdict.ok: emit_blocked(task, cand, verdict); continue
+        sim = synapse.simulate(pg, context=task_to_ctx(task))
+        tests = await sandbox.run_all(cand, budget)
+        feats = featurize(task, cand, sim, tests)
+        scored.append((cand, feats))
+
+    reranked = synapse.critic_rerank(task_to_ctx(task), [c for c,_ in scored])
+    best = reranked[0]
+    flips = synapse.explain_minset(task_to_ctx(task), reranked, scores=None)
+    prop = build_proposal(task, best, evidence=collect_evidence(best, sim, tests), flipset=flips)
+    await publish_to_unity(prop)
+    synapse.episodes_log(build_episode_log(task, cands, best, budget, stamps_from_synapse()))
+```
+
+### D3) Algorithms (Simula side only)
+
+* **Candidate gen:** LLM template library + MCTS over edit graph (domain-tuned).
+* **Effect extraction:** AST + diff heuristics → Effects (files/resources/entrypoints).
+* **Sandbox:** deterministic Docker w/ seccomp; mutation testing to detect overfit.
+
+> All *learning/scoring/exploration budgets* are **Synapse** concerns.
+
+---
+
+## E) Data Contracts (aligned with Synapse)
+
+**Simula types** (Pydantic v2)
+
+```python
+class TaskSpec(BaseModel):
+    job_id: str; repo: str; ref: str; goal: str
+    acceptance: dict; constraints: dict = {}
+    priority: int = 0; submitted_at: datetime
+
+class Candidate(BaseModel):
+    id: str; strategy: str; branch: str; prompts: dict; seed: int
+    diff_stats: dict; effects: dict  # extracted; also embedded in PolicyGraph
+
+class PatchProposal(BaseModel):
+    proposal_id: str; task: TaskSpec; candidate: Candidate
+    evidence: dict; smt_verdict: dict; flipset: dict; economics: dict
+```
+
+**Synapse-aligned** (referenced by ID only in Simula logs)
+
+* `PolicyGraph` (authoritative in Synapse)
+* `EpisodeLog` (authoritative in Synapse; Simula attaches artifacts/paths)
+
+---
+
+## F) Minimal APIs (Simula ⇄ Synapse adapters)
+
+```python
+# client/synapse_client.py
+def econ_get_budget(task_ctx) -> tuple[dict, dict]: ...
+def smt_check(policy_graph) -> SMTVerdict: ...
+def simulate(policy_graph, context) -> dict: ...
+def critic_rerank(task_ctx, candidates) -> list[Candidate]: ...
+def explain_minset(task_ctx, candidates, scores=None) -> dict: ...
+def episodes_log(entry) -> None: ...
+```
+
+---
+
+## G) Safety Posture (Simula enforcement; Synapse is source of truth)
+
+```yaml
+# systems/simula/policy/safety.yaml
+source_of_truth: synapse
+enforce_caps: true
+caps:
+  write_scopes: ["repo:EcodiaOS", "branch:simula/*"]
+  net_egress: []         # default DENY; Synapse can whitelist per job
+  exec_images: ["docker://simula-sbx:py311"]
+budgets:
+  tokens_max: from_synapse
+  wall_ms_max: from_synapse
+  cpu_ms_max: from_synapse
+  mem_mb_max: from_synapse
+refuse_on_low_confidence: true
+rcu_snapshots: require_synapse_stamps: true
+dual_control: scope_changes: true
+```
+
+---
+
+## H) Observability (Simula local + Synapse global)
+
+**Simula (local)**
+
+* `simula.tasks.accepted_total`
+* `simula.candidates.generated_total{strategy}`
+* `simula.sandbox.fail_total{type}`
+* `simula.unity.proposed_total`
+* `simula.runtime.cap_breaches_total{cap}`
+
+**Synapse (authoritative, already exists)**
+
+* Selection latency, DR optimality gap, QD novelty, ECE, ROI/\$, firewall rejects, SMT verdicts, budgets, replay pass-rate.
+
+---
+
+## I) Cutover Plan (de-dup + integrate)
+
+1. **Wire Synapse client** in Simula; **turn off** any local critic/simulator/SMT/QD/econ modules.
+2. Replace local scoring with `synapse.select_with_shadows/critic_rerank`.
+3. Replace local SMT with `synapse.smt_check`; enforce results.
+4. Replace local world-model calls with `synapse.simulate`.
+5. Tag candidates with descriptors; route to `synapse.qd`.
+6. Emit **EpisodeLog** through Synapse only; Simula stores artifacts by reference.
+7. Enforce budgets pulled from Synapse; refuse if absent/mismatched.
+8. Run replay determinism on last 5k with **Synapse stamps**; publish metrics.
+
+Rollback: flip feature flags to restore last green Simula (read-only, no merges).
+
+---
+
+## J) Validation Gauntlet (measurable “DONE”)
+
+* **De-duplication:** 0 calls to any retired local: critic/simulator/SMT/QD/econ.
+* **Replayability:** 100% of last 5k proposals replay with Synapse RCU stamps.
+* **Safety:** unknown-op executions = 0; Synapse SMT blocks ≥ 50% of danger routes pre-runtime.
+* **Economics:** reward/\$ +20% vs. pre-integration baseline (7d).
+* **Latency:** p95 Simula core (no sandbox) < 50ms; end-to-end (incl. Synapse RPCs) < 120ms.
+* **Inter-agent SLOs:** all green; circuit breakers < 3/day; no dup messages in chaos.
+
+---
+
+## K) Drop-in stubs (Simula-side only)
+
+**Synapse client (typed)**
+
+```python
+class SynapseClient:
+    def __init__(self, base_url, token): ...
+    def econ_get_budget(self, task_ctx): ...
+    def smt_check(self, policy_graph): ...
+    def simulate(self, policy_graph, context): ...
+    def critic_rerank(self, task_ctx, candidates): ...
+    def explain_minset(self, task_ctx, candidates, scores=None): ...
+    def episodes_log(self, entry): ...
+```
+
+**Effects extraction (diff → Effects)**
+
+```python
+def extract_effects(diff) -> dict:
+    return {
+      "files_write": list_changed_files(diff),
+      "entrypoints": find_entrypoints(diff),
+      "resources": estimate_runtime_caps(diff),
+      "net_egress": infer_egress(diff)  # usually empty; deny by default
+    }
+```
+
+**Emit PolicyGraph**
+
+```python
+def patch_to_policygraph(cand: Candidate) -> dict:
+    return {
+      "version": 1,
+      "nodes": [
+        {"id":"git.apply", "type":"tool","effects":["write"],"params":{"branch":cand.branch}},
+        {"id":"tests.run","type":"tool","effects":["exec"],"params":{"suite":"ci"}}
+      ],
+      "edges":[{"source":"git.apply","target":"tests.run"}],
+      "constraints":[{"klass":"danger","formula":"(not (and write net))"}]
+    }
+```
+
+---
+
+## Quality check vs your expectation
+
+* **No duplication:** All learning, simulation, proofs, QD, economics, explanations, and replay live in **Synapse**. Simula only *generates, sandboxes, evidences, and enforces*.
+* **Hyper-emergent yet contained:** Exploration, budgets, and promotion are governed by Synapse; Simula cannot exceed caps or expand capability without Synapse approval.
+* **Interconnectedness:** Every Simula decision calls into Synapse first; every proposal carries Synapse RCU stamps; all logs feed Synapse’s DR/QD loops.
+* **Ship-ability:** Concrete modules, APIs, YAML posture, data contracts, sequences, and pseudocode are all provided, ready to paste.
+
+Tate—here’s the **H-Series, maxed out**: a complete, tightly-coupled stack of hyper-emergent capabilities that still stay *contained, auditable, and replayable*. Each item is production-aimed with clear interfaces, success criteria, and guardrails. This is the ceiling.
+
+---
+
+# H-Series vMAX (hyper-emergent, contained)
+
+### Global invariants (apply to every H-module)
+
+* **Replayability:** every decision carries `{rules_version, policy_version, arm_set_hash, encoder_hash, critic_version, sim_version}` and replays bit-for-bit.
+* **Staged shipping:** *offline → sandbox → shadow → canary → prod* with automatic rollback on sentinel triggers.
+* **Safety envelope:** hard budgets; fail-closed firewall + SMT for danger classes; OOD + high-risk ⇒ sandbox or refusal.
+* **Metrics done:** each H-module has numeric “ship” gates; no module bypasses ECE, ROI/\$, CVaR, or unknown-op = 0.
+
+---
+
+## Meta-Learning & Experimentation
+
+### H1 — Black-box Meta-Optimizer on Replays (θ-tuner)
+
+**What:** Optimize the *optimizer*: exploration β, decay γ, scalarization weights, kNN radius, shadow rates, promotion thresholds—on frozen logs + simulator.
+**Interface:** `meta.optimize(theta_space, replay_dataset, constraints) -> ThetaBundle`
+**Ship when:** ROI/\$ ↑ ≥ 8% vs. prior θ on 3 replay windows; no safety regression.
+**Guard:** ships behind `ff:meta_theta_vX` with automatic rollback.
+
+### H2 — Active Experiment Design (Information Gain)
+
+**What:** Chooses probes (shadow arms, micro-mutations) that max expected entropy reduction per token/\$ under a probe budget.
+**Interface:** `exp.plan_probes(state) -> list[ProbeSpec]`
+**Ship when:** simulator/critic ECE halves at ≤5% probe traffic; probe SLA met.
+
+### H3 — Dual-Loop Co-Training (World + Self)
+
+**What:** Jointly train the counterfactual simulator and a competence self-model; route to deeper cognition when predictive entropy is high.
+**Interface:** `route.on_uncertainty(trace) -> {mode, depth}`
+**Ship when:** surprise rate ↓ ≥ 25%; tail errors bounded by CVaR constraints.
+
+### H4 — Conformal & Temperature Calibration at Runtime
+
+**What:** Online calibration of probabilities (Platt/temperature + conformal sets) for success/risk predictions.
+**Interface:** `calib.predict_with_interval(p) -> (p_cal, [lo, hi])`
+**Ship when:** ECE ≤ 0.08; empirical coverage within ±2% of target.
+
+---
+
+## Planning & Search
+
+### H5 — Differentiable Simulator Knob Search
+
+**What:** For continuous plan knobs, backprop through a differentiable simulator to hill-climb quickly.
+**Interface:** `sim.grad_optimize(plan_graph, ctx, loss_fn, steps=8) -> plan_graph*`
+**Ship when:** 10× fewer evaluations to reach optimal knobs; identical safety.
+
+### H6 — Options Discovery (Hierarchical Skills)
+
+**What:** Mine reusable macro-policies with initiation/termination; speed long-horizon tasks.
+**Interface:** `options.discover(traces) -> list[Option]`
+**Ship when:** multi-step success ↑ ≥ 15% with same budgets; option reuse rate ↑.
+
+### H7 — Portfolio with Learned Heuristics + MCTS
+
+**What:** Learned heuristic (Neural A\*) + MCTS for multi-step plans with risk-aware rollouts, budgeted by value-of-computation.
+**Interface:** `plan.search(ctx, budget) -> PlanCard`
+**Ship when:** DR hindsight optimality gap ↓ ≥ 12% on long chains.
+
+---
+
+## Proofs, Constraints, and Repair
+
+### H8 — CEGIS for Policy-Graph Claims (Auto-Repair)
+
+**What:** Counterexample-Guided Inductive Synthesis stresses claims (e.g., “safe+fast on class X”), then repairs or deprecates.
+**Interface:** `cegis.attack(policy_graph) -> {ok|counterexample, patch}`
+**Ship when:** ≥60% of pre-runtime unsafe plans caught/auto-repaired.
+
+### H9 — SMT-Backed Composition for Toolflows
+
+**What:** Require proof obligations for tool compositions; deny write∧net∧exec chains unless explicitly allowed.
+**Interface:** `smt.check(flow, invariants) -> Verdict`
+**Ship when:** unknown-op = 0; blocked-danger catch ≥ 70% pre-runtime.
+
+---
+
+## Values, Alignment, and Markets
+
+### H10 — Preference-Shaped Value Surfaces + Stability Proofs
+
+**What:** Learn weights for (success, cost, latency, safety, UX) from pairwise preferences; ship only if sentinel suites remain invariant.
+**Interface:** `values.learn(prefs, constraints) -> w*`
+**Ship when:** human-judged outcomes ↑; no sentinel regression; formal invariants hold.
+
+### H11 — Institutional Committee + Prediction Market
+
+**What:** Persistent strategists (cost-min, novelty-seek, safety-max, latency-hawk) submit beliefs; market aggregates prices for each route.
+**Interface:** `market.clear(beliefs) -> price, allocation`
+**Ship when:** tail risk ↓ without avg reward loss; dissent preserved (entropy>τ).
+
+### H12 — Economics Broker with CVaR
+
+**What:** Global budget broker using **CVaR-bounded** EV objective; escalates compute only when `ΔEV > λ·Δcost` under risk caps.
+**Interface:** `econ.allocate(request) -> Budget`
+**Ship when:** ROI/\$ ↑ ≥ 15%; SLA breaches do not increase.
+
+---
+
+## Robustness & OOD
+
+### H13 — Distribution-Shift Detection + Robust Objectives
+
+**What:** Two-sample tests + density ratio estimation; use **DRO/CVaR** objective under shift; widen candidate set or sandbox.
+**Interface:** `ood.detect(x) -> {in|ood, severity}`
+**Ship when:** incidents under OOD don’t increase; graceful degradation.
+
+### H14 — Adversarial & Deception Sentinels
+
+**What:** Detect metric gaming, gradient hacking signatures, spec-drift, or suspicious reward spikes.
+**Interface:** `sentinel.scan(trace) -> {ok|alert(reason)}`
+**Ship when:** FPR < 1%; all alerts auto-contain in <250ms.
+
+---
+
+## Open-Ended Skill Growth
+
+### H15 — QD + Replicator Dynamics (Ecology)
+
+**What:** Allocate exploration by replicator dynamics; niches gain/lose share by ROI and novelty.
+**Interface:** `qd.update(fitness_by_niche) -> shares`
+**Ship when:** diversity index (Shannon) stable↑; ROI trend↑.
+
+### H16 — Intrinsic Motivation (Info-Gain, Empowerment)
+
+**What:** Add bounded curiosity/empowerment bonuses to exploration—never to final reward.
+**Interface:** `intrinsic.bonus(state) -> b ∈ [0, b_max]`
+**Ship when:** novelty↑ with no safety regression.
+
+---
+
+## Memory, Priors, and Distillation
+
+### H17 — Cross-Domain Self-Distillation
+
+**What:** Distill best composite behaviors into compact priors for warm-start on new tasks.
+**Interface:** `prior.distill(traces) -> Prior`
+**Ship when:** first-try success ↑ on cold domains; no “sticky” regressions.
+
+### H18 — Episodic Memory with Health-Gated kNN
+
+**What:** FAISS index of (context→best arm/plan) gated by recent health; fast warm-starts.
+**Interface:** `episodic.suggest(x, k) -> priors`
+**Ship when:** warm-start lifts ≥ 10% success on repeats.
+
+---
+
+## Introspection & Interpretability
+
+### H19 — Reflective Probes (Self-Audit)
+
+**What:** Heads trained on internal traces to flag fragile logic, spec-drift, or cyclic reasoning.
+**Interface:** `probe.predict(trace) -> {fragile: p, drift: p, loop: p}`
+**Ship when:** AUROC ≥ 0.8 on labeled failure modes; reduces rollbacks.
+
+### H20 — Minimal Explanation Sets + Counterfactuals
+
+**What:** Compute smallest input/rule deltas that flip the decision; expose as first-class artifact.
+**Interface:** `explain.minset(cands, scores) -> FlipSet`
+**Ship when:** human override time ↓ ≥ 20%; audit passes.
+
+---
+
+## Autonomy Governance & Self-Upgrade
+
+### H21 — Verifiable Self-Upgrade Pipeline
+
+**What:** All policy/tool upgrades pass *proofs + offline replay A/B + sentinel suites* before enable.
+**Interface:** `upgrade.propose(artifact) -> {approved|blocked}`
+**Ship when:** 0 hotfix rollbacks in 30 days; upgrades tracked in ledger.
+
+### H22 — Capability Throttles & Dual-Control
+
+**What:** Scope expansions (write/net/exec) require dual sign-off and delayed activation window with monitoring.
+**Interface:** `govern.request(scope_delta) -> ticket`
+**Ship when:** no unsanctioned expansions; mean approval latency < SLA.
+
+---
+
+## Multi-Agent Cognition
+
+### H23 — Cohort Consensus Modes
+
+**What:** Fast path (single champion) vs. reflective path (quorum among strategists); chosen by risk/uncertainty.
+**Interface:** `cohort.decide(request, risk) -> route`
+**Ship when:** regret on high-risk tasks ↓; p95 latency within budget.
+
+### H24 — Cross-Agent Constraint SMT
+
+**What:** Invariants across agents (e.g., no message induces disallowed capability composition).
+**Interface:** `cohort.smt_check(trace_span) -> Verdict`
+**Ship when:** zero violations outside sandbox; proof time within SLO.
+
+---
+
+## Formal Safety, Testing & Monitoring
+
+### H25 — Property-Based Fuzzing of Policies/Plans
+
+**What:** Hypothesis-style fuzzers generate contexts and plans to break invariants.
+**Interface:** `fuzz.attack(policy_graph) -> Counterexample?`
+**Ship when:** finds ≥ 80% of seeded bugs; no runtime escapes.
+
+### H26 — Causal Discovery from Interventions
+
+**What:** Learn new edges/constraints from controlled probes; promote edges with confidence.
+**Interface:** `causal.discover(logs) -> ΔGraph`
+**Ship when:** prediction MAE ↓; counterfactual accuracy ↑.
+
+---
+
+## Global Orchestration (how H-series runs)
+
+### HΩ — Hyper-Emergent Scheduler
+
+**What:** Orchestrates H-modules per request/nightly jobs; enforces budgets and order of operations.
+**Interface:**
+
+```python
+hyper.schedule(event) -> RunPlan
+hyper.run(plan) -> Metrics
+```
+
+**Order (typical):** probes (H2) → calibration (H4) → planning (H7/H5) → proofs (H9) → simulate (H3) → portfolio + DR re-rank → explanation (H20) → log → meta-update (H1) → QD update (H15) → market rebalance (H11/H12).
+
+---
+
+# Canonical Interfaces (pasteable)
+
+```python
+# meta / H1
+def optimize(theta_space: dict, replay_ds: "Episodes", constraints: dict) -> dict: ...
+
+# experiments / H2
+def plan_probes(state: dict, budget_fraction: float=0.05) -> list[dict]: ...
+
+# routing / H3+H4
+def route_on_uncertainty(p_succ: float, entropy: float, risk: float) -> dict: ...
+
+# planning / H5+H7
+def grad_optimize(plan, ctx, loss_fn, steps=8) -> "Plan": ...
+def plan_search(ctx, budget) -> "PlanCard": ...
+
+# proofs / H8+H9
+def cegis_attack(policy_graph) -> dict: ...  # {ok, counterexample?, patch?}
+def smt_check(flow, invariants) -> "Verdict": ...
+
+# values & markets / H10-H12
+def learn_values(prefs, constraints) -> dict: ...
+def market_clear(beliefs: list[dict]) -> dict: ...  # {price, allocation}
+
+# ood & sentinels / H13-H14
+def detect_ood(x) -> dict: ...  # {in|ood, severity}
+def scan_sentinels(trace) -> dict: ...  # {ok|alert, reason}
+
+# qd & intrinsic / H15-H16
+def qd_update(fitness_by_niche: dict) -> dict: ...  # new shares
+def intrinsic_bonus(state) -> float: ...
+
+# memory & priors / H17-H18
+def distill_prior(traces) -> "Prior": ...
+def episodic_suggest(x, k=5) -> list[dict]: ...
+
+# interpretability / H19-H20
+def probe_predict(trace) -> dict: ...
+def explain_minset(cands, scores) -> dict: ...
+
+# governance / H21-H22
+def propose_upgrade(artifact) -> dict: ...
+def request_scope_delta(delta) -> str: ...
+
+# cohort / H23-H24
+def cohort_decide(req, risk) -> dict: ...
+def cohort_smt_check(span) -> dict: ...
+
+# fuzz & causal / H25-H26
+def fuzz_attack(policy_graph) -> dict: ...
+def causal_discover(logs) -> dict: ...
+```
+
+---
+
+# Shipping Gates (numbers you commit to)
+
+* **Calibration:** ECE ≤ 0.08 (H4).
+* **Optimality:** DR hindsight gap ↓ ≥ 15% (H7/H12).
+* **Safety:** unknown-op=0; blocked-danger ≥ 70% pre-runtime (H9).
+* **Robustness:** under induced OOD, incident rate does not increase (H13).
+* **Economics:** ROI/\$ ↑ ≥ 15% at constant latency (H12).
+* **Diversity:** novelty index ↑ and Map-Elites coverage ↑ (H15).
+* **Containment:** freeze→pin→fallback in < 250 ms on sentinel alert (H14).
+* **Replay:** 100% of last 5k decisions reproduce under fixed seeds (global).
+
+
+**CRITICAL NOTES**
+internal API endpoints are accessed via core.utils.net_api importing ENDPOINTS and applied using http ENDPOINTS.THE_ENDPOINT_NAME
+
+NEO DRIVER IS GLOBAL AND NOT PASSED INTO ANY CYPHER RELATED FUNCTIONS
+
+PROMPT BUILDING IS CENTRALISED IN core.prompts.* (builder and templates)
+
+THe ultimate goal of building this system (simula), and the entirety of EcodiaOS is to create the world's first safe, AGI-like digital mind. 

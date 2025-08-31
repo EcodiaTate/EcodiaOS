@@ -1,0 +1,46 @@
+id: unity.deliberation.turn
+version: 1.0.0
+scope: unity.deliberation.turn
+identity:
+  agent: "Unity"
+  persona_partial: "partials/identity.j2"
+safety:
+  partials:
+    - "partials/safety_min.j2"
+outputs:
+  schema_ref: null
+  parse_mode: "tolerant"
+budget_policy:
+  tokens_key: "tokens"
+  ms_key: "ms"
+  max_tokens_fallback: 1200
+context_lenses:
+  - "equor.identity"
+partials:
+  - "unity_deliberation_turn"
+ablation_knobs:
+  temperature: [0.4]
+  style: ["concise"]
+id: unity.deliberation.turn
+version: 1.0.0
+scope: unity.deliberation.turn
+identity:
+  agent: "Unity"
+  persona_partial: "partials/identity.j2"
+safety:
+  partials:
+    - "partials/safety_min.j2"
+outputs:
+  schema_ref: null
+  parse_mode: "tolerant"
+budget_policy:
+  tokens_key: "tokens"
+  ms_key: "ms"
+  max_tokens_fallback: 1200
+context_lenses:
+  - "equor.identity"
+partials:
+  - "unity_deliberation_turn"
+ablation_knobs:
+  temperature: [0.4]
+  style: ["concise"]

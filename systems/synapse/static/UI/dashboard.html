@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synapse Observability Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <header>
+        <h1>Synapse Observability Dashboard</h1>
+        <div id="status-light" class="offline"></div>
+    </header>
+    <main>
+        <section id="global-stats" class="card">
+            <h2>Global Stats</h2>
+            <div id="stats-grid">
+                <div class="stat-item">
+                    <h4>Total Episodes</h4>
+                    <p id="total-episodes">--</p>
+                </div>
+                <div class="stat-item">
+                    <h4>Policy Arms</h4>
+                    <p id="total-arms">--</p>
+                </div>
+                <div class="stat-item">
+                    <h4>Active QD Niches</h4>
+                    <p id="active-niches">--</p>
+                </div>
+                <div class="stat-item">
+                    <h4>Firewall Blocks</h4>
+                    <p id="firewall-blocks">--</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="qd-coverage" class="card">
+            <h2>Quality-Diversity Archive Coverage</h2>
+            <div id="qd-grid"></div>
+        </section>
+
+        <section id="episode-inspector" class="card">
+            <h2>Episode Inspector</h2>
+            <div class="search-bar">
+                <input type="text" id="episode-id-input" placeholder="Enter Episode ID...">
+                <button id="fetch-episode-btn">Inspect</button>
+            </div>
+            <pre id="episode-trace-output">{ "status": "Awaiting search..." }</pre>
+        </section>
+    </main>
+    <script src="dashboard.js"></script>
+</body>
+</html>

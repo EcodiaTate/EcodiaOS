@@ -1,0 +1,41 @@
+{
+  "name": "ecodiaos",
+  "private": true,
+  "workspaces": ["frontend-voxis"],
+  "dependencies": {
+    "@tsparticles/react": "3.0.0",
+    "@tsparticles/engine": "^3.0.2",
+    "@tsparticles/slim": "^3.0.2",
+    "three": "^0.178.0",
+    "@react-three/drei": "^10.6.1",
+    "@react-three/fiber": "^9.2.0",
+    "lottie-react": "^2.4.1",
+    "next-transpile-modules": "^10.0.1"
+ 
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@types/three": "^0.178.1",
+    "babel-plugin-glsl": "^1.0.0",
+    "concurrently": "^9.2.1",
+    "glslify": "^7.1.1",
+    "npm-run-all": "^4.1.5",
+    "onchange": "^7.1.0",
+    "raw-loader": "^4.0.2",
+    "rimraf": "^6.0.1",
+    "turbo": "^1.10.0",
+    "yargs": "^17.7.2",
+    "eslint": "^8.57.0"
+  },
+  "overrides": {
+    "eslint": "^8.57.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "clean": "rimraf .turbo && rimraf frontend-voxis/.next",
+    "dev:app": "turbo run dev --filter=frontend-voxis",
+    "dev": "npm-run-all --parallel dev:app"
+  }
+}

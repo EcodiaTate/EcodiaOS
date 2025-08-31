@@ -1,0 +1,24 @@
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [".venv", "venv", "dist", "build", "node_modules", "runs", ".cache", "sim vision.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "COM", "Q", "W", "RUF100"]
+ignore = ["E501"]
+# Only auto-fix safe buckets by default
+fixable   = ["I", "UP", "COM", "Q", "W", "RUF100", "F841"]
+unfixable = ["F"]
+
+# ✅ Use a table (NOT an inline table) for per-file-ignores
+[tool.ruff.lint.per-file-ignores]
+"workers/promoter.py"        = ["E501"]
+"**/__init__.py"             = ["F401"]
+"migrations/**"              = ["ALL"]
+"systems/**/patches/**"      = ["F401"]
+"systems/**/registries.py"   = ["F401"]
+
+[tool.ruff.format]
+quote-style = "preserve"
+indent-style = "space"
+skip-magic-trailing-comma = false

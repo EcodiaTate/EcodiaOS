@@ -1,0 +1,144 @@
+networks:
+  ecodian_net:
+    name: ecodian_net
+
+volumes:
+  neo4j_data:
+  models_data:
+
+services:
+  # --- Core Dependencies ---
+  redis:
+    image: redis:7-alpine
+    container_name: ecodia_redis
+    networks: [ecodian_net]
+    ports:
+      - "6379:6379"
+
+  neo4j:
+    image: neo4j:5
+    container_name: ecodia_neo4j
+    networks: [ecodian_net]
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+    environment:
+      NEO4J_AUTH: neo4j/testpassword # Use a consistent password for dev
+      NEO4J_PLUGINS: '["apoc"]'
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # --- EcodiaOS Main Application Service ---
+  api:
+    container_name: ecodia_os_api
+    image: ecodiaos:dev
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # <-- From your original file: Ensures correct file permissions inside the container
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+        DOCKER_GID: ${DOCKER_GID:-0}
+    working_dir: /app
+    networks: [ecodian_net]
+    command:
+    - python
+    - -X
+    - dev
+    - -W
+    - default
+    - -m
+    - uvicorn
+    - "${APP_MODULE:-app:app}"
+    - --host
+    - 0.0.0.0
+    - --port
+    - "${APP_PORT:-8000}"
+    - --log-level
+    - debug
+    - --access-log
+
+
+    
+    # <-- From your original file: Centralized environment configuration
+    env_file:
+      - ./config/.env
+    
+    # --- Merged Environment Variables ---
+    environment:
+      # Service Discovery
+      environment:
+      PYTHONFAULTHANDLER: "1"
+      PYTHONASYNCIODEBUG: "1"
+      UVICORN_WORKERS: "1"
+      LOG_LEVEL: "DEBUG"
+      PYTHONPATH: /app
+      ECODIAOS_BASE_URL: http://localhost:8000
+      REDIS_HOST: redis
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: testpassword
+      # Your existing variables
+      SIMULA_SANDBOX_MODE: docker
+      SIMULA_REPO_ROOT: /app
+      HF_HOME: /models/hf
+      QORA_API_KEY: dev-local-key
+    
+    volumes:
+      # <-- From your original file: Granular mounts are better for dev
+      - ./:/app
+      - ./config:/app/config:ro
+      - models_data:/models:rw
+      # <-- CRITICAL: Mounts the Docker socket for Simula to use
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    # <-- From your original file: Ensures the container user can access the Docker socket
+    group_add:
+      - "${DOCKER_GID:-0}"
+      
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  # --- Synapse Autonomous Daemon ---
+  # This runs the background learning loops in a separate process
+  synapse_daemon:
+    image: ecodiaos:dev # Use the same image as the API
+    container_name: ecodia_os_synapse_daemon
+    build: # Ensure it's built if the image doesn't exist
+      context: .
+      dockerfile: Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+        DOCKER_GID: ${DOCKER_GID:-0}
+    # Override the default command to run the daemon script
+    command: python -m systems.synapse.daemon
+    networks: [ecodian_net]
+    env_file:
+      - ./config/.env
+    environment:
+      PYTHONPATH: /app
+      ECODIAOS_BASE_URL: http://localhost:8000
+      REDIS_HOST: redis
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: testpassword
+    volumes:
+      - ./:/app # Mount code so it has the latest updates
+      - ./config:/app/config:ro
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_started

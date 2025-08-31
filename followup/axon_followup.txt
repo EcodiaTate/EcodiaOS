@@ -1,0 +1,181 @@
+Got you. Here are the **follow-up notes**—by system—covering every delta Axon introduces so the whole stack stays continuous, auditable, and *more capable than before*. I’ve tied key items to your Atune+++ spec so we don’t miss the seams.
+
+---
+
+# Cross-system scope (what Axon needs, what others must provide)
+
+**Axon invariants:** single ingress/egress, MEJ replay, semantic capability tokens, counterfactual coupling, EIG/FAE bidding, Reflex fast-lane, SFKG deposits, TEMPO reserves, Attention-Market budgets.
+
+**Atune counterparts:** FAE planner, MAG gates, SFKG field, Reflex arcs, TEMPO, Market allocator, with explicit repo structure & knobs already laid out. &#x20;
+
+---
+
+## 1) Atune (salience, planning, market)
+
+**What Atune must expose/accept for Axon continuity**
+
+* **Replace synthetic embeddings** used in `routes.py` with Axon/Synapse embeddings (same 3072-dim slots you’re using for SFKG).&#x20;
+* **Return FAE/MAG/Market terms** on `/atune/route` so Axon can ledger “why” and bid compute: add `fae.terms`, `market.bid`, `allocation_ms`. &#x20;
+* **Expose SFKG hotspots** so Axon can bias ProbeCraft/EIG: `GET /atune/focus/fields`.&#x20;
+* **Reflex dry-run endpoint** (`POST /atune/reflex/test`) so Axon can validate Reflex catalogs during driver rollout.&#x20;
+* **TEMPO forecast** for pre-reservation of attention: `GET /atune/tempo/forecast`.&#x20;
+
+**Internal wiring Atune should complete**
+
+* **Probes → FAE:** micro-sim probes (small Synapse arm) feed IG/Risk deltas; Axon will call this pre-actuation.&#x20;
+* **Affect loop:** accept Equor’s drive vector and modulate MAG temperature, risk clamps, austerity thresholds, SFKG leak γ.&#x20;
+* **Market allocator:** keep the VCG-style selection & ε-explore so Axon bids translate cleanly into μ-attention.&#x20;
+* **Ledger:** persist MAG gates, FAE breakdown, probe summaries, auction outcomes—Axon depends on this for why-traces.&#x20;
+
+**Definition of Done (Atune)**
+
+* `/atune/route` responds with: plan decision, `fae.terms`, `market.bid`/`allocation_ms`, reflex matches, salience vector. (See test scaffolds.)&#x20;
+* Field & Reflex tests pass (diffusion/hotspot & PII reflex).&#x20;
+
+---
+
+## 2) Synapse (learning, policy, small-arms)
+
+**New responsibilities to support Axon**
+
+* **Outcome models → `E[U(a)]`** for FAE, with nightly NeuralLinear/Bayesian heads and regret logging.&#x20;
+* **Small-arm micro-sim** endpoint for Atune probes (30–80ms SLAs; JSON-only outputs).&#x20;
+* **Policy hint / bandit service** that accepts Axon’s realized IG/risk/cost metrics to update λ-vectors.&#x20;
+* **EIG\_do option:** accept SCM stubs from Axon to evaluate counterfactual information gain (optional but unlocks causal control).
+
+**Continuity tests**
+
+* Probe disagreement > δ escalates uncertainty bonus back to Atune.&#x20;
+
+---
+
+## 3) Unity (deliberation, high-stakes gate)
+
+**What changes**
+
+* **Risk thresholds:** take Atune/Equor risk projections and enforce n-of-m reviews for intents ≥ tier. (Atune already emits plan decisions and risk heads; carry thresholds here.)&#x20;
+* **Why-trace acceptance:** persist Axon’s structured why-trace (salience→FAE bid→cap token→verdict) attached to each Unity session.
+* **Market oversight:** sample audits of high-bid allocations to ensure truthful bidding (matches Atune’s Market intent).&#x20;
+
+**Continuity tests**
+
+* For any blocked act, Unity can reconstruct FAE terms and MAG gates from Atune’s ledger.&#x20;
+
+---
+
+## 4) Equor / Ethor (identity, ethics, affect)
+
+**New interfaces**
+
+* **Drive/Affect vector** emitter to Atune (curiosity, caution, integrity\_load, fatigue…) with safe clamps.&#x20;
+* **Capability tokens**: semantic predicates (scopes, spend, sentiment/toxicity bounds, domain caps) that Axon’s checker must validate pre-act.
+* **Risk clamps**: programmatic minima for must-protect domains feed Atune’s Risk head and Axon’s cap predicate VM.&#x20;
+
+**Continuity tests**
+
+* MAG temperature and SFKG leak respond to affect vector within bounded ranges (watchdog rollback on drift).&#x20;
+
+---
+
+## 5) Simula (driver synthesis, twins, red-team)
+
+**New deliverables**
+
+* **ProbeCraft hook:** accept API doc bundles and obligations, synthesize drivers + contract tests for Axon Mesh.
+* **Twin execution service:** fast counterfactual run per high-stakes intent; return uplift deltas for Axon’s counterfactual coupling.
+* **Repro bundles:** hermetic inputs/outputs/timings for MEJ replay (Atune’s tests already assume deterministic seeds).&#x20;
+
+**Continuity tests**
+
+* For a canaried connector, Simula must produce a **replay capsule** that Axon can execute bit-exactly; Atune end-to-end smoke stays green.&#x20;
+
+---
+
+## 6) Qora (KG & embeddings)
+
+**Upgrades to back Axon↔Atune SFKG**
+
+* **Embedding store @ 3072-d** with node binding & neighborhood queries; linear-time updates over active nodes. &#x20;
+* **Field data**: persist `field_energy`, ∥∇F∥, Laplacian for hotspot APIs and schema induction jobs.&#x20;
+* **Schema induction/consolidation** pipelines for FocusGraph motifs (stored as priors).&#x20;
+
+**Continuity tests**
+
+* New events near a stored schema show bootstrapped salience + correct protocol defaults on replay.&#x20;
+
+---
+
+## 7) Net/API layer (transport + contracts)
+
+**Endpoints**
+
+* **Atune:** `/atune/route`, `/atune/focus/fields`, `/atune/reflex/test`, `/atune/tempo/forecast`.&#x20;
+* **Axon:** `/axon/sense` (Event batches with salience hints, field deposits, reflex matches), `/axon/act` (Intent → ActionResult, with counterfactual metrics).
+* **Budget exchange:** `GET /axon/market/budgets` ↔ Atune allocator (pool\_ms, ε, granularity, reserves). See Atune config knobs.&#x20;
+
+**Continuity tests**
+
+* Bus backpressure never starves Reflex/Unity lanes; Atune smoke test remains ≤200ms p95.&#x20;
+
+---
+
+## 8) Safety & Reflex
+
+**Shared catalogs & invariants**
+
+* Keep a **single Reflex catalog** referenced by both Axon and Atune (PII redact, credential block, etc.), with deny-by-default policy outside whitelist. &#x20;
+* Atune tests already validate reflex hits; Axon must pass the same fixtures.&#x20;
+
+---
+
+## 9) Budgeting & Market
+
+**Mechanism continuity**
+
+* Axon bids with **FAE/cost**; Atune’s Market allocates μ-attention with approximate-VCG + ε-exploration; allocator honors `pool_ms`, fairness floor, granularity.  &#x20;
+* **TEMPO reserves** are pre-booked and consumed by Atune’s allocator; Axon respects the reservation window.&#x20;
+
+**Continuity tests**
+
+* `test_fae_market` stays green with Axon as bidder; some budget is allocated each tick.&#x20;
+
+---
+
+## 10) Observability & Ledger
+
+**What to persist everywhere**
+
+* **Event barcode** (hash), **MAG gates**, **FAE terms**, **probe summaries**, **auction results**, **field stats**, **reflex actions**—Atune ledger already enumerates these.&#x20;
+* **Migration safety**: sidecar + replay A/B + canary + staged ramp + kill switch (feature-flag). Axon must mirror Atune’s rollout policy.&#x20;
+
+---
+
+## 11) Migration & Rollout (joint)
+
+* **Sidecar:** run Axon next to current I/O with double-ledger.
+* **Replay A/B:** feed last 7 days through Axon↔Atune; compare miss-critical↓, false-escalation↓, reward/compute↑.&#x20;
+* **Canary:** 5% with Equor clamps; Reflex only. **Ramp:** enable MAG+Market → SFKG → Probes → TEMPO. **Kill switch:** one router include removal.&#x20;
+
+---
+
+## 12) KPIs that prove continuity *and* emergence
+
+Use the same emergence metrics Atune defines, plus Axon’s world-touching deltas:
+
+* **Field Coherence**, **Schema Lift**, **Probe Uplift**, **Reflex p99 latency**, **Affect responsiveness**, **Exploration fairness**, **Causal hits**.&#x20;
+* **Driver frontier**: time to first working connector, sustained new-capability velocity (Axon/Simula).
+* **Safety**: blocked-by-cap tokens count vs. incidents; Unity escalation rate in high-stakes lanes.
+
+---
+
+## 13) “Make it real” checklist (by owner)
+
+* **Atune:** ship route payload with `fae`, `market`, hotspots API; wire Equor affect; keep tests green. &#x20;
+* **Synapse:** expose small-arm probe endpoint + outcome heads + λ-bandit updates (reads Axon’s realized EIG/risk/cost).&#x20;
+* **Unity:** accept why-trace; enforce thresholds; sample audits of high bids.
+* **Equor/Ethor:** emit affect vector; mint semantic caps; clamp risk.&#x20;
+* **Simula:** implement driver blueprint obligations + twin counterfactuals + repro bundles (for MEJ).
+* **Qora:** 3072-d embeddings; SFKG persistence; schema induction/consolidation stores. &#x20;
+* **Axon:** finalize `/sense`, `/act`, MEJ, Reflex parity, Market bidder, TEMPO handling.
+
+If you want, I can turn this into **issue tickets** (per repo) with acceptance tests pulled straight from the Atune test files and config—so each owner knows exactly what to implement and how we’ll prove it.

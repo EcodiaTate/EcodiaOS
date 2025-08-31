@@ -1,0 +1,4 @@
+# file: D:\EcodiaOS\core\llm\llm_bus.py
+# hypothesis_version: 6.137.1
+
+[0.0, 0.2, 0.7, 1.0, 1024, 'Task', '[A-Za-z]+', 'agent', 'anthropic', 'arguments', 'assistant', 'brand_consistency', 'cached_content', 'call_id', 'candidates', 'chat', 'claude', 'content', 'description', 'facet_keys', 'function', 'gemini', 'google', 'google-genai', 'gpt', 'gpt-5', 'gpt5', 'hate', 'helpfulness', 'id', 'idiot', 'input', 'input_schema', 'input_text', 'json_object', 'kill', 'max_output_tokens', 'max_tokens', 'messages', 'mode', 'model', 'name', 'oai', 'object', 'openai', 'output', 'output_text', 'parameters', 'parts', 'properties', 'provider', 'public', 'raw', 'response_format', 'role', 'scope', 'stupid', 'system', 'temperature', 'text', 'tool_calls', 'tool_choice', 'tool_use', 'tools', 'toxicity', 'type', 'ugly', 'user']

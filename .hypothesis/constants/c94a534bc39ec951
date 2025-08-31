@@ -1,0 +1,4 @@
+# file: D:\EcodiaOS\systems\equor\__init__.py
+# hypothesis_version: 6.137.1
+
+['constitution', 'dao', 'evaluator', 'features', 'learner', 'merges', 'resolver']

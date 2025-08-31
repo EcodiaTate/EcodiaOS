@@ -1,0 +1,15 @@
+{"type": "job_start", "job": {"agent": "simula", "mode": "autonomous", "task": "Your primary goal is to read the Java properties file located at 'config.properties', \nparse its key-value pairs, and re"}, "ts": "2025-08-16T04:48:30.371554+00:00"}
+{"type": "llm_call", "model": "unknown", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-16T04:48:39.898315+00:00"}
+{"type": "tool_start", "name": "log_conflict", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T04:48:40.242688+00:00"}
+{"type": "tool_end", "name": "log_conflict", "ok": false, "err": "TypeError(\"log_conflict() got an unexpected keyword argument 'system'\")", "extra": {}, "duration_ms": 61.06870699977662, "ts": "2025-08-16T04:48:40.303731+00:00"}
+{"type": "tool_start", "name": "log_conflict", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T04:48:40.328078+00:00"}
+{"type": "tool_end", "name": "log_conflict", "ok": true, "err": null, "extra": {}, "duration_ms": 18.319730999792228, "result": {"_redacted": true}, "ts": "2025-08-16T04:48:40.346401+00:00"}
+{"type": "llm_call", "model": "unknown", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-16T04:48:47.489674+00:00"}
+{"type": "tool_start", "name": "log_conflict", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T04:48:47.511938+00:00"}
+{"type": "tool_end", "name": "log_conflict", "ok": false, "err": "TypeError(\"log_conflict() got an unexpected keyword argument 'summary'\")", "extra": {}, "duration_ms": 23.370751999664208, "ts": "2025-08-16T04:48:47.535293+00:00"}
+{"type": "tool_start", "name": "log_conflict", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T04:48:47.559552+00:00"}
+{"type": "tool_end", "name": "log_conflict", "ok": true, "err": null, "extra": {}, "duration_ms": 20.73160000009011, "result": {"_redacted": true}, "ts": "2025-08-16T04:48:47.580271+00:00"}
+{"type": "llm_call", "model": "unknown", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-16T04:48:50.772450+00:00"}
+{"type": "tool_start", "name": "log_event_to_graph", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T04:48:50.793675+00:00"}
+{"type": "tool_end", "name": "log_event_to_graph", "ok": true, "err": null, "extra": {}, "duration_ms": 202.923015000124, "result": {"_redacted": true}, "ts": "2025-08-16T04:48:50.996602+00:00"}
+{"type": "job_end", "status": "ok", "duration_ms": 20654.27425200005, "extra": {}, "ts": "2025-08-16T04:48:51.025812+00:00"}

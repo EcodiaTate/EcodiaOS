@@ -1,0 +1,2 @@
+{"type": "job_start", "job": {"agent": "simula_v2", "goal": "Your primary goal is to read the Java properties file located at 'config.properties', parse its key-value pairs, and ret"}, "ts": "2025-08-19T06:06:44.700707+00:00"}
+{"type": "job_end", "status": "error", "duration_ms": 28477.86183700009, "extra": {"exc": "AttributeError(\"'dict' object has no attribute 'objective'\")"}, "ts": "2025-08-19T06:07:13.464353+00:00"}

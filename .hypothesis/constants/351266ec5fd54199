@@ -1,0 +1,4 @@
+# file: D:\EcodiaOS\systems\equor\resolver.py
+# hypothesis_version: 6.137.1
+
+[0.0, 0.05, '__warn_reason', 'agent', 'agent_name', 'block', 'capabilities', 'ethics', 'expected_reward', 'for_kind', 'identity', 'include_audience', 'include_kinds', 'include_scopes', 'include_tags', 'is_cold', 'key', 'kind', 'misc', 'mission', 'purpose', 'scope', 'selected_count', 'stores', 'style', 'tags', 'task', 'text', 'tone', 'unknown', 'unresolved', 'values', 'warn', '{', '}']

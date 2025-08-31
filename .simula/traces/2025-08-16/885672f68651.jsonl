@@ -1,0 +1,35 @@
+{"type": "job_start", "job": {"agent": "simula", "mode": "autonomous", "task": "Add a memoized Fibonacci function and its unit tests, wiring it into the tools module."}, "ts": "2025-08-16T03:16:48.835184+00:00"}
+{"type": "llm_call", "model": "unknown", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-16T03:16:55.717904+00:00"}
+{"type": "tool_start", "name": "query_knowledge_graph", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T03:16:55.739729+00:00"}
+{"type": "tool_end", "name": "query_knowledge_graph", "ok": false, "err": "TypeError(\"query_knowledge_graph() got an unexpected keyword argument 'cypher_query'\")", "extra": {}, "duration_ms": 16.23699899937492, "ts": "2025-08-16T03:16:55.755974+00:00"}
+{"type": "tool_start", "name": "query_knowledge_graph", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T03:16:55.772382+00:00"}
+{"type": "tool_end", "name": "query_knowledge_graph", "ok": true, "err": null, "extra": {}, "duration_ms": 479.32724000020244, "result": {"_redacted": true}, "ts": "2025-08-16T03:16:56.251702+00:00"}
+{"type": "llm_call", "model": "unknown", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-16T03:17:01.350957+00:00"}
+{"type": "llm_call", "model": "unknown", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-16T03:17:09.189739+00:00"}
+{"type": "tool_start", "name": "propose_code_evolution", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T03:17:09.208908+00:00"}
+{"type": "tool_end", "name": "propose_code_evolution", "ok": false, "err": "TypeError(\"propose_code_evolution() got an unexpected keyword argument 'objective_dict'\")", "extra": {}, "duration_ms": 19.170006999956968, "ts": "2025-08-16T03:17:09.228071+00:00"}
+{"type": "tool_start", "name": "propose_code_evolution", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T03:17:09.250386+00:00"}
+{"type": "tool_end", "name": "propose_code_evolution", "ok": true, "err": null, "extra": {}, "duration_ms": 245.0118870001461, "result": {"_redacted": true}, "ts": "2025-08-16T03:17:09.495377+00:00"}
+{"type": "llm_call", "model": "unknown", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-16T03:17:18.317055+00:00"}
+{"type": "tool_start", "name": "propose_code_evolution", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T03:17:18.675273+00:00"}
+{"type": "tool_end", "name": "propose_code_evolution", "ok": false, "err": "TypeError(\"propose_code_evolution() got an unexpected keyword argument 'objective_dict'\")", "extra": {}, "duration_ms": 17.92945699980919, "ts": "2025-08-16T03:17:18.693198+00:00"}
+{"type": "tool_start", "name": "propose_code_evolution", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T03:17:18.712150+00:00"}
+{"type": "tool_end", "name": "propose_code_evolution", "ok": true, "err": null, "extra": {}, "duration_ms": 235.6948229999034, "result": {"_redacted": true}, "ts": "2025-08-16T03:17:18.947836+00:00"}
+{"type": "llm_call", "model": "unknown", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-16T03:17:27.221453+00:00"}
+{"type": "tool_start", "name": "propose_code_evolution", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T03:17:27.273561+00:00"}
+{"type": "tool_end", "name": "propose_code_evolution", "ok": false, "err": "TypeError(\"propose_code_evolution() got an unexpected keyword argument 'objective_dict'\")", "extra": {}, "duration_ms": 18.47249899947201, "ts": "2025-08-16T03:17:27.292027+00:00"}
+{"type": "tool_start", "name": "propose_code_evolution", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T03:17:27.313786+00:00"}
+{"type": "tool_end", "name": "propose_code_evolution", "ok": true, "err": null, "extra": {}, "duration_ms": 122.00761300027807, "result": {"_redacted": true}, "ts": "2025-08-16T03:17:27.435787+00:00"}
+{"type": "llm_call", "model": "unknown", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-16T03:17:36.627882+00:00"}
+{"type": "tool_start", "name": "propose_code_evolution", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T03:17:36.651299+00:00"}
+{"type": "tool_end", "name": "propose_code_evolution", "ok": false, "err": "TypeError(\"propose_code_evolution() got an unexpected keyword argument 'objective_dict'\")", "extra": {}, "duration_ms": 19.9253939999835, "ts": "2025-08-16T03:17:36.671218+00:00"}
+{"type": "tool_start", "name": "propose_code_evolution", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T03:17:36.693125+00:00"}
+{"type": "tool_end", "name": "propose_code_evolution", "ok": true, "err": null, "extra": {}, "duration_ms": 124.26916700042057, "result": {"_redacted": true}, "ts": "2025-08-16T03:17:36.817385+00:00"}
+{"type": "llm_call", "model": "unknown", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-16T03:17:47.333915+00:00"}
+{"type": "tool_start", "name": "propose_code_evolution", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T03:17:47.362820+00:00"}
+{"type": "tool_end", "name": "propose_code_evolution", "ok": false, "err": "TypeError(\"propose_code_evolution() got an unexpected keyword argument 'objective_dict'\")", "extra": {}, "duration_ms": 19.070336999902793, "ts": "2025-08-16T03:17:47.381898+00:00"}
+{"type": "tool_start", "name": "propose_code_evolution", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T03:17:47.398841+00:00"}
+{"type": "tool_end", "name": "propose_code_evolution", "ok": true, "err": null, "extra": {}, "duration_ms": 117.23030600023776, "result": {"_redacted": true}, "ts": "2025-08-16T03:17:47.516075+00:00"}
+{"type": "tool_start", "name": "log_event_to_graph", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T03:17:47.538721+00:00"}
+{"type": "tool_end", "name": "log_event_to_graph", "ok": true, "err": null, "extra": {}, "duration_ms": 1102.2562890002519, "result": {"_redacted": true}, "ts": "2025-08-16T03:17:48.640971+00:00"}
+{"type": "job_end", "status": "ok", "duration_ms": 59677.787111000725, "extra": {}, "ts": "2025-08-16T03:17:48.663077+00:00"}

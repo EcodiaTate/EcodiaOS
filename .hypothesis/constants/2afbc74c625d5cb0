@@ -1,0 +1,4 @@
+# file: D:\EcodiaOS\systems\equor\logging.py
+# hypothesis_version: 6.137.1
+
+['D:/config/.env', 'ENV_FILE', 'NEO4J_PASSWORD', 'NEO4J_URI', 'NEO4J_USER', 'id', 'metrics', 'output']

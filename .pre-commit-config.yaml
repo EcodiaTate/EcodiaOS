@@ -1,0 +1,14 @@
+
+repos:
+  - repo: local
+    hooks:
+      - id: eos-bible-autogen
+        name: EOS Bible Autogen
+        entry: python tools/eos_bible/generate_bible.py autogen
+        language: system
+        pass_filenames: false
+      - id: eos-bible-lint
+        name: EOS Bible SoC Lint
+        entry: python tools/eos_bible/generate_bible.py lint
+        language: system
+        pass_filenames: false

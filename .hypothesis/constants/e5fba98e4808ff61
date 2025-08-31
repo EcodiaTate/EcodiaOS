@@ -1,0 +1,4 @@
+# file: D:\EcodiaOS\systems\unity\core\room\result_helpers.py
+# hypothesis_version: 6.137.1
+
+[3000, 'UNKNOWN', 'action_taken', 'agent', 'agent_keys', 'agent_output_summary', 'cl100k_base', 'consensus', 'consensus_type', 'content', 'context', 'debate_protocol', 'escalated', 'gpt-4o', 'history', 'outcome', 'phase', 'reasoning', 'round', 'rounds_total', 'session_id', 'source', 'status', 'step', 'text']

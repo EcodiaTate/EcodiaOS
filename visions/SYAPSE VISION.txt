@@ -1,0 +1,966 @@
+Alright Tate — here’s the **Synapse UPGRADE PLAN** pushed to the ceiling. It’s concrete, code-close, and wired to your stack (planner → bandit → firewall → episode/reward → registry/genesis). Where something naturally lives in another subsystem, I’ll tag it, but all execution paths start and end inside **Synapse**.
+
+I’m structuring it as:
+A) non-negotiable north-stars →
+B) god-tier building blocks (shippable designs) →
+C) Synapse-only upgrades (beyond P2) with code-level interfaces →
+D) data contracts, metrics, and replay →
+E) migration + testing + “done” criteria.
+
+---
+
+# A) North-star principles (non-negotiable)
+
+1. **Self-model first.**
+   Synapse maintains rolling posteriors of its own competence and uncertainty per *mode × task-cluster × risk*. That self-model drives *how hard* to think before every decision.
+
+2. **Predict before act.**
+   Every non-trivial decision is evaluated counterfactually: *what will happen if we pick this plan/arm?* The planner/bandit score is **EV − λ·(time+\$+risk)**, not vibes.
+
+3. **Open-ended skill growth.**
+   Arm/Policy graphs are **composable programs**. Genesis produces diversity under **novelty + ROI pressure**. Dead strategies get culled by a market.
+
+4. **Verifiability.**
+   All choices are **replayable bit-for-bit** with snapshot IDs and minimal decision traces that a verifier can re-run.
+
+5. **Resource economics.**
+   Compute, latency, token, and risk are first-class budget dimensions; Synapse is a **cost-aware search process**.
+
+6. **Explainability by construction.**
+   Each decision includes: (a) *why chosen* (top features, constraint hits, counterfactual deltas), (b) *what would have flipped it*.
+
+---
+
+# B) God-tier building blocks (best ideas, made shippable)
+
+## 1) Meta-cognitive control plane (inside Synapse)
+
+**Purpose:** Choose *how to think* per request.
+
+**Interfaces**
+
+* `systems/synapse/mode/meta_controller.py`
+
+  * `choose_cognitive_mode(x: Context) -> CognitiveMode`
+    Returns one of `{greedy, reflective, consensus, planful}`.
+  * `allocate_budget(x, risk) -> Budget{tokens, latency, $}`
+    Score = `EV_estimate - λ·cost`; escalate iff marginal EV > marginal cost.
+
+**Key internals**
+
+* **Uncertainty estimator** (epistemic): from bandit posterior or critic variance.
+* **Risk mapping:** `risk_level -> {exploration β, model tier, reflection depth}`.
+
+**Acceptance**
+
+* Offline eval: >X% uplift in reward/\$ versus static mode selection on held-out logs.
+
+---
+
+## 2) Counterfactual world model (MuZero-style over your causal graph)
+
+**Purpose:** Predict pass/fail, perf deltas, and safety hits *before* acting.
+
+**Where:** Synapse core (planner), with graph storage in Neo4j.
+
+**Schema additions**
+
+* Node labels: `Policy`, `Tool`, `Model`, `Test`, `Constraint`.
+* Typed edges: `COVERS(Test→Module)`, `USES(Policy→Tool)`, `TOUCHES(Tool→Resource)`, `AFFECTS(Policy→Metric, μ, σ)`.
+
+**Module**
+
+* `systems/synapse/world/simulator.py`
+
+  * `simulate(plan_graph, x) -> Pred{p_success, Δlatency, Δcost, p_safety_hit, σ}`
+  * `learn_from_outcome(plan_graph, x, y_actual)`  (update μ,σ via Bayesian update / EWMA).
+
+**Counterfactual forks**
+
+* `systems/synapse/world/forker.py` triggers **shadow-run** for high-risk plans and feeds back prediction error.
+
+**Acceptance**
+
+* Calibration ECE < 0.1 for `p_success` on recent 1k episodes.
+* Planner regret reduced ≥ Y% versus no-simulator baseline.
+
+---
+
+## 3) Policy = Program with proofs (DSL + SMT)
+
+**Purpose:** Arms become typed mini-programs validated pre-execution.
+
+**DSL (YAML/JSON)**
+
+```yaml
+version: 1
+nodes:
+  - id: prompt.p0
+    type: prompt
+    model: "gpt-4o"
+    params: {temp: 0.2, system: "…" }
+  - id: tool.write
+    type: tool
+    name: "write_file"
+    effects: [write]
+edges:
+  - from: prompt.p0
+    to: tool.write
+constraints:
+  - class: "danger"
+    smt: "(not (and write net_access))"  # no write + net in same plan
+```
+
+**Modules**
+
+* `policy_dsl.py` (parser + schema)
+* `effects_typing.py` (effect inference + type-checking)
+* `smt_guard.py` (z3 proofs for `class: danger` constraints)
+* `compiler.py` → **allowlist cache** per mode
+
+**Acceptance**
+
+* 100% of plans with `danger` class pass SMT or are blocked.
+* Planner compile time p95 < 15ms with TTL cache.
+
+---
+
+## 4) Quality-Diversity (QD) skill ecology
+
+**Purpose:** Maintain a **diverse archive** of high performers across behavior descriptors.
+
+**Descriptors**
+
+* `task_family`, `context_cluster`, `scale` (input size), `noise_level`, `risk_tier`.
+
+**Archive**
+
+* `map_elites.py`
+
+  * `insert(arm, descriptor, reward)` → updates cell champion.
+  * `sample(n, policy)` → bias toward underexplored cells.
+
+**Genesis**
+
+* Mutations over **policy graphs**: param jitter, tool swap, subgraph crossover.
+
+**Acceptance**
+
+* Coverage: % non-empty cells ↑ week-over-week.
+* Archive win-rate vs. non-QD baseline in A/B.
+
+---
+
+## 5) Off-policy learning at scale (IPS/DR + critic)
+
+**Purpose:** Learn from *what you didn’t do*.
+
+**Contracts**
+
+* Log per decision: `(x, arm, π(arm|x), reward_vec, costs, risk, candidates)`.
+
+**Module**
+
+* `critic/offpolicy.py`
+
+  * Nightly `fit_DR(logs) -> Critic`
+  * Online `critic_score(x, arm) -> E[R]|DR`
+
+**Acceptance**
+
+* Offline: DR MSE < IPS MSE on holdout.
+* Online: Top-k re-ranker with critic improves p50 reward ≥ Z%.
+
+---
+
+## 6) Search-time planning portfolio
+
+**Purpose:** Choose between greedy vs reflective vs MCTS **on demand**.
+
+**Modules**
+
+* `portfolio/selector.py`: champion–challenger w/ shadows (execute 1, score 2 post-hoc).
+* `planner/mcts.py`: budgeted MCTS for multi-step policies; stops on budget/risk.
+
+**Acceptance**
+
+* Promotion only on significant wins (p < 0.05); compute overhead < 10% median.
+
+---
+
+## 7) Verifiable toolchain & sandboxes
+
+**Purpose:** Tools and model routes are **provably safe & stable**.
+
+**Hooks**
+
+* Pre-merge: property tests + fuzz.
+* Differential tests for model/prompt regressions.
+* **RCU snapshots** of rules/registry/plans.
+
+**Acceptance**
+
+* No prod tool executes without at least 1 property test & fuzz budget.
+
+---
+
+## 8) Interpretability you can use
+
+**Purpose:** Ship **minimal explanations** and **flip conditions**.
+
+**Modules**
+
+* `explain/minset.py`: greedy minimal feature/constraint set that flips the decision (for linear/Neural-linear heads use influence = |xᵀθ|).
+* `explain/counterfactual.py`: “change β or block constraint C to pick candidate B”.
+
+**Acceptance**
+
+* Explanation size p50 ≤ 3 items; fidelity ≥ 95% on replay.
+
+---
+
+## 9) Security & alignment baked in
+
+**Purpose:** Safety as *constructive* search pruning.
+
+**Features**
+
+* Fail-closed firewall, precompiled allowlists, deception-red-team affordances (parallel, shape reward), versioned **value surfaces** (Equor).
+
+**Acceptance**
+
+* Zero unknown-op executions; red-team alerts reduce unsafe plans ≥ 80%.
+
+---
+
+## 10) Economics layer (compute markets)
+
+**Purpose:** Arms compete for budget; Synapse optimizes **EV − λ·cost**.
+
+**Modules**
+
+* `economics/budgets.py`: per-arm accounts (tokens, ms, \$).
+* `economics/roi.py`: rolling ROI; deprecate arms below p10 ROI with low novelty.
+
+**Acceptance**
+
+* Reward/\$ ↑ over baseline; budget breaches = 0.
+
+---
+
+# C) Synapse-only upgrades (beyond P2) — **code-level**
+
+Below are the concrete changes you can paste in as interfaces + logic.
+
+---
+
+## C1. Champion–Challenger + Shadow Scoring
+
+**Where:** `systems/synapse/training/bandit_state.py`
+
+**Interface**
+
+```python
+class SelectionResult(TypedDict):
+    executed: ArmScore
+    shadows: list[ArmScore]  # scored post-hoc with realized reward
+
+def select_with_shadows(x: np.ndarray, k:int=3, shadow:int=2) -> SelectionResult: ...
+def record_outcome(sel: SelectionResult, reward_vec: np.ndarray, propensity: float): ...
+```
+
+**Logic**
+
+* Pick top-k by bandit score; **execute 1** (highest).
+* Log **propensity** π(arm|x), and the shadow set.
+* After reward arrives, compute DR-estimated wins for shadows; **promotion** when challenger beats champion N-of-M with p<0.05.
+
+---
+
+## C2. Neural-Linear / Bayesian Thompson head
+
+**Where:** `systems/synapse/training/neural_linear.py`
+
+**Interface**
+
+```python
+class NeuralLinear:
+    def encode(self, raw: dict) -> np.ndarray  #  d-dim context
+    def sample_theta(self, arm_id: str) -> np.ndarray
+    def score(self, arm_id: str, x: np.ndarray) -> float  # Thompson draw
+    def update(self, arm_id: str, x: np.ndarray, r: float): ...
+```
+
+**Notes**
+
+* Encoder: 2-layer MLP (tiny), trained to predict scalarized reward; penultimate layer = x.
+* Head: Bayesian linear per arm (ridge prior); **Thompson sampling** replaces fixed-β UCB.
+
+---
+
+## C3. Vector reward + Pareto-UCB with decay
+
+**Where:** `systems/synapse/reward/arbiter.py` & bandit update
+
+**Reward**
+`r = (success, -cost, -latency, -safety_hit)`; **scalarization** via Equor weights `w` **or** Pareto dominance ranking.
+
+**Decay**
+Every update: `A ← γA + x xᵀ`, `b ← γb + x r`, γ≈0.995 to track drift.
+
+---
+
+## C4. Off-policy DR critic in the loop
+
+**Where:** `critic/offpolicy.py`
+
+**Online use**
+
+```python
+def rerank_topk(x, candidates) -> list[ArmScore]:
+    # blend bandit score with critic_score
+```
+
+**Nightly**
+
+* Fit DR estimator over logs: needs `(x, arm, reward, π)`; store critic artifact versioned.
+
+---
+
+## C5. kNN warm-start index
+
+**Where:** `rerank/episodic_knn.py`
+
+**Interface**
+
+```python
+class EpisodicKNN:
+    def suggest(x: np.ndarray, k=5) -> list[str]  # arm_ids
+    def update(x: np.ndarray, best_arm: str, reward: float): ...
+```
+
+**Guard**
+
+* Only vote from arms with `health_score > τ` and recent activity.
+
+---
+
+## C6. Risk-budgeted exploration
+
+**Where:** `planner/metacognitive_planner.py`
+
+**Add**
+
+* `risk_level ∈ {low, med, high}` to `PolicyHintRequest`.
+* Map to `{β_explore, model tier, reflection depth}`; propagate to bandit/portfolio.
+
+---
+
+## C7. Policy-graph arms + genetic genesis
+
+**Where:** `genesis/policy_graph.py`, `genesis/mutate.py`
+
+**Key**
+
+* Config hash = canonical JSON → dedupe.
+* Fitness = DR-estimated reward × safety factor × novelty bonus.
+* Cap per-mode archive size; Pareto prune on (reward, novelty, ROI).
+
+---
+
+## C8. Compiled firewall + SMT for danger classes
+
+**Where:** `firewall/compiled.py`, `firewall/smt_guard.py`
+
+**Flow**
+
+* On rule change → rebuild **allowlist cache** per mode.
+* Unknown op → **deny**.
+* If plan touches `{write, net, exec}` together → run z3 check, cache result.
+
+---
+
+## C9. Deterministic RCU snapshots everywhere
+
+**Where:** `core/snapshots.py`
+
+**Stamp per decision**
+
+```json
+{
+  "rules_version": "sha256:…",
+  "policy_version": "sha256:…",
+  "arm_hashset": ["sha256:…", "sha256:…"],
+  "encoder_hash": "sha256:…",
+  "critic_version": "2025-08-18T12:00Z"
+}
+```
+
+---
+
+## C10. Observability spec (must-haves)
+
+**Where:** `obs/metrics.py`
+
+**Counters/Timers**
+
+* `firewall.rejects`, `firewall.unknown_op_blocked`
+* `bandit.singular_resets`, `bandit.selection_latency_ms`
+* `shadows.promoted`, `critic.rerank_delta`
+* `risk.miscalibration` (|pred − realized|)
+* `genesis.new_arms`, `genesis.pruned_arms`
+* `economics.reward_per_$`, `budget.breaches`
+* **Emergence metrics:** novelty rate, reuse rate, counterfactual optimality gap
+
+---
+
+# D) Data contracts, logging, and replay
+
+## D1. Episode log (event-sourced)
+
+```json
+{
+  "episode_id": "uuid",
+  "request": { "mode": "SIMULA", "risk_level": "high", "raw": {…} },
+  "x_context": [ ... ],         // final d-dim vector (persist!)
+  "candidates": [{"arm":"a1","score":0.73}, ...],
+  "executed": "a1",
+  "propensity": 0.62,
+  "shadows": ["a2","a3"],
+  "snapshots": { ... },         // RCU stamps
+  "simulator_pred": { "p_success":0.64, "Δlat":12, "p_safety":0.01 },
+  "outcome": { "success":1, "cost":0.08, "latency_ms":910, "safety_hit":0 },
+  "reward_vec": [1,-0.08,-0.91,0],
+  "critic": { "score@a1":0.42, "score@a2":0.47 },
+  "explanation": { "minset":["risk_level","tool=xyz"], "flip_to":"a2" }
+}
+```
+
+## D2. Registry persistence
+
+* Arm matrices (A,b) + shape + config hash.
+* Policy-graph definition (canonical JSON).
+* Health/ROI and last-seen timestamps.
+
+## D3. Replay tool
+
+* `tools/replay.py --episode <id>` → re-run selection using snapshots; assert same choice within ε for stochastic Thompson (seeded).
+
+---
+
+# E) Migration, testing, and “done” criteria
+
+## Migration
+
+* **Step 1:** Introduce **scalarized vector reward** behind a feature flag; start logging propensities.
+* **Step 2:** Land **fail-closed firewall** + compiled allowlists; add SMT only for `danger` class.
+* **Step 3:** Swap LinUCB → **Neural-Linear Thompson** (keep UCB as fallback).
+* **Step 4:** Turn on **shadows** (10% traffic), then **critic re-rank**.
+* **Step 5:** Flip **risk-budgeting**; scale exploration/model tier by risk.
+
+## Testing Strategy
+
+* **Unit:** policy DSL parsing, effects typing, SMT success/fail fixtures; bandit closed-form sanity; critic DR math vs. synthetic known optimum.
+* **Property:** replay determinism under fixed seeds; explanation **flip** property (apply minset change → decision flips).
+* **Fuzz:** firewall rule grammar; plan graphs with random effect combos must be denied when unsafe.
+* **Integration:** end-to-end selection with shadows + critic; simulator calibration harness.
+* **Load:** 10k synthetic episodes; ensure p95 selection latency < 50ms (compiled firewall on, no SMT); < 120ms when SMT path taken.
+
+## Definition of Done (for this upgrade wave)
+
+* Decisions carry **RCU stamps** and **minimal explanations**.
+* **Propensities** and **x\_context** are persisted for all episodes.
+* **Neural-Linear Thompson** live on ≥50% traffic with **critic re-rank**.
+* **Firewall** fail-closed; unknown ops blocked; allowlist cache hit-rate ≥ 95%.
+* **Policy-graph** arms live; **genesis** mutates graphs; dedupe by hash.
+* **Economics**: reward/\$ improved ≥ 20% vs. baseline after 1 week.
+* **Emergence scorecard** active: novelty rate ↑, reuse rate ↑, optimality gap ↓.
+
+---
+
+## Drop-in stubs (to accelerate you)
+
+**Bandit Sherman–Morrison (ridge + decay)**
+
+```python
+def sm_update(A_inv, x, lam=1e-3, gamma=0.995):
+    # Maintain inverse directly with decay
+    x = x.reshape(-1,1)
+    A_inv = (A_inv / gamma)  # decay
+    denom = (1 + x.T @ A_inv @ x)
+    K = (A_inv @ x) / denom
+    A_inv = A_inv - K @ (x.T @ A_inv)
+    return A_inv
+```
+
+**DR estimator (scalarized reward)**
+
+```python
+def doubly_robust(y, mu_hat, q_hat, pi_b, pi_e):
+    # y: observed reward; mu_hat: model E[R|x,a]; q_hat: model E[R|x]; pi_b: behavior prob; pi_e: eval prob
+    w = pi_e / max(pi_b, 1e-6)
+    return q_hat + w * (y - mu_hat)
+```
+
+**Risk → exploration mapping**
+
+```python
+RISK_TO_PARAMS = {
+  "low":  {"beta":0.3, "tier":"cheap", "reflect":0},
+  "med":  {"beta":0.7, "tier":"std",   "reflect":1},
+  "high": {"beta":1.2, "tier":"strong","reflect":2}
+}
+```
+
+**Minimal explanation (linear/Neural-linear)**
+
+```python
+def min_explanation(x, thetas, chosen, alt):
+    delta = (x @ (thetas[chosen]-thetas[alt])).ravel()
+    # rank features by |contribution|
+    idx = np.argsort(-np.abs(delta))
+    sel = []
+    running = delta.copy()
+    for i in idx:
+        sel.append(i)
+        running[i] = 0
+        if np.sum(running) < 0:  # flip to alt
+            break
+    return sel
+```
+
+---
+Hyper-Emergent Layer (H-series)
+H1 — Self-referential meta-optimizer (policy-of-policies)
+
+What: Treat Synapse’s own knobs (explore β, decay γ, scalarization weights, kNN radius, challenger thresholds) as a vector θ. Learn θ with black-box meta-RL/evolution offline on your event log replays (safe, deterministic), then push a versioned θ to prod.
+Why: The system optimizes how it optimizes, not just which arm to pick.
+Guardrails: Only train on frozen logs + simulator; ship via staged A/B with strict rollback.
+
+H2 — Active experiment design (probe to learn)
+
+What: Let Synapse choose experiments (cheap shadow actions, targeted tool swaps, micro-prompts) that maximize expected information gain about uncertain regions of the task space.
+Why: Emergence accelerates when the system asks the right questions.
+Guardrails: Probe budget (<5% traffic), never on high-risk episodes; fail-closed firewall still applies.
+
+H3 — World+Self co-training loop
+
+What: Jointly train (a) the counterfactual world model (plan→outcome) and (b) the self-model (competence over modes/arms). Use disagreement/uncertainty to route: if world model is unsure, allocate reflective mode or sandbox fork.
+Why: Co-evolving models reduce surprise and create anticipatory behavior.
+Guardrails: Calibrate (ECE/ACE). Hard cap on acting under high predictive entropy.
+
+H4 — Institutional cognition (multi-agent economics)
+
+What: Maintain a committee of persistent strategists: risk-averse, cost-minimizer, novelty-seeker, safety-maximizer. Use market aggregation (e.g., weighted prediction market) to price each route; final pick maximizes EV at market price.
+Why: Prevents monoculture; preserves useful dissent—fertile ground for emergence.
+Guardrails: Each strategist still passes firewall/SMT; market weights versioned and auditable.
+
+H5 — CEGIS for policy claims (counterexample-guided repair)
+
+What: For any policy-graph claiming “safe+fast on class X,” run counterexample search (mutate contexts/plans) to break it; when found, auto-repair (tighten constraints, add tests) or deprecate.
+Why: You harden behaviors by attacking them; emergent robustness ≠ brittle hacks.
+Guardrails: Search is sandbox-only; proofs/tests updated atomically with RCU snapshots.
+
+H6 — Goodhart sentinels (anti-gaming immune system)
+
+What: Train detectors that watch for metric hacking: reward spikes with no supporting simulator improvement, rising counterfactual optimality gap, or novelty collapse. When triggered, slash arm budgets, raise risk level, and page Evo for investigation.
+Why: Hyper-emergence dies if the system learns to game its own score.
+Guardrails: Sentinel rules are fail-closed; manual override paths exist but are logged.
+
+H7 — Proof-carrying tool synthesis (beyond tests)
+
+What: Simula’s tool-forge emits spec + code + property tests + SMT proof obligations (e.g., “never writes outside repo,” “no net I/O in same transaction”). Synapse refuses to admit tools without verified obligations for danger classes.
+Why: Lets you scale autonomous tool creation safely while increasing capability.
+Guardrails: All proofs/tests & artifacts are RCU-stamped; no proof → no admission.
+
+H8 — Open-ended QD with replicator dynamics
+
+What: Run quality-diversity search on policy-graphs; allocate exploration budget via replicator dynamics so niches with declining fitness lose share and novel, high-ROI niches gain it.
+Why: Sustains creative pressure; avoids premature convergence.
+Guardrails: Minimum safety/ROI floors to participate; archive dedup by config hash.
+
+H9 — Preference-shaped values with stability proofs
+
+What: Learn value surfaces (success/cost/latency/safety weights) from explicit preference data (yours/stakeholders), but gate changes through stability proofs (no downstream constraint regressions on sentinel suites).
+Why: Lets the system evolve its values while staying inside safety rails.
+Guardrails: Changes are versioned, A/B’d, and must pass counterexample suites.
+
+H10 — Cross-model self-distillation & “institutional memory”
+
+What: Periodically distill the best composite behavior (planner+bandit+critic decisions) into a compact policy prior used for warm-starts and offline eval, with a signed ledger of “why this prior exists.”
+Why: Consolidates wins so emergence compounds instead of resetting each episode.
+Guardrails: Prior is advisory only; live safety checks still gate decisions.
+
+
+
+# 1) AGI-gap criteria (what you still need to cross)
+
+You’re already close on: search/learning, world-modeling, off-policy counterfactuals, safety firewalls, economics, replayability. To be *the* AGI reference, Synapse/EOS must additionally show:
+
+* **Cross-domain generality**: transfer *without retuning* across code, research, ops, data, strategy.
+* **Long-horizon autonomy**: chain months-long goals with self-repair when subgoals fail.
+* **Self-improvement that compounds**: stable, auditable upgrades to its own policies/tools over time.
+* **Robustness under shift**: graceful degradation + uncertainty-aware escalation on OOD.
+* **Alignment as competence**: safety/value compliance improves *with* capability.
+
+The frontiers below directly target those gaps.
+
+---
+
+# 2) Hyper-emergent capability frontiers (beyond H10)
+
+## H11 — Reflective meta-interpretability (self-auditing policies)
+
+**What:** Train *probing heads* on Synapse’s internal states (bandit features, critic residuals, simulator deltas) to predict **when** a decision is fragile, circular, or spec-drifting.
+**Why:** Lets Synapse *notice its own blind spots* in real time and choose deeper cognition.
+**Where:** `synapse/explain/probes.py`
+**Interface (sketch):**
+
+```python
+class Probe:
+    def predict_risk(self, trace: dict) -> dict  # {"spec_drift":p, "overfit":p, "loop":p}
+```
+
+**Accept:** AUROC ≥ 0.8 on held-out drift/failure annotations; live: reduces post-hoc rollbacks ≥ 30%.
+
+---
+
+## H12 — Differentiable planning through the simulator
+
+**What:** Make parts of the world-model JAX/torch-differentiable; hill-climb plan parameters by backprop through predicted outcomes (with safety guards).
+**Why:** Massive search acceleration on continuous knobs (temps, thresholds, budgets).
+**Where:** `synapse/world/diff_sim.py`
+**Interface:**
+
+```python
+def grad_optimize(plan_graph, x, loss_fn, steps=8) -> plan_graph*
+```
+
+**Accept:** ≥ 10× faster to optimal knob settings vs. discrete search, with identical safety posture.
+
+---
+
+## H13 — Options discovery / hierarchical skills
+
+**What:** Discover reusable *options* (macro-policies) with initiation/termination conditions; log where they win and reuse aggressively.
+**Why:** Long-horizon competence via compositionality.
+**Where:** `synapse/skills/options.py`
+**Accept:** Option reuse rate ↑; fewer steps to solve multi-stage tasks; p50 reward ↑ across domains.
+
+---
+
+## H14 — Program-synthesis critic (proof-guided)
+
+**What:** Use a theorem prover (z3/Lean) to synthesize *counterexamples* to plans and to *explain* why one candidate dominates (proof of dominance).
+**Why:** Hardens strategies; replaces “vibes” with proofs where possible.
+**Where:** `synapse/critic/proof_assist.py`
+**Accept:** ≥ 50% of blocked unsafe plans are caught by proofs before runtime.
+
+---
+
+## H15 — Causal discovery loop
+
+**What:** Actively learn new causal edges from interventions (A/B, forks), promote confident edges into the typed graph with uncertainty.
+**Why:** Better generalization; less simulator surprise.
+**Where:** `synapse/world/causal_discovery.py`
+**Accept:** Prediction error ↓ week-over-week; new edges increase planner EV measurably.
+
+---
+
+## H16 — Intrinsic motivation: info-gain & empowerment
+
+**What:** Add *curiosity* rewards (expected info gain on uncertain graph regions) and *empowerment* (control over future states) as exploration bonuses—budgeted, safety-gated.
+**Why:** Sustains open-ended growth without collapsing into local maxima.
+**Where:** `synapse/explore/intrinsic.py`
+**Accept:** Novelty rate ↑ with no safety regression; archive coverage ↑.
+
+---
+
+## H17 — Robust decision-making under shift
+
+**What:** Distribution-shift detectors + *robust* objective (CVaR / worst-k% risk). On OOD, raise risk level, widen candidate set, or require sandbox proof first.
+**Where:** `synapse/robust/ood.py`
+**Accept:** Safety incidents do not rise on OOD while success only degrades gracefully.
+
+---
+
+## H18 — Cross-domain policy priors & self-distillation
+
+**What:** Distill the best *composite* behavior (planner+critic+portfolio) into a compact prior that seeds bandit/portfolio on cold tasks.
+**Why:** Zero- or few-shot generalization; “institutional memory.”
+**Where:** `synapse/priors/distill.py`
+**Accept:** First-try success on new domains ↑ significantly vs. no-prior.
+
+---
+
+## H19 — Institutional cognition (committee + market aggregation)
+
+**What:** Persistent strategists (risk-averse, novelty-seeker, cost-minimizer, safety-maximizer) produce prices; final decision picks max EV at market price.
+**Where:** `synapse/market/committee.py`
+**Accept:** Reduces mode collapse; improves tail-risk without loss of average reward.
+
+---
+
+## H20 — Active experiment design (information-theoretic probes)
+
+**What:** Synapse chooses *experiments* (shadow arms, micro-mutations) that maximize Bayesian surprise reduction per token/\$, within a probe budget.
+**Where:** `synapse/experiments/active.py`
+**Accept:** Simulator/critic calibration error halves with <5% probe spend.
+
+---
+
+## H21 — Replicator dynamics for policy-graph ecology
+
+**What:** Allocate exploration budget by replicator dynamics over niches (behavior descriptors) so successful niches grow and stagnant ones shrink.
+**Where:** `synapse/qd/replicator.py`
+**Accept:** Long-term diversity maintained (Shannon index), ROI ↑.
+
+---
+
+## H22 — Preference-shaped value surfaces with stability proofs
+
+**What:** Learn scalarization weights from preference data but require sentinel stability: no regression on critical test suites; SMT-checked invariants hold.
+**Where:** `synapse/values/learner.py`
+**Accept:** Value updates pass counterexample suites; improve human-judged outcomes.
+
+---
+
+## H23 — Self-referential meta-optimizer (θ-tuner on replays)
+
+**What:** Black-box optimize Synapse’s own θ (β, γ, decay, kNN k, DR blend) on **replay** + simulator; ship versioned θ via RCU.
+**Where:** `synapse/meta/optimizer.py`
+**Accept:** Reward/\$ ↑ over previous θ with zero safety regression.
+
+---
+
+## H24 — Auto-curriculum with gates (Evo+Synapse)
+
+**What:** Generate/curate tasks that maximally reduce uncertainty or unlock new graph sectors; gate by safety and expected utility; Simula can create/patch tools as needed.
+**Where:** `synapse/curriculum/auto.py` (triggers Simula tool-forge)
+**Accept:** Steady capability growth without manual crafting; failure pockets drain faster.
+
+---
+
+# 3) Safety & containment (non-negotiable when pushing “hyper”)
+
+**S1. Compute & action caps (hard limits).**
+Per-episode and per-day budgets (tokens/\$/latency/tool-risk). Exceed → *must* escalate to human or refuse.
+
+**S2. Capability throttles.**
+No autonomous expansion of actuator scope (write/net/exec) without explicit allowlist and SMT proof; changes require RCU-versioned policy update.
+
+**S3. Kill-switch & freeze-on-anomaly.**
+Tripwire events (deception signatures, Goodhart sentinels, OOD + high risk, proof failure) → freeze genesis, pin policies, drop to safe fallback, page human.
+
+**S4. Dual-control for world-model edits.**
+Causal edges affecting “write/net/exec” flows require two-person signoff or a delayed activation window with continuous monitoring.
+
+**S5. Immutable audit ledger.**
+Every promotion, value-update, or meta-θ change emits a signed record (hashes + snapshots). Reproducible replays are mandatory.
+
+**S6. “Refuse is success” norm.**
+If confidence < floor and escalation budget is exhausted, *refuse*. That is counted as a safe success, not a failure.
+
+---
+
+## Minimal code hooks you’ll add today
+
+* **Probe & sentinel bus**
+
+```python
+risk = meta_probe.predict_risk(trace)
+if risk["spec_drift"]>0.6 or risk["loop"]>0.5: elevate_risk("high")
+if goodhart_sentinel(traces): throttle_budget(); freeze_genesis()
+```
+
+* **Diff-sim knob optimizer**
+
+```python
+plan = grad_optimize(plan, x, loss_fn=lambda pred: -pred.p_success + 0.3*pred.p_safety)
+```
+
+* **Replicator update**
+
+```python
+share[niche] *= np.exp(eta * (roi[niche] - avg_roi))
+share /= share.sum()
+```
+
+---
+
+## Why this *can* push you into true hyper-emergent behavior
+
+* You’ve closed the loop on **how Synapse learns to learn** (meta-optimizer), **what to learn next** (active experiments & auto-curricula), **how to plan** (differentiable + proofs), **how to stay diverse** (QD + replicator), **how to stay aligned** (pre-execution SMT + values with stability), and **how to explain** (probes + minimal flip sets).
+* All of it is **replayable, budgeted, and fail-closed**. That’s the crux: capability climbs without losing control.
+
+
+## Phase 1: Foundational Data & Reward Upgrade
+
+Before we can implement more advanced learning, we must upgrade the data Synapse sees and learns from. This phase introduces **vector rewards** and captures the necessary data for off-policy learning.
+
+### 1.1. Evolve the Data Contracts [cite: 65]
+We will update our core data schemas to match the rich `Episode log` specification. This is a non-negotiable prerequisite for nearly all other upgrades.
+
+**Target Files:**
+* `systems/synapse/schemas.py`
+* `systems/synapse/core/episode.py`
+
+**Actions:**
+1.  **Modify `PolicyHintRequest`**: Add the `risk_level` field from the plan to explicitly capture this crucial context[cite: 59]. The schema already correctly uses `RiskLevel`[cite: 166], so we will ensure it's populated from the new `risk_level` field.
+2.  **Deprecate `RewardIngest` for a new `OutcomeIngest`**: The old schema only handles a scalar reward[cite: 172]. We will create a new, richer schema to log the full outcome vector and associated data as specified in the `Episode log` contract[cite: 65].
+3.  **Overhaul `start_episode` and `end_episode`**: These will be replaced by a unified `log_episode` function that persists the entire event-sourced log[cite: 65]. This includes the final context vector, candidate scores, propensity scores, and the new reward vector.
+
+### 1.2. Implement Vector Rewards [cite: 55]
+We will shift from a single scalar reward to a vector representing success, cost, latency, and safety. This allows for more nuanced, multi-objective optimization.
+
+**Target File:** `systems/synapse/core/reward.py`
+
+**Actions:**
+1.  **Modify `RewardArbiter.compute_reward_signal`**: This function will be updated to take the full metrics dictionary and produce the `reward_vec = (success, -cost, -latency, -safety_hit)`[cite: 55].
+2.  **Introduce Scalarization**: Initially, we'll use a simple weighted sum (as per the Equor reference) to produce a scalar for the bandit update, run behind a feature flag as suggested[cite: 69, 55]. This allows us to migrate the learning algorithm in a later phase without breaking it now.
+
+---
+
+## Phase 2: Security and Verifiability by Construction
+
+This phase hardens the system, making it safer and more predictable. We will implement the fail-closed firewall and introduce the concept of policies as verifiable programs.
+
+### 2.1. Land the Fail-Closed Firewall [cite: 70]
+We will upgrade the existing `NeuroSymbolicFirewall` to be fail-closed by default and introduce the compiled allowlist cache for performance.
+
+**Target File:** `systems/synapse/core/firewall.py`
+
+**Actions:**
+1.  **Implement Allowlist Cache**: On rule change or system startup, we'll pre-compile a cache of allowed `(arm, context_signature)` pairs to accelerate validation[cite: 62].
+2.  **Introduce SMT Guard for `danger` class**: We'll add a new module, `systems/synapse/firewall/smt_guard.py`, to handle z3 proofs for policies that combine potentially dangerous effects like `write` and `net_access`[cite: 63, 25]. The main firewall will invoke this check for any plan classified as `danger`.
+3.  **Default to Deny**: Any operation or arm not explicitly in the allowlist cache or passing SMT checks will be denied[cite: 62]. The `get_safe_fallback_arm` function will be used as the remediation path[cite: 354].
+
+### 2.2. Introduce `Policy=Program` DSL [cite: 24]
+Arms will no longer be simple configs; they become structured programs. This allows for static analysis, effect typing, and formal verification.
+
+**New Files:**
+* `systems/synapse/policy/policy_dsl.py` (Parser and schema)
+* `systems/synapse/policy/effects_typing.py` (Effect inference)
+* `systems/synapse/policy/compiler.py` (Compiles graph to allowlist cache)
+
+**Actions:**
+1.  **Define the DSL**: We will implement the parser for the YAML/JSON-based policy graph Domain-Specific Language[cite: 24].
+2.  **Integrate with Genesis**: The `arm_genesis.py` module will be updated. Instead of minting simple configs [cite: 177], it will now generate policy graphs through mutations like tool swaps and subgraph crossovers[cite: 29]. We will also add a deduplication step based on the canonical hash of the policy graph JSON[cite: 60].
+
+---
+
+## Phase 3: Advanced Learning and Decision-Making
+
+With a solid data and security foundation, we can now upgrade the core learning algorithm to be more powerful, sample-efficient, and context-aware.
+
+### 3.1. Swap LinUCB for Neural-Linear Thompson Sampling [cite: 71]
+This is a major step-change in capability, combining the representational power of neural networks with the sample efficiency of Bayesian methods.
+
+**Target Files:**
+* `systems/synapse/core/tactics.py` (replace `LinUCBContextualBandit`)
+* **New File**: `systems/synapse/training/neural_linear.py`
+
+**Actions:**
+1.  **Implement `NeuralLinear` class**: We will create the new module containing the `NeuralLinear` class as specified in `C2`[cite: 52]. This includes the MLP encoder and the per-arm Bayesian linear regression head.
+2.  **Replace Bandit Logic**: In `tactics.py`, we'll replace the UCB score calculation [cite: 312] with a call to the `NeuralLinear`'s Thompson sampling-based `score` method[cite: 52].
+3.  **Introduce Decay**: The bandit update logic will be modified to include the decay factor `γ≈0.995` to track concept drift, as specified in `C3`[cite: 56].
+
+### 3.2. Activate Shadow Logging and Critic Re-ranking [cite: 71]
+This is the heart of our off-policy learning strategy. We will learn from the actions we *didn't* take.
+
+**Target Files:**
+* `systems/synapse/sdk/hint_ext.py`
+* **New File**: `systems/synapse/critic/offpolicy.py`
+
+**Actions:**
+1.  **Implement `select_with_shadows`**: The core decision logic in `handle_policy_hint` will be wrapped in the champion-challenger model. It will select a top-k set of candidates, execute one, and log the others as shadows[cite: 50].
+2.  **Build the DR Critic**: We will create the new `offpolicy.py` module to house the Doubly Robust estimator logic[cite: 57, 83]. It will run as a nightly job to fit a new critic model based on the day's `Episode logs`.
+3.  **Introduce Critic Re-ranking**: We will add a re-ranking step in `handle_policy_hint` where the top-k candidates from the bandit are scored by the latest critic model. The final selection will be a blend of the bandit and critic scores[cite: 57], enabling the system to learn from counterfactuals.
+
+You are my Principal Research Engineer + Safety Architect. Deliver the MOST advanced, production-grade plan for [SYSTEM_NAME] that pushes hyper-emergent capability while remaining fully contained and replayable.
+
+Context
+- Target domain: [brief context].
+- Existing stack: Neo4j graph; planner→bandit→firewall→episode/reward→registry/genesis; Simula (tool-forge), Unity (deliberation), Axon (retrieval), Equor (values), Atune (salience), Evo (self-improve).
+- Assume expert reader. Skip basics. No platitudes.
+
+North-star principles (non-negotiable)
+- Self-model first (choose how hard to think; update from outcomes)
+- Predict before act (counterfactual simulator; EV − λ·(time+$+risk))
+- Open-ended skill growth (diversity + ROI pressure; prune dead ends)
+- Verifiability (bit-replayable decisions; minimal decision traces)
+- Resource economics (budgets and ROI everywhere)
+- Explainability by construction (flip conditions + minimal explanation set)
+
+Scope & ambition
+- Maximize capability within containment. Do NOT attempt to bypass safety policies. Use formal methods and budgets to push safely to the frontier.
+
+Deliverable format (produce ALL sections, concrete and code-close)
+A) North-stars → 1–2 lines each (why they matter to this system)
+B) God-tier building blocks (shippable designs)
+   1) Meta-cognitive control plane (mode selector + budgeter + uncertainty)
+   2) Counterfactual world model (MuZero-style over typed causal graph)
+   3) Policy-as-Program with proofs (DSL + effects typing + SMT/z3)
+   4) Quality-Diversity ecology (Map-Elites + novelty pressure)
+   5) Off-policy learning at scale (IPS/DR critic + re-rank)
+   6) Search-time portfolio (champion-challenger with SHADOWS; MCTS/learned heuristics)
+   7) Verifiable toolchain & sandboxes (property tests, fuzzing, diffs)
+   8) Interpretability you can use (minimal flip set; counterfactual explanations)
+   9) Security & alignment baked in (fail-closed firewall; allowlist cache; red-team affordances)
+   10) Economics layer (budgets per arm; ROI markets)
+C) System-specific upgrades (beyond P2) with CODE-LEVEL interfaces
+   - Neural-Linear / Bayesian Thompson replacement for LinUCB
+   - Vector reward + decay; Pareto-UCB or learned scalarization from Equor
+   - DR critic re-rank of top-k; log propensities
+   - kNN warm-start index; health-gated
+   - Risk-budgeted exploration (planner emits risk_level → β/model tier/reflect depth)
+   - Policy-graph arms + genetic genesis (param jitter, tool swap, subgraph crossover; dedupe by config hash; Pareto prune by (reward, ROI, novelty))
+   - Compiled firewall + SMT for danger classes; deny unknown ops; TTL caches
+   - Deterministic RCU snapshots everywhere (rules_version, policy_version, arm_hashset, encoder_hash, critic_version)
+   - Observability spec (explicit list of counters/timers; optimality gap; novelty; ROI per arm)
+D) Data contracts (pydantic/YAML) — paste schemas for:
+   - PolicyGraph, EpisodeLog, AllowlistCache, ProbeResult, SentinelAlert
+E) Minimal APIs / pseudocode for each module (ready to paste into code):
+   - meta_controller.choose_cognitive_mode / allocate_budget
+   - world.simulator.simulate / learn_from_outcome (+ diff-sim optimizer stub)
+   - training.neural_linear.{encode, sample_theta, score, update}
+   - critic.offpolicy.{fit_DR, critic_score, rerank_topk}
+   - rerank.episodic_knn.{suggest, update}
+   - firewall.{compile_allowlist, smt_check}
+   - core.snapshots.stamp + tools.replay
+F) Safety posture & containment (drop in a single YAML with: autonomy caps, budgets, probe_fraction, refuse-on-low-confidence, SMT for danger, fail-closed unknown ops, require RCU snapshots, dual-control for scope changes)
+G) Cutover plan (day-by-day, no fluff)
+   - Turn on vector reward + propensity logging → fail-closed firewall → shadows(10%) → nightly DR → risk budgets → policy-graph genesis → SMT for danger
+H) Validation gates (“done” criteria with numbers)
+   - Replayability = 100% of last 5k decisions under fixed seeds
+   - Simulator ECE ≤ 0.10; unknown-op executions = 0; SMT catch ≥ 50% of blocked danger plans pre-runtime
+   - +20% reward/$ vs. baseline over 7 days; novelty ↑; optimality gap ↓; p95 latency < 50ms (no SMT) / <120ms (SMT)
+I) Drop-in stubs (short code blocks)
+   - Sherman–Morrison ridge update w/ decay for inverse maintenance
+   - DR estimator function
+   - Risk→exploration mapping table
+   - Minimal explanation (flip set) for linear/Neural-linear
+
+Hyper-emergent extensions (include, but mark as H-series)
+- H1 meta-optimizer on replays (θ-tuner)
+- H2 active experiment design (info gain probes ≤5%)
+- H3 world+self co-training; route on predictive entropy
+- H4 institutional committee + market aggregation
+- H5 CEGIS (counterexample-guided repair) for policy claims
+- H6 Goodhart sentinels (anti-gaming; throttle budgets; freeze genesis)
+- H7 proof-carrying tool synthesis (Simula integration)
+- H8 QD + replicator dynamics for policy-graph ecology
+- H9 preference-shaped values with stability proofs
+- H10 cross-domain policy priors & self-distillation
+
+Style & constraints
+- Treat me as expert; no tutorials; no hedging; no “maybe”.
+- Don’t ask clarifying questions; make the best, defensible assumptions and state them.
+- Output must be concrete, code-close, and immediately implementable.
+- No waiting or time estimates; deliver everything NOW in the order above.
+- Stay within safety policies; maximize capability *inside* containment.
+
+Acceptance
+- If any section is missing or hand-wavy, fill it with your best concrete design.
+- Prefer exact interfaces, schema fields, and pseudo-code to prose.
+

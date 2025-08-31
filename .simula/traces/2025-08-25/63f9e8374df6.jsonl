@@ -1,0 +1,2 @@
+{"type": "job_start", "job": {"agent": "simula_v12_governed", "goal": "Add smoke test + prepare CI; ensure pytest passes"}, "ts": "2025-08-25T05:38:21.475167+00:00"}
+{"type": "job_end", "status": "ok", "duration_ms": 27999.270616999638, "extra": {}, "ts": "2025-08-25T05:38:51.228936+00:00"}

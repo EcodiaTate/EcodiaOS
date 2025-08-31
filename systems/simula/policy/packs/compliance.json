@@ -1,0 +1,3 @@
+[
+  { "id": "no-gpl", "pattern": "GNU GENERAL PUBLIC LICENSE", "message": "GPL text added; check license compliance.", "when": "any" }
+]

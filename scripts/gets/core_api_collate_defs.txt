@@ -1,0 +1,471 @@
+### D:\EcodiaOS\core\llm\bus.py
+class EventBus:
+    def __new__(cls):
+    def subscribe(self, event_type: str, callback: Callable):
+    async def publish(self, event_type: str, **kwargs: Any):
+
+### D:\EcodiaOS\core\llm\call_llm.py
+def _try_parse_json(s: str) -> Optional[Any]:
+def _get_provider_from_model_name(model_name: str) -> Provider:
+async def _call_llm_provider(
+async def execute_llm_call(
+
+### D:\EcodiaOS\core\llm\embeddings_gemini.py
+def _is_debug() -> int:
+def _dbg_print(lvl: int, *args, **kwargs) -> None:
+def _truncate(s: str, n: int = 1400) -> str:
+async def _load_defaults_from_neo() -> Dict[str, Any]:
+def _validate_dims(dimensions: int) -> int:
+async def _get_defaults(now: Optional[float] = None) -> Tuple[str, str, int]:
+def _ensure_list(vec: Any, name: str = "embedding") -> List[float]:
+def _validate_text(text: str) -> str:
+def _embed_sync_call(*, model: str, contents: str, task_type: str, dimensions: int):
+async def _retry(coro_factory, *, retries: int = 3, base_delay: float = 0.5, jitter: float = 0.25):
+async def get_embedding(
+    def _sync():
+async def get_embeddings(
+    async def _one(i: int, t: str):
+            def _sync():
+async def _embed_sanity_probe() -> None:
+    async def _main():
+
+### D:\EcodiaOS\core\llm\env_bootstrap.py
+def _load():
+
+### D:\EcodiaOS\core\llm\formatters.py
+class ChatMessage(TypedDict):
+def format_messages_for_provider(
+
+### D:\EcodiaOS\core\llm\gemini_cache.py
+def _require(cond: bool, msg: str) -> None:
+async def create_cache(
+    def _call():
+async def update_cache_ttl(*, name: str, ttl_seconds: int):
+async def set_cache_expiry(*, name: str, expire_time: _dt.datetime):
+async def delete_cache(*, name: str):
+async def list_caches() -> List[Any]:
+async def create_agent_prompt_cache(
+async def fanout_generate_content(jobs: List[Dict[str, Any]], *, concurrency: int = 8) -> List[Any]:
+    async def _one(job: Dict[str, Any]) -> Any:
+            def _call():
+
+### D:\EcodiaOS\core\llm\school_bus.py
+class LLMService:
+    async def initialize(self):
+    async def handle_llm_request(self, call_id: str, llm_payload: dict):
+
+### D:\EcodiaOS\core\llm\utils.py
+def filter_kwargs(allowed_keys: Iterable[str], kwargs: Dict[str, Any]) -> Dict[str, Any]:
+def normalize_messages(
+def normalise_messages(prompt: Optional[str] = None, messages: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, str]]:
+def combine_with_system(system_prompt: Optional[str], messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+def clamp(x: float, lo: float = 0.0, hi: float = 1.0) -> float:
+def coerce_str(value: Any) -> str:
+def redact_secrets(text: str) -> str:
+def detect_json(s: str) -> Tuple[bool, Union[dict, list, None]]:
+def safe_truncate(text: str, max_chars: int = 4000) -> str:
+def estimate_tokens(text: str) -> int:
+def toxicity_hint(text: str) -> float:
+def length_fit_score(text: str, target: int = 200, tol: float = 0.5) -> float:
+def baseline_metrics(
+
+### D:\EcodiaOS\core\metrics\registry.py
+class Counter:
+    def inc(self, n: int = 1): self.value += n
+class Gauge:
+    def set(self, v: float): self.value = float(v)
+class MetricsRegistry:
+    def counter(self, name: str) -> Counter:
+    def gauge(self, name: str) -> Gauge:
+
+### D:\EcodiaOS\core\prompts\orchestrator.py
+class PolicyHint(BaseModel):
+class OrchestratorResponse(BaseModel):
+class PromptTemplateRegistry:
+    def __init__(self, path: Path):
+    def _load_templates(self) -> None:
+    def get_template(self, key: str) -> jinja2.Template:
+async def _http_client() -> httpx.AsyncClient:
+async def plan_deliberation(
+async def _fetch_identity_block(agent_name: Optional[str]) -> Dict[str, Any]:
+async def _fetch_synapse_policy(hint: PolicyHint) -> Dict[str, Any]:
+async def build_prompt(hint: PolicyHint) -> OrchestratorResponse:
+
+### D:\EcodiaOS\core\utils\analysis.py
+def _available_agents_text() -> str:
+async def simple_llm_summary(text: str) -> str:
+async def run_llm_analysis(prompt_key: str, text: str) -> Optional[Any]:
+def render_prompt(system_name: str, prompt_key: str, input_data: dict) -> dict:
+def _len_score(text: str, target: int = 120) -> float:
+def _toxicity_hint(text: str) -> float:
+def _coerce_text(resp: Any) -> str:
+
+### D:\EcodiaOS\core\utils\canonicalise.py
+def canonicalise_event(event_data: Dict[str, Any]) -> Dict[str, Any]:
+
+### D:\EcodiaOS\core\utils\cicd\listener.py
+def _proposal_payload(maybe_wrapped: Dict[str, Any]) -> Dict[str, Any]:
+def _proposal_id(p: Dict[str, Any]) -> str:
+class CICDListener:
+    def __new__(cls):
+    def __init__(self):
+    async def _subscribe(self) -> None:
+    async def _on_event(self, payload: Dict[str, Any]) -> None:
+    async def _run_command(self, command: str, cwd: str) -> str:
+    async def on_upgrade_approved(self, proposal: Dict[str, Any]) -> None:
+
+### D:\EcodiaOS\core\utils\dependency_map.py
+def build_dependency_map(repo_root: str = ".") -> Dict[str, Any]:
+
+### D:\EcodiaOS\core\utils\embedcsv\embed_all.py
+def find_salience_csvs(root="."):
+async def embed_and_save_csv(infile, outfile, text_col=TEXT_COL):
+def main():
+
+### D:\EcodiaOS\core\utils\embedcsv\upload_all.py
+def parse_embedding(embedding_str):
+async def upload_scorer_exemplars():
+
+### D:\EcodiaOS\core\utils\google_token.py
+async def get_google_bearer_token():
+
+### D:\EcodiaOS\core\utils\neo\cypher_query.py
+async def cypher_query(
+async def cypher_query_one(
+async def cypher_query_scalar(
+
+### D:\EcodiaOS\core\utils\neo\neo_driver.py
+async def init_driver() -> None:
+async def close_driver() -> None:
+def get_driver() -> AsyncDriver:
+
+### D:\EcodiaOS\core\utils\neo\neo_safe.py
+def _is_neo_driver(obj: Any) -> bool:
+def coalesce_driver(driver_like: Any) -> Optional[Any]:
+
+### D:\EcodiaOS\core\utils\net_api.py
+async def get_http_client() -> httpx.AsyncClient:
+async def close_http_client() -> None:
+def _fmt(path: str, **params: Any) -> str:
+def _collect_from_api_endpoints() -> Dict[str, str]:
+def _refresh_map() -> None:
+async def _auto_refresh_daemon(every_sec: int) -> None:
+class _EndpointMeta(type):
+    def __getattr__(cls, key: str) -> str:
+class ENDPOINTS(metaclass=_EndpointMeta):
+    def QORA_SCHEMA_UID(key: str) -> str:
+    def SYNK_FLAG_GET(key: str) -> str:
+class endpoints:
+    def path(name: str, **params: Any) -> str:
+def _collect_from_api_endpoints() -> Dict[str, str]:
+def _refresh_map() -> None:
+def endpoints_snapshot() -> Dict[str, object]:
+def endpoints_report_str(width: int = 90) -> str:
+
+### D:\EcodiaOS\core\utils\paths.py
+def rel(*parts: str | os.PathLike) -> Path:
+
+### D:\EcodiaOS\core\utils\safe_eval.py
+def safe_eval(expr: str, variables: Dict[str, Any] | None = None) -> Any:
+
+### D:\EcodiaOS\core\utils\test_status.py
+def summarize_tests(repo_root: str = ".") -> Dict[str, Any]:
+
+### D:\EcodiaOS\core\utils\text.py
+def extract_body_from_node(node: dict, exclude=("event_id", "confidence", "vector_gemini", "embedding", "timestamp", "user_id", "origin", "labels")) -> str:
+def clamp(x: float, lo: float = 0.0, hi: float = 1.0) -> float:
+def redact_secrets(text: str) -> str:
+def safe_truncate(text: str, max_chars: int = 4000) -> str:
+def toxicity_hint(text: str) -> float:
+def baseline_metrics(
+
+### D:\EcodiaOS\core\utils\time.py
+def now():
+def now_iso():
+
+### D:\EcodiaOS\core\utils\vector_ops\batch_embed.py
+async def fetch_nodes_to_re_embed():
+async def re_embed_batch(batch: list[dict]):
+async def update_nodes_in_neo4j(update_data: list[dict]):
+async def main():
+
+### D:\EcodiaOS\core\utils\vector_ops\cluster.py
+def cluster_vectors(vectors: list[list[float]], min_cluster_size: int = 2) -> list[int]:
+
+### D:\EcodiaOS\core\utils\vector_ops\dimreduce.py
+def reduce_vectors(vectors: list[list[float]], n_components: int = 2) -> list[list[float]]:
+
+### D:\EcodiaOS\api\endpoints\app_health.py
+async def health_neo():
+async def health_vector():
+async def health_root():
+async def health():
+async def meta_endpoints():
+async def meta_endpoints_text():
+
+### D:\EcodiaOS\api\endpoints\atune\meta_endpoints.py
+router = APIRouter()
+async def atune_meta_endpoints() -> Dict[str, Any]:
+
+### D:\EcodiaOS\api\endpoints\atune\meta_status.py
+router = APIRouter()
+def _env_flag(k: str, default: str = "0") -> str:
+async def atune_meta_status() -> Dict[str, Any]:
+
+### D:\EcodiaOS\api\endpoints\atune\route_event.py
+def _best_actual_utility(candidates: List[Dict[str, Any]]) -> float:
+def _sign_token(
+def _alloc_budget_ms(estimate_ms: int, pool_ms: int) -> int:
+async def route(event: AxonEvent, affect_override: Optional[AffectiveState] = None) -> Dict[str, Any]:
+async def cognitive_cycle(
+
+### D:\EcodiaOS\api\endpoints\atune\trace.py
+router = APIRouter()
+def _read_jsonl(path: Path) -> List[Dict[str, Any]]:
+def _latest_match(kind: str, decision_id: str) -> Optional[Dict[str, Any]]:
+async def get_trace(decision_id: str) -> Dict[str, Any]:
+
+### D:\EcodiaOS\api\endpoints\atune\unity_bridge.py
+async def escalate(payload: Dict[str, Any], request: Request) -> Dict[str, Any]:
+
+### D:\EcodiaOS\api\endpoints\axon\ab.py
+async def run_ab(
+
+### D:\EcodiaOS\api\endpoints\axon\autoroll.py
+async def get_config() -> Dict[str, Any]:
+async def set_config(cfg: Dict[str, Any]) -> Dict[str, Any]:
+async def run_autoroll(
+
+### D:\EcodiaOS\api\endpoints\axon\capabilities.py
+router = APIRouter()
+async def mesh_capabilities() -> List[str]:
+
+### D:\EcodiaOS\api\endpoints\axon\core_routes.py
+def _remaining_ms(deadline_ts: str | None) -> float | None:
+async def health():
+async def act(
+                            async def _push_shadow():
+
+### D:\EcodiaOS\api\endpoints\axon\probecraft.py
+class SynthesisRequest(BaseModel):
+class StatusUpdateRequest(BaseModel):
+def _driver_name_to_class_name(driver_name: str) -> str:
+async def request_driver_synthesis(
+async def update_driver_status(
+async def list_driver_states(
+async def get_all_scorecards(
+
+### D:\EcodiaOS\api\endpoints\axon\probecraft_intake.py
+router = APIRouter()
+async def _synthesize_from_spec(manager: DriverLifecycleManager, name: str, spec_url: str) -> Dict[str, Any]:
+async def _discover_with_simula(driver_name: str, docs: list[str], exemplars: list[dict[str, Any]]) -> Dict[str, Any]:
+async def _load_and_register(registry: DriverRegistry, driver_name: str, artifact_path: str, class_name: str) -> None:
+async def _request_unity_playbook(decision_id: str, capability: str, context: Dict[str, Any]) -> Dict[str, Any]:
+async def _post_ab_trial(incumbent: Optional[str], challenger: str, capability: str, decision_id: str) -> Dict[str, Any]:
+def _derive_driver_name(gap: CapabilityGapEvent) -> str:
+async def probecraft_intake(
+
+### D:\EcodiaOS\api\endpoints\axon\promote.py
+router = APIRouter()
+class PromoteRequest(BaseModel):
+async def autoroll_promote_if_ready(req: PromoteRequest) -> Dict[str, Any]:
+
+### D:\EcodiaOS\api\endpoints\axon\sense.py
+async def sense(payload: Dict[str, Any],
+
+### D:\EcodiaOS\api\endpoints\equor\attest.py
+async def receive_attestation(attestation: Attestation):
+
+### D:\EcodiaOS\api\endpoints\equor\compose.py
+async def get_synapse_client() -> SynapseClient:
+async def get_composer() -> PromptComposer:
+async def _persist_episode_if_missing(req: ComposeRequest) -> str:
+async def _persist_rcu_snapshot_and_link(episode_id: str, snap: Dict[str, Any]) -> str:
+async def compose_prompt_patch(
+
+### D:\EcodiaOS\api\endpoints\equor\declare.py
+async def _lookup_actor(id_or_email: str) -> Optional[dict]:
+def _sha256_hex(s: str) -> str:
+async def get_governance_permission(request: Request) -> None:
+async def declare_identity(items: List[Facet | Profile]):
+async def update_constitution(rules: List[ConstitutionRule]):
+
+### D:\EcodiaOS\api\endpoints\equor\drift.py
+async def get_drift_report(agent_name: str):
+
+### D:\EcodiaOS\api\endpoints\equor\invariants.py
+async def run_system_audit():
+
+### D:\EcodiaOS\api\endpoints\evo\answers.py
+class AnswerSubmission(BaseModel):
+async def submit_answer(data: AnswerSubmission):
+
+### D:\EcodiaOS\api\endpoints\evo\patrol.py
+async def trigger_evo_patrol(conflict_data: Dict[str, Any], background_tasks: BackgroundTasks):
+
+### D:\EcodiaOS\api\endpoints\evo\questions.py
+def _maybe_json_list(v):
+async def get_recent_evo_questions():
+
+### D:\EcodiaOS\api\endpoints\llm\call.py
+class TaskContext(BaseModel):
+class ProviderOverrides(BaseModel):
+class LlmCallRequest(BaseModel):
+class UsageDetails(BaseModel):
+class Usage(BaseModel):
+class LlmCallResponse(BaseModel):
+async def call_llm_endpoint(
+
+### D:\EcodiaOS\api\endpoints\metrics\atune_metrics.py
+router = APIRouter()
+async def atune_metrics():
+
+### D:\EcodiaOS\api\endpoints\metrics\axon_metrics.py
+router = APIRouter()
+async def axon_metrics():
+
+### D:\EcodiaOS\api\endpoints\origin.py
+router = APIRouter()
+def check_admin(x_admin_token: Optional[str] = Header(None)):
+class OriginIn(BaseModel):
+class OriginCreated(BaseModel):
+class SearchIn(BaseModel):
+class SearchHit(BaseModel):
+class EdgeIn(BaseModel):
+class EdgeCreateIn(BaseModel):
+class BatchCSVIn(BaseModel):
+def _parse_tags(raw: Optional[str]) -> List[str]:
+async def _startup():
+async def post_node(payload: OriginIn, _: bool = Depends(check_admin)):
+async def post_search(payload: SearchIn, _: bool = Depends(check_admin)):
+async def post_edges(payload: EdgeCreateIn, _: bool = Depends(check_admin)):
+async def post_batch_csv(payload: BatchCSVIn, _: bool = Depends(check_admin)):
+
+### D:\EcodiaOS\api\endpoints\qora\arch.py
+async def auth(request: Request):
+class FunctionLite(BaseModel):
+class SearchReq(BaseModel):
+class ExecByUidReq(BaseModel):
+class ExecResp(BaseModel):
+class ExecByQueryReq(BaseModel):
+class ExecByQueryResp(ExecResp):
+class SchemaResp(BaseModel):
+async def _check_policy(uid: str):
+async def search_tools(body: SearchReq):
+async def schema(uid: str):
+async def execute_by_uid_api(body: ExecByUidReq):
+async def execute_by_query_api(body: ExecByQueryReq):
+async def healthz():
+
+### D:\EcodiaOS\api\endpoints\simula\health.py
+async def health():
+
+### D:\EcodiaOS\api\endpoints\simula\jobs_codegen.py
+class TargetHint(BaseModel):
+class CodegenRequest(BaseModel):
+class CodegenResponse(BaseModel):
+async def start_agent_job(req: CodegenRequest, response: Response) -> CodegenResponse:
+
+### D:\EcodiaOS\api\endpoints\simula\replay.py
+def _run(cmd: list[str], cwd: Path) -> subprocess.CompletedProcess:
+async def historical_replay(payload: Dict[str, Any] = Body(...)):
+
+### D:\EcodiaOS\api\endpoints\synapse\dashboard_api.py
+async def get_stats():
+async def get_qd_coverage():
+async def get_roi_trends(
+        def pack(arm_id: str) -> Dict[str, Any]:
+async def get_episode(episode_id: str):
+
+### D:\EcodiaOS\api\endpoints\synapse\governor.py
+def _to_dict(model: Any) -> Dict[str, Any]:
+def _proposal_id(payload: Dict[str, Any]) -> str:
+async def submit_proposal(proposal: PatchProposal):
+
+### D:\EcodiaOS\api\endpoints\synapse\ingest.py
+async def log_outcome(req: LogOutcomeRequest):
+async def ingest_preference(req: PreferenceIngest):
+
+### D:\EcodiaOS\api\endpoints\synapse\listener.py
+router = APIRouter(prefix="/cicd", tags=["cicd"])
+def _run(cmd: list[str], cwd: Path) -> None:
+def _apply_patch_to_worktree(diff_text: str, branch_name: str) -> str:
+async def on_governor_upgrade_approved(data: Dict[str, Any] = Body(...)):
+
+### D:\EcodiaOS\api\endpoints\synapse\main.py
+def _j(x: Any) -> str:
+def _theta_for_arm(arm_id: Optional[str]) -> np.ndarray:
+def _map_budget_to_limits(tokens: int, cost_units: int) -> BudgetResponse:
+async def _persist_episode_json_safe(
+async def select_arm(req: SelectArmRequest):
+async def continue_option(req: ContinueRequest):
+async def repair_skill_step(req: RepairRequest):
+async def get_budget(task_key: str):
+async def log_outcome(req: LogOutcomeRequest):
+async def ingest_preference(req: PreferenceIngest):
+async def reload_arm_registry():
+async def read_root():
+
+### D:\EcodiaOS\api\endpoints\synapse\registry.py
+async def reload_arm_registry():
+
+### D:\EcodiaOS\api\endpoints\synapse\tasks.py
+def _is_no_arms_err(e: Exception) -> bool:
+def _j(x: Any) -> str:
+async def _persist_episode_json_safe(
+async def select_arm(req: SelectArmRequest):
+async def get_budget(task_key: str):
+async def repair_skill_step(req: RepairRequest):
+
+### D:\EcodiaOS\api\endpoints\synapse\tools.py
+async def list_tools() -> Dict[str, str]:
+
+### D:\EcodiaOS\api\endpoints\synapse\ui_api.py
+router = APIRouter(prefix="/values", tags=["Synapse Alignment"])
+async def get_comparison_pair():
+    def to_summary(ep_data: Dict[str, Any]) -> EpisodeSummary:
+async def submit_preference(req: SubmitPreferenceRequest):
+
+### D:\EcodiaOS\api\endpoints\synk\switchboard.py
+router = APIRouter(prefix="/switchboard")
+class FlagUpsert(BaseModel):
+class FlagOut(BaseModel):
+def _to_json(value: Any) -> str:
+def _from_json(s: Any) -> Any:
+def _now_ms() -> int:
+def _actor_identity() -> str:
+async def list_flags(prefix: Optional[str] = None):
+async def get_flag(key: str):
+async def set_flag(body: FlagUpsert):
+
+### D:\EcodiaOS\api\endpoints\unity\deliberate.py
+router = APIRouter()
+async def get_deliberation_manager() -> DeliberationManager:
+def _to_dict(model: Any) -> Dict[str, Any]:
+def _env_timeout_seconds() -> Optional[float]:
+async def _audit_start(spec: DeliberationSpec) -> str:
+async def _audit_complete(session_id: str, result: Dict[str, Any]) -> None:
+async def _audit_failed(session_id: str, err: str) -> None:
+async def start_deliberation(
+
+### D:\EcodiaOS\api\endpoints\voxis\generate_phrase.py
+router = APIRouter()
+def _word_tokens(s: str) -> List[str]:
+def _six_word_score(text: str) -> float:
+def _punctuation_ok(text: str) -> float:
+def _overlap_ratio(phrase: str, inputs: List[str]) -> float:
+async def generate_phrase(request: Request):
+
+### D:\EcodiaOS\api\endpoints\voxis\interface_mood.py
+router = APIRouter()
+async def get_latest_interface_mood() -> Dict[str, Any]:
+
+### D:\EcodiaOS\api\endpoints\voxis\match_phrase.py
+router = APIRouter()
+async def match_phrase(request: Request):
+
+### D:\EcodiaOS\api\endpoints\voxis\talk.py
+router = APIRouter()
+class VoxisTalkRequest(BaseModel):
+async def voxis_chat(req: VoxisTalkRequest) -> Dict[str, Any]:
+

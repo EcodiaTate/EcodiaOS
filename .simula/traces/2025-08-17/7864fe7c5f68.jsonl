@@ -1,0 +1,9 @@
+{"type": "job_start", "job": {"agent": "simula", "mode": "autonomous", "task": "Your primary goal is to read the Java properties file located at 'config.properties', \nparse its key-value pairs, and re"}, "ts": "2025-08-17T03:50:48.758339+00:00"}
+{"type": "llm_call", "model": "gemini-2.5-pro", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-17T03:50:58.891252+00:00"}
+{"type": "llm_call", "model": "gemini-2.5-pro", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-17T03:51:09.770091+00:00"}
+{"type": "tool_start", "name": "log_conflict", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-17T03:51:09.798598+00:00"}
+{"type": "tool_end", "name": "log_conflict", "ok": true, "err": null, "extra": {}, "duration_ms": 276.0938769997665, "result": {"_redacted": true}, "ts": "2025-08-17T03:51:10.074682+00:00"}
+{"type": "llm_call", "model": "gemini-2.5-pro", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-17T03:51:16.786018+00:00"}
+{"type": "tool_start", "name": "log_conflict", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-17T03:51:17.109435+00:00"}
+{"type": "tool_end", "name": "log_conflict", "ok": true, "err": null, "extra": {}, "duration_ms": 274.17119800020373, "result": {"_redacted": true}, "ts": "2025-08-17T03:51:17.383578+00:00"}
+{"type": "job_end", "status": "ok", "duration_ms": 27496.52276300003, "extra": {}, "ts": "2025-08-17T03:51:17.400178+00:00"}

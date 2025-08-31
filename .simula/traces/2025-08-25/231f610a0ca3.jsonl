@@ -1,0 +1,2 @@
+{"type": "job_start", "job": {"agent": "simula_v12_governed", "goal": "Add smoke test + prepare CI; ensure pytest passes"}, "ts": "2025-08-25T04:14:55.423831+00:00"}
+{"type": "job_end", "status": "error", "duration_ms": 6953.308859000003, "extra": {"exc": "AttributeError(\"'EventBus' object has no attribute 'unsubscribe'\")"}, "ts": "2025-08-25T04:15:02.376971+00:00"}

@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DeliberationConfig",
+  "type": "object",
+  "required": ["steps"],
+  "properties": {
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "action"],
+        "properties": {
+          "name": { "type": "string" },
+          "action": { "type": "string", "enum": ["deliberate", "execute", "ignore", "escalate"] },
+          "arguments": { "type": "object", "additionalProperties": true },
+          "budget_ms": { "type": "integer", "minimum": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "escalate_to_unity": { "type": "boolean", "default": false },
+    "notes": { "type": "string" }
+  },
+  "additionalProperties": true
+}

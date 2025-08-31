@@ -1,0 +1,2 @@
+{"type": "job_start", "job": {"agent": "simula_v12_governed", "goal": "Add smoke test + prepare CI; ensure pytest passes"}, "ts": "2025-08-25T04:22:48.780943+00:00"}
+{"type": "job_end", "status": "error", "duration_ms": 6879.04937899998, "extra": {"exc": "ValueError(\"Step 1 'targets' key is present but empty\")"}, "ts": "2025-08-25T04:22:55.659984+00:00"}

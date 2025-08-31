@@ -1,0 +1,12 @@
+{
+  "require_static_clean": false,
+  "require_tests_green": false,
+  "min_delta_cov": 0.0,
+  "run_safety": false,
+  "pr_open": false,
+  "pr_draft": true,
+  "pr_labels": [
+    "simula",
+    "auto"
+  ]
+}

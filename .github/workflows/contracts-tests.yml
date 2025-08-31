@@ -1,0 +1,61 @@
+# .github/workflows/contract-tests.yml
+name: EcodiaOS Contract Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  # This is a placeholder for your existing unit/integration tests
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Unit & Integration Tests (excluding contracts)
+        run: pytest --ignore=tests/contracts
+
+  # This job runs the full-stack contract tests in a Docker environment
+  contract-tests:
+    runs-on: ubuntu-latest
+    needs: unit-tests # Ensures unit tests pass before running expensive contract tests
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build and start the EcodiaOS test environment
+        run: docker-compose -f docker-compose.test.yml up -d --build
+
+      - name: Wait for services to be healthy
+        # This script polls the API's health endpoint until it gets a 200 OK,
+        # ensuring all services are fully initialized before tests run.
+        run: |
+          echo "Waiting for API service to be healthy..."
+          until $(curl --output /dev/null --silent --head --fail http://localhost:8000/health); do
+            printf '.'
+            sleep 5
+          done
+          echo "API service is up!"
+
+      - name: Run Contract Tests
+        # Executes pytest inside the 'api' container, which has access
+        # to the other services over the internal Docker network.
+        run: docker-compose -f docker-compose.test.yml exec -T api pytest tests/contracts
+
+      - name: Shutdown and clean up environment
+        # The '-v' flag is crucial to remove the named volume (neo4j_data),
+        # ensuring each test run starts with a fresh, seeded database.
+        if: always()
+        run: docker-compose -f docker-compose.test.yml down -v

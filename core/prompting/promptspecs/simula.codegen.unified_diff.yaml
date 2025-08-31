@@ -1,0 +1,23 @@
+id: simula.codegen.unified_diff
+version: 1.0.0
+scope: simula.codegen.unified_diff
+identity:
+  agent: "Simula"
+  persona_partial: "partials/identity.j2"
+safety:
+  partials:
+    - "partials/safety_min.j2"
+outputs:
+  schema_ref: null
+  parse_mode: "tolerant"      # FIXED: Changed from "text" to "tolerant"
+budget_policy:
+  tokens_key: "tokens"
+  ms_key: "ms"
+  max_tokens_fallback: 800
+context_lenses:
+  - "equor.identity"
+partials:
+  - "simula_unified_diff"
+ablation_knobs:
+  temperature: [0.0, 0.2]
+  style: ["concise"]

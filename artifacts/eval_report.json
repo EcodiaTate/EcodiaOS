@@ -1,0 +1,52 @@
+{
+  "ok": false,
+  "score": 0.45,
+  "weights": {
+    "unit": 0.45,
+    "static": 0.15,
+    "contracts": 0.15,
+    "runtime": 0.1,
+    "perf": 0.1,
+    "security": 0.05
+  },
+  "breakdown": {
+    "unit_pass_ratio": 1.0,
+    "integration_pass_ratio": 1.0,
+    "static_ok": false,
+    "contracts_ok": false,
+    "perf_score": 0.0,
+    "runtime_ok": false,
+    "security_ok": false,
+    "coverage_delta": 0.0
+  },
+  "raw": {
+    "tests": {
+      "ok": false,
+      "unit": {
+        "passed": 0,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "ratio": 1.0
+      },
+      "integration": {},
+      "coverage_delta": 0.0,
+      "duration_s": 0.3508772850036621,
+      "rc": 127,
+      "stdout": "OCI runtime exec failed: exec failed: unable to start container process: exec: \"pytest\": executable file not found in $PATH: unknown\n",
+      "selected": [
+        "tests/**/*.py"
+      ]
+    },
+    "static": {
+      "ruff_ok": false,
+      "mypy_ok": false,
+      "bandit_ok": false,
+      "outputs": {
+        "ruff": "OCI runtime exec failed: exec failed: unable to start container process: exec: \"ruff\": executable file not found in $PATH: unknown\n",
+        "mypy": "OCI runtime exec failed: exec failed: unable to start container process: exec: \"mypy\": executable file not found in $PATH: unknown\n",
+        "bandit": "OCI runtime exec failed: exec failed: unable to start container process: exec: \"bandit\": executable file not found in $PATH: unknown\n"
+      }
+    }
+  }
+}

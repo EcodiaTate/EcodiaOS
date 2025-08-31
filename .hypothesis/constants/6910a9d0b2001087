@@ -1,0 +1,4 @@
+# file: D:\EcodiaOS\systems\unity\core\room\vote.py
+# hypothesis_version: 6.137.1
+
+[0.0, 0.1, 1.0, 100.0, 300, ',', '[-+]?\\d*\\.?\\d+', '^\\s*[-*]\\s*(.+)$', 'abstain', 'agree', 'approve', 'aye', 'choice', 'conf', 'confidence', 'content', 'disagree', 'n', 'nay', 'neutral', 'no', 'oppose', 'pass', 'prob', 'ranked', 'rationale', 'raw', 'reason', 'reject', 'role', 'scores', 'skip', 'support', 'terse', 'text', 'unityroom', 'unityroom_vote', 'user', 'vote', 'weight', 'withhold', 'y', 'yes']

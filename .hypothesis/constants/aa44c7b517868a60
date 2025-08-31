@@ -1,0 +1,4 @@
+# file: D:\EcodiaOS\systems\unity\core\room\synthesis.py
+# hypothesis_version: 6.137.1
+
+[0.2, 120, 900, 3000, 8000, '?', 'No session context.', 'agent', 'agent_output_summary', 'analytical', 'cluster_hits', 'consensus', 'consensus_type', 'content', 'debate_protocol', 'fallback', 'key', 'majority', 'max_rounds', 'phase', 'role', 'round', 'round_robin', 'salience_reasons', 'score', 'scores', 'seed', 'size', 'summary', 'synthesis', 'synthesis_max_tokens', 'text', 'type', 'unity', 'unityroom', 'unityroom_synthesis', 'unspecified', 'user', '…', '📊 Salience Scores:', '📌 Rationales:']

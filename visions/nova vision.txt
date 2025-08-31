@@ -1,0 +1,229 @@
+**CRITICAL INSTRUCTIONS FOR CHATGPT** THESE DOCUMENTS ARE THE ABSOLUTE LOWEST STANDARD. ALWAYS AIM TO IMPLEMENT MORE THAN IS HERE TO ACHEIVE HIGHER COGNITION
+
+
+# NOVA — The Invention Engine (Unimprovable v1)
+
+## 0) Role & Invariants (non-negotiable)
+
+* **Scope:** Generate *new* strategies, mechanisms, modules, files, or systems—and discover truly novel ideas when asked (science/engineering permitted). It **consumes** briefs from Evo/Simula/Synapse and **returns** vetted, scored candidates with evidence.
+* **Boundaries:**
+
+  * **Atune**: NOVA sends *bids* and *decision packages* into the attention market; Atune may escalate to Unity; budget envelopes always honored.&#x20;
+  * **Synapse**: NOVA queries task budgets and logs outcomes; Synapse learns which playbooks/candidate types win.&#x20;
+  * **Axon**: When inventions become **capabilities/drivers**, rollout goes through Probecraft → testing → shadow → live.&#x20;
+  * **Equor**: Every actionable artifact must carry a **CapabilityToken**, rollback contract, and (optional) proof object.
+  * **Unity**: Only invoked via Atune for high-stakes invention or risk-laden rollouts.&#x20;
+* **Replayability:** Every step produces a **DesignCapsule** (prompts, seeds, corpora, playbook graphs, evaluation logs, ablations) committed to **MEJ++** with a **barcode** and cross-links. (BLAKE3; 3072-d embedding provenance.)&#x20;
+* **Safety chain:** Invention → obligations → Simula evaluation → market selection → rollout; if/when it becomes actuation, Axon still enforces **cap-token → reflex → twin → conformal → live**.&#x20;
+
+---
+
+## 1) Core loop (single pass; fully replayable)
+
+**Intake → Decompose → Synthesize → Prove → Evaluate → Auction → Archive → Rollout**
+
+1. **Intake** (from Evo “Conflict” nodes, Synapse “Opportunity” tasks, or user briefs)
+2. **Decompose** into hypotheses & constraints (objectives, risk tiers, allowed levers, rollback shape)
+3. **Synthesize** candidates via **Playbooks** (below)
+4. **Prove** obligations (PCC-lite: pre/postconditions, invariants, sketch proofs)
+5. **Evaluate** with Simula (unit/prop-based tests, ablations, counterfactuals, cost/risk)
+6. **Auction** with Atune’s market (FAE utility + cost + novelty; Pareto/VCG; TEMPO budgets)
+7. **Archive** everything as a **DesignCapsule**; update concept library
+8. **Rollout** via Probecraft lifecycle (testing→shadow→live; auto rollback/attestation)&#x20;
+
+---
+
+## 2) Surfaces (endpoints)
+
+All endpoints defined under `api.endpoints.nova.*` (export `router`, mounted at gateway—no hardcoded paths).&#x20;
+
+* `POST /nova/propose` → input **InnovationBrief** → returns list of **InventionCandidate**(s) with scores + evidence
+* `POST /nova/synthesize` → run specific **PlaybookSpec** to generate candidates
+* `POST /nova/evaluate` → Simula harness on candidate(s); returns metrics, risks, ablations
+* `POST /nova/ablate` → shrink candidate to minimal winning core
+* `POST /nova/auction` → send candidates to Atune market (returns winners & spend)
+* `POST /nova/rollout` → emit a **CapabilitySpec** to Probecraft; supervise testing→shadow→live
+* `GET /nova/archive/{id}` → retrieve **DesignCapsule** (with barcodes & why-trace)
+* `GET /nova/playbooks` → list/describe installed playbooks
+
+**Headers**: `x-budget-ms`, `x-deadline-ts`, `x-decision-id` pass through; responses include `metrics.cost_ms`.&#x20;
+
+---
+
+## 3) Canonical contracts (schemas)
+
+### 3.1 InnovationBrief (v1)
+
+```json
+{
+  "brief_id": "brf_x",
+  "source": "evo|synapse|user|system",
+  "problem": "string",
+  "context": {"system_parts": ["atune","axon", "..."], "related_events": ["evt_..."]},
+  "constraints": {"risk_tier":"low|med|high", "latency_ms":1200, "budget_ms":5000},
+  "success": {"uplift_metric":"actual_utility", "target_delta":0.02},
+  "obligations": {"pre": ["..."], "post": ["..."]},
+  "fallback": {"rollback_contract": {"type":"undo","params":{}}},
+  "hints": {"analogies":["..."], "novelty_priority": 0.7}
+}
+```
+
+### 3.2 InventionCandidate (v1)
+
+```json
+{
+  "candidate_id": "inv_123",
+  "playbook": "map_elites.search" | "dreamcoder.library" | "alphadev.rl" | "...",
+  "artifact": {"type":"code|dsl|policy|graph", "diffs":[...]},
+  "spec": {"mechanism_graph": {...}, "capability_spec": {...}?},
+  "scores": {"fae": 0.0, "novelty": 0.0, "risk": 0.0, "cost_ms": 0},
+  "evidence": {"tests": {...}, "ablations": {...}, "proofs": {...?}},
+  "obligations": {"pre":["..."],"post":["..."]},
+  "rollback_contract": {"type":"undo","params":{}},
+  "provenance": {"seeds":[...], "prompts":[...], "retrieval":["doc_..."], "models":{"embed":"3072d","gen":"..."}}
+}
+```
+
+### 3.3 DesignCapsule (replay)
+
+Inputs (brief, seeds, retrieval sets), playbook DAG + params, generated artifacts, evaluation logs, counterfactuals, costs, barcodes, **why-trace** of invention decisions (no CoT). (Mirrors MEJ++ style.)&#x20;
+
+---
+
+## 4) Synthesis Playbooks (the “how”)
+
+NOVA ships with **five complementary, research-grade playbook families**. They’re composable in a DAG and selected by Synapse/Atune under budget.
+
+### A) **DreamCoder-style Concept Library Growth**
+
+Bootstraps reusable primitives by alternating **wake/sleep** phases: synthesize solutions (wake), compress into a library (sleep), and update the search policy. Use it to *grow* EOS’s internal invention vocabulary. ([arXiv][1], [people.csail.mit.edu][2])
+
+* **Why:** Generalizes across tasks; yields interpretable building blocks.
+* **How here:** Extract frequent sub-graphs from successful candidates; reify into **MechanismOps** (typed DSL ops) and prioritize them in future searches.
+
+### B) **Quality-Diversity (QD) / MAP-Elites search**
+
+Explore **diverse, high-performing** mechanism spaces simultaneously (axes: latency, safety margin, generality, cost). Maintain an **Elites Archive** and let the market pick knee-point winners. ([arXiv][3])
+
+* **Why:** QD outperforms single-objective search when many trade-offs matter.
+* **How here:** Emitters correspond to different inventors (Proposer, Minimalist, Robustifier), scheduled by a bandit.
+
+### C) **Deliberate Reasoning Trees (ToT + MCTS)**
+
+Use **Tree-of-Thoughts** to branch plan/critique/repair steps; MCTS guided by FAE score and feasibility estimates. ([arXiv][4])
+
+* **Why:** Enables lookahead and backtracking for non-obvious mechanisms.
+* **How here:** Each node stores a partial MechanismSpec and local proofs/tests.
+
+### D) **Reward-Code Synthesis (EUREKA-style)**
+
+Auto-write **reward/evaluator code** that induces desired behavior, then train/score policies or heuristics against it. (Great for driver heuristics, planning rules.) ([arXiv][5])
+
+* **Why:** Converts vague goals into executable signals; often beats hand-written rewards.
+* **How here:** Produce reward modules evaluated in Simula; keep the best via QD/MCTS.
+
+### E) **Algorithm Discovery (AlphaDev/AlphaTensor tracks)**
+
+When the target space is algorithmic (optimizers, loops, transforms), run RL search over low-level instruction graphs (AlphaDev) or tensor decompositions (AlphaTensor). ([Google DeepMind][6], [Nature][7])
+
+* **Why:** Demonstrated discovery of **new, faster** algorithms accepted upstream (e.g., C++ sort improvements).
+* **How here:** Wrap as a playbook; cap compute; produce proofs/tests + microbenchmarks before any rollout.
+
+### F) **Causal Hypothesis Discovery (NOTEARS+robust variants)**
+
+Induce candidate causal graphs for interventions; **don’t** rely solely on NOTEARS—use it as one signal and prefer interventional tests due to robustness concerns. ([arXiv][8])
+
+* **Why:** Actionable inventions are often **interventions**.
+* **How here:** Propose causal edges → design counterfactual experiments in Simula → archive validated SCM snippets.
+
+### G) **PCC-lite Proof Obligations**
+
+Attach **machine-checkable** obligations (types, invariants, postconditions) to each candidate; small proof sketches or typed contracts are verified before promotion. ([USENIX][9], [SpringerLink][10])
+
+---
+
+## 5) Typed DSLs (make ideas concrete)
+
+* **MechanismSpec DSL**: a small, typed graph language for composing **Ops** (retrieval, transform, decide, compress, verify).
+* **CapabilitySpec DSL**: describes what becomes a driver (IO schema, rate limits, obligations, rollback).
+* **ProofSpec**: first-order predicates + refinement types for PCC-lite checking.
+
+All three are JSON-serializable and recorded in **DesignCapsules**.
+
+---
+
+## 6) Market & Budget integration
+
+* NOVA always requests budget from **Synapse**, runs playbooks within `x-budget-ms`, and reports **true cost** (`metrics.cost_ms`) back. Atune’s **VCG/Pareto** auction selects winners; **TEMPO** reserves are respected during bursts (non-reserved candidates can be dropped).&#x20;
+
+---
+
+## 7) Safety, Attestation, and Rollback
+
+* **Before rollout**: candidate must have **obligations**, a **rollback\_contract**, and (when applicable) a **proof object**.
+* **Promotion**: NOVA → Probecraft: testing → shadow → live, with gates (latency ≤ p95 target, uplift ≥ threshold, shadow pass). Auto-demote on anomalies; bind caps to **artifact\_hash** and attestations.&#x20;
+
+---
+
+## 8) Observability & Why-trace (invention legibility)
+
+For every invention:
+
+* **NovaWhyTrace**: `{brief, playbooks_used, key_choices, evidence_refs, market_terms, budget_use, verdicts}`
+* **DesignCapsule** holds full artifacts & logs; **barcode** returned to callers. (Why-trace is legible without chain-of-thought.)&#x20;
+
+---
+
+## 9) T-NOVA Test Gates (block merges if red)
+
+1. **T-NOVA-REPLAY** — `DesignCapsule` replays bit-exact (same winners under fixed seeds; same scores ±ε).
+2. **T-NOVA-OBLIGATIONS** — obligations/proofs verified before **/nova/rollout** can execute.
+3. **T-NOVA-MARKET** — candidates emit `{fae, cost_ms}`; Atune auction returns deterministic winners under fixed seeds.
+4. **T-NOVA-UPLIFT** — 30-tick shadow shows ≥ **+2%** realized uplift vs. uniform on target metric.
+5. **T-NOVA-BURST** — respect **TEMPO** reserves; non-reserved playbooks are rejected when exhausted.
+6. **T-NOVA-SAFETY** — high-risk candidates trigger Unity via Atune; unsafe ones blocked; rollback rehearsed at least once.
+
+(These align with your existing system gates: T-ACT-SAFETY, T-VCG-UPLIFT, T-MEJ-REPLAY, T-WHY, T-BURST, T-PROBECRAFT-PROMOTE.)&#x20;
+
+---
+
+## 10) Implementation skeleton (drop-ins)
+
+* **Packages:** `systems/nova/{playbooks, dsl, runners, ledger, endpoints, tests}`
+* **Endpoint file:** `api.endpoints.nova.core` exporting `router` with the surfaces above. (Mounted in `api/endpoints/nova/__init__.py`.)&#x20;
+* **Ledger:** `NovaLedger` mirrors MEJ++ (BLAKE3, cross-links to Atune/Axon records).
+* **Embeddings:** always log model+dim (**3072**) in provenance.&#x20;
+* **Runners:**
+
+  * `PlaybookRunner` (budgets, seeds, parallel emitters)
+  * `ProofRunner` (PCC-lite VM)
+  * `EvalRunner` (Simula harness; ablations; counterfactuals)
+  * `AuctionClient` (Atune market; TEMPO compliance)
+
+---
+
+## 11) Three shippable playbooks (Week 1)
+
+1. **QD-Elites for Driver Heuristics**
+
+   * Optimize heuristics (e.g., chunking, routing thresholds) across axes {latency, success rate, safety margin}.
+   * Output: `CapabilitySpec` + microbenchmarks; roll via Probecraft.
+
+2. **DreamCoder Library for MechanismOps**
+
+   * Mine recurring subgraphs in your Atune/Axon/Simula codegen; create reusable ops with docs & tests. ([arXiv][1])
+
+3. **AlphaDev-style Inner-Loop Optimizer**
+
+   * Target a hot path (e.g., JSON normalization, token filters). RL over WASM instruction graphs; prove equivalence; ship if >1–5% speedup. ([Google DeepMind][6], [Nature][7])
+
+---
+
+## 12) KPIs that prove “invention” (track weekly)
+
+* **New-skill velocity:** (capabilities/week) that pass shadow KPIs
+* **Causal uplift:** Δ utility of interventions vs. twin counterfactuals
+* **Novelty\@k:** embedding distance vs. archive, normalized by usefulness
+* **Safety load:** Unity escalations / high-stakes inventions
+* **Economics:** utility/compute; cost per successful capability
+* **Replay quality:** % capsules bit-exact; coverage≈α for conformal gates

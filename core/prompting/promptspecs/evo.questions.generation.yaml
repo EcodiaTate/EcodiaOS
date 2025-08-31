@@ -1,0 +1,24 @@
+id: evo.question.generation
+version: 1.0.0
+scope: evo.question.generation
+identity:
+  agent: "Evo"
+  persona_partial: "partials/identity.j2"
+safety:
+  partials:
+    - "partials/safety_min.j2"
+    - "partials/json_guard_strict.j2"
+outputs:
+  schema_ref: "core/prompting/schemas/evo_question_generation_output.json"
+  parse_mode: "strict_json"
+budget_policy:
+  tokens_key: "tokens"
+  ms_key: "ms"
+  max_tokens_fallback: 600
+context_lenses:
+  - "equor.identity"
+partials:
+  - "evo_question_generation"
+ablation_knobs:
+  temperature: [0.2, 0.4]
+  style: ["concise"]

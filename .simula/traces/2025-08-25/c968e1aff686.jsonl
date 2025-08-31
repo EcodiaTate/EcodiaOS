@@ -1,0 +1,2 @@
+{"type": "job_start", "job": {"agent": "simula_v12_governed", "goal": "Add smoke test + prepare CI; ensure pytest passes"}, "ts": "2025-08-25T05:17:44.023403+00:00"}
+{"type": "job_end", "status": "error", "duration_ms": 942.6067889999103, "extra": {"exc": "AttributeError(\"'OrchestratorResponse' object has no attribute 'tools'\")"}, "ts": "2025-08-25T05:17:44.965992+00:00"}

@@ -1,0 +1,13 @@
+# objectives/example.yaml
+spec: "Refactor evaluator aggregator to implement EvalResult and run_evaluator_suite for full metrics + hard gates"
+targets:
+  - path: "systems/simula/code_sim/evaluators/__init__.py"
+    mode: "scaffold"   # could be: scaffold, imports, typing, error_paths, full
+    signature: "run_evaluator_suite(objective_dict, sandbox_session) -> EvalResult"
+  - path: "systems/simula/code_sim/mutators/prompt_patch.py"
+    mode: "full"
+notes: |
+  Ensure all unified diffs are valid and apply cleanly.
+  Use Equor/Unity/Evo feedback in plan generation.
+branch: null      # or e.g. simula/dev
+dry_run: false

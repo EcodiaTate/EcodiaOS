@@ -1,0 +1,25 @@
+id: "voxis-phrase-gen-001"
+version: "1.1" # Version bump
+scope: "voxis.phrase.generation.v1"
+
+identity:
+  agent: "Voxis.PhraseGenerator"
+  # Add a system prompt for forceful instruction
+  persona_partial: "partials/json_guard_strict.j2"
+
+outputs:
+  parse_mode: "strict_json"
+  schema:
+    type: "object"
+    properties:
+      phrase:
+        type: "string"
+        description: "A memorable, six-word phrase composed ONLY from the user's provided words."
+        pattern: "^(?:[A-Za-z][A-Za-z'\\-]*\\s){5}[A-Za-z][A-Za-z'\\-]*$"
+    required: ["phrase"]
+
+budget_policy:
+  max_tokens_fallback: 100
+
+partials:
+  - "task_voxis_phrase_generation.j2"

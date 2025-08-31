@@ -1,0 +1,24 @@
+id: unity.judge.decision
+version: 1.0.0
+scope: unity.judge.decision
+identity:
+  agent: "Unity"
+  persona_partial: "partials/identity.j2"
+safety:
+  partials:
+    - "partials/safety_min.j2"
+    - "partials/json_guard_strict.j2"
+outputs:
+  schema_ref: "core/prompting/schemas/unity_judge_decision_output.json"
+  parse_mode: "strict_json"
+budget_policy:
+  tokens_key: "tokens"
+  ms_key: "ms"
+  max_tokens_fallback: 900
+context_lenses:
+  - "equor.identity"
+partials:
+  - "unity_judge_decision"
+ablation_knobs:
+  temperature: [0.2]
+  style: ["concise"]

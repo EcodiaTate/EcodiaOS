@@ -1,0 +1,4 @@
+# file: D:\EcodiaOS\systems\synk\core\tools\vector_store.py
+# hypothesis_version: 6.137.1
+
+[3072, '.', 'Event', '_', 'cosine', 'embedding', 'event_id', 'index_name', 'node_id', 'top_k', 'vector_gemini']

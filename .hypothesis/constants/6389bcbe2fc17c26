@@ -1,0 +1,4 @@
+# file: D:\EcodiaOS\systems\equor\dao.py
+# hypothesis_version: 6.137.1
+
+[0.0, 'audience', 'author', 'candidate', 'confidence', 'e', 'expected_reward', 'f', 'global', 'identity', 'key', 'kind', 's', 'scope', 'status', 'system', 'tags', 'text']

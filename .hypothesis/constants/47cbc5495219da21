@@ -1,0 +1,4 @@
+# file: D:\EcodiaOS\systems\synk\core\tools\neo.py
+# hypothesis_version: 6.137.1
+
+[0.0, ',', ', ', ', r2', ', r3, r4', ':', 'Cluster', 'Event', 'RETURN r', 'RETURN r1, r2', 'SET ', 'SemanticExemplar', 'Synk', 'Tool', 'any', 'created_at', 'description', 'dst_match', 'embedding', 'event_id', 'extra', 'fqn', 'gemini', 'gemini-3072-index', 'hash', 'id', 'index', 'interm_props', 'k', 'label', 'label_filter', 'labels', 'limit', 'match', 'n', 'n += $props', 'name', 'openai', 'properties', 'props', 'rel_props', 'score', 'scorer', 'src_match', 'system', 'text', 'unknown_tool', 'uuid', 'v_gemini', 'v_oai', 'vec', 'vector_gemini']

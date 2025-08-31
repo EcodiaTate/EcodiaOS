@@ -1,0 +1,42 @@
+// tests/contracts/seed.cypher
+// Seeds the Neo4j test database with baseline nodes for contract testing.
+
+// A constitutional rule for governance tests
+MERGE (r:ConstitutionRule {id:"CR_TEST_PROHIBIT_LEGACY"})
+SET r.name = "Prohibit Legacy API",
+    r.pattern = "(LEGACY_API)",
+    r.active = true,
+    r.priority = 100,
+    r.severity = 'high',
+    r.deontic = 'MUST',
+    r.updated_at = timestamp();
+
+// A default, safe PolicyArm for Synapse to select in fallback scenarios
+WITH '{"id":"pg_safe_planful_v1","nodes":[{"id":"prompt","type":"prompt","model":"gpt-4o-mini","params":{"temperature":0.1}}],"edges":[]}' AS pg_json
+MERGE (p:PolicyArm {arm_id:"safe_planful_v1"})
+SET p.id = "safe_planful_v1",
+    p.mode = "planful",
+    p.policy_graph = pg_json,
+    p.created_at = timestamp();
+
+// A mock :Code node for Qora to discover
+MERGE (c:Code:CodeFile {fqn: "systems/legacy/api.py"})
+SET c.name = "api.py",
+    c.path = "systems/legacy/api.py",
+    c.module = "systems.legacy.api",
+    c.hash = "mockhash123",
+    c.docstring = "This is a mock legacy API file for testing governance rules.";
+
+// A mock Conflict node for Evo to escalate
+MERGE (conflict:Conflict {event_id: "conflict_test_001"})
+ON CREATE SET
+    conflict.description = "A sample conflict for escalation testing.",
+    conflict.severity = "medium",
+    conflict.kind = "failure",
+    conflict.status = "open",
+    conflict.source_system = "test_suite",
+    conflict.created_at = datetime();
+
+// Ensure unique constraints for test stability
+CREATE CONSTRAINT IF NOT EXISTS FOR (c:Conflict) REQUIRE c.event_id IS UNIQUE;
+CREATE CONSTRAINT IF NOT EXISTS FOR (p:PolicyArm) REQUIRE p.arm_id IS UNIQUE;

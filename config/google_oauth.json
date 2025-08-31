@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "ecodiaos",
+  "private_key_id": "145671786325ffbd1492a74cd6b6807e1894d928",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCT+oSatwaLPPZM\nqr+btR2nTDs/JrJVD+NH/VECLQMwSmd4yF+hgq9ne/k7BjXs+akyk2gbnxuVYC4E\nzyWeVuvz7yTRwWIsU8Ar1ynzodamkF+X4gjpWRKwJT+Sn40yzQeYtDAbRuzcm4yX\nhKPeoH7gOEheeegQHiOHc3awywt+dd1E4UPzwz0ulPVaW4toJDjUu9/0vzHVYqy0\nF+kDnIIurNdG9imKKO7sMx8D+9tFudrpAgyXy14blH58EOCGFYCnWss0mlUWCam8\n6KJ/tEH3RtoDIgqT6EMCrcbfblebpu1L1AY7AgCWRujgkGrdfYQAkXG9SXiUniy+\nnQZXmG+BAgMBAAECggEAA3daKRIZtQP+7HWQ8q2jxc4RMrXeNkQeoapvPfbuNNC/\nWvrNk6fPIkRLBp0LAROpiRHfHcuErsNvnIT6J3r3gLGkugWWvj1Rem1qMgbj02e9\nF36P0SB5IbdjpXR3jx2ynHr3CAKJrJK3sLpmiMHXavrihhUCsLL2B9eWa4Z8DNCe\nmZNvVtCnylYScF1ylleFHrZp6EoVHVcN0uNhfuE5xtetHPtNVvAekN85uZa0rB3O\na86QTJF+nK46NDx6qpbwJhJI4/L1GX1dZG7uS5A18uuQcWt1rZ5HuLRnyGP9pKi8\nn3+2Fd4/5AhAECi4uDm5FHc3pMqkUGukpY69CgllOQKBgQDDFnUFb0sv+pGhtxgQ\nvBChuYJjm0Vu2WsKb5YUqyFlel5nUzi8AMYz1kXBNw5cCaUetgt68R07GtWIq+hU\nPb5rXlPh4OcWaJS8zYbXLB1XlhwiZ6xUfdOch6my+z261m9K41U7NkdsxYhviFca\nFnsA6on4mOxSAxBiIBuk0btDGQKBgQDCLpVy0W4smPKVdOGObUXauyoKUC4sDph9\nZu4ebX9mptkmEjrSHc91cXjzWqp0/NcW8LLjQkhMdKa3Mz8uZ7czzRJXScL0OjBN\nS2FsMKGQvoJvkaMYhnF62qHwx8YhIh+i3oG9L1J+7FcmNU1o4h4/bse7LZz7Xe1r\nCABVParEqQKBgQCRiuaAyHgCcmBFknA8w+FwlhKFtyhEu6WU4ozIHKfMqk9VrIuu\nDrHPqHLf4/Atj/CFCfFkpg9Vsf5OeVnZxzqRpYzU/lHIsPsOJBMN4lZ9qnqQ3GF/\no2PE6p0a7z8tbZ8X8qP6idMdffz8oG3DA7R+iXunYIcl5C1L14JoIyQeuQKBgCEB\nD++y/vnfiSOz+P5fPkc+FpgoJqDgXjS6QPC1Bblp1HCvGoZKAM/iWH9sQpqduuUw\nRgdwZZ9xGED9GdkGUdIhIePqKpOeLEWG8WkVHvDeIIdcBo+Nkk4iSPIG0nshNKVX\nElAYcfoWq31YA+82t5NqfdInn43t2gOeGYhjcdn5AoGAUCMbZzuxXectyO7xdlgn\nE7asfhe6wqHbdR2VMURHIr8Nj2KvbPrR3APYuIj1H9SwV07DsfzsFnmF8/zNJ3py\nDlIIo4hZgys3oVBSEBNswzqbpG6oBcNmjUi7ypgKzl3M8Pkp94Cpl0Mr+N9HF4TJ\n1WSC+P5nvTGveEskhdxq9sM=\n-----END PRIVATE KEY-----\n",
+  "client_email": "ecodiaos-bot@ecodiaos.iam.gserviceaccount.com",
+  "client_id": "110976192564167416541",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/ecodiaos-bot%40ecodiaos.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

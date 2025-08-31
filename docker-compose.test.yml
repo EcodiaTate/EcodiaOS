@@ -1,0 +1,70 @@
+# docker-compose.test.yml
+# A variant of the main compose file, specialized for contract testing.
+version: "3.8"
+
+# Inherit the service definitions from the main file
+x-service-defaults: &service_defaults
+  build:
+    context: .
+    dockerfile: Dockerfile
+    args:
+      UID: ${UID:-1000}
+      GID: ${GID:-1000}
+      DOCKER_GID: ${DOCKER_GID:-0}
+  networks: [ecosian_net]
+  env_file:
+    - ./config/.env
+  environment:
+    PYTHONPATH: /app
+    ECODIAOS_BASE_URL: http://localhost:8000
+    REDIS_HOST: redis
+    NEO4J_URI: bolt://neo4j:7687
+    NEO4J_USER: neo4j
+    NEO4J_PASSWORD: testpassword
+    QORA_API_KEY: "test-qora-key"
+
+networks:
+  ecosian_net:
+    name: ecosian_test_net
+
+volumes:
+  neo4j_test_data:
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: ecodia_redis_test
+    networks: [ecosian_net]
+
+  neo4j:
+    image: neo4j:5
+    container_name: ecodia_neo4j_test
+    networks: [ecosian_net]
+    volumes:
+      - neo4j_test_data:/data
+      # TEST-SPECIFIC: Mounts the seed script to run on startup
+      - ./tests/contracts/seed.cypher:/docker-entrypoint-initdb.d/seed.cypher
+    environment:
+      NEO4J_AUTH: neo4j/testpassword
+      NEO4J_PLUGINS: '["apoc"]'
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:7474 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    <<: *service_defaults
+    container_name: ecodia_os_api_test
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    group_add:
+      - "${DOCKER_GID:-0}"
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      redis:
+        condition: service_started

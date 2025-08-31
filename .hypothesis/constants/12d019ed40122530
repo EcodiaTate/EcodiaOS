@@ -1,0 +1,4 @@
+# file: D:\EcodiaOS\core\utils\registries\tool_registry.py
+# hypothesis_version: 6.137.1
+
+[8000, '%Y-%m-%d %H:%M:%S', '...[truncated]', 'Tool', 'Unknown', '__name__', '_tool_system', 'args', 'async_session', 'auto', 'caller', 'disabled', 'doc', 'duration_sec', 'error', 'fqn', 'is_async', 'kwargs', 'name', 'none', 'noop', 'off', 'props', 'result', 'session', 'signature', 'status', 'success', 'system', 'timestamp', 'tool_name', 'unknown', 'unknown_tool', 'updated_at']

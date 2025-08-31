@@ -1,0 +1,72 @@
+2025-08-27T14:02:23.906954Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo\\cookies"), AnchoredSystemPathBuf(".turbo\\cookies\\.turbo-cookie"), AnchoredSystemPathBuf(".turbo\\cookies\\1.cookie")}
+2025-08-27T14:02:23.910650Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-27T14:02:23.993558Z  WARN daemon_server: turborepo_lib::commands::daemon: daemon already running
+2025-08-27T14:02:24.006323Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo\\daemon\\ff61efafc2b97c55-turbo.log.2025-08-27")}
+2025-08-27T14:02:24.006397Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-27T14:02:24.599757Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo\\daemon\\ff61efafc2b97c55-turbo.log.2025-08-27")}
+2025-08-27T14:02:24.599799Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-27T14:04:25.708560Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("_tmp_13600_e6c285b90a908dba9824eb1eaf44694f")}
+2025-08-27T14:04:25.708596Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-27T14:04:38.502537Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("pnpm-lock.yaml.930058009")}
+2025-08-27T14:04:38.502578Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-27T14:04:38.605673Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("pnpm-lock.yaml.930058009")}
+2025-08-27T14:04:38.605748Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-27T14:04:38.809325Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("pnpm-lock.yaml.930058009")}
+2025-08-27T14:04:38.809358Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-27T14:07:04.307882Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("frontend-voxis\\node_modules")}
+2025-08-27T14:07:04.308063Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("frontend-voxis"), path: AnchoredSystemPathBuf("frontend-voxis") }}))
+2025-08-27T14:07:07.505523Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("_tmp_16088_01025cd3b4371c5638884e121d710097")}
+2025-08-27T14:07:07.505556Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-27T14:08:12.507809Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("frontend-voxis\\node_modules")}
+2025-08-27T14:08:12.507852Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("frontend-voxis"), path: AnchoredSystemPathBuf("frontend-voxis") }}))
+2025-08-27T14:08:18.177869Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-08-27T14:09:51.005851Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("frontend-voxis\\.next")}
+2025-08-27T14:09:51.005892Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("frontend-voxis"), path: AnchoredSystemPathBuf("frontend-voxis") }}))
+2025-08-27T14:09:51.222504Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-08-27T14:14:51.820939Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("frontend-voxis\\tsconfig.json")}
+2025-08-27T14:14:51.822892Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("frontend-voxis"), path: AnchoredSystemPathBuf("frontend-voxis") }}))
+2025-08-27T14:15:23.506880Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("frontend-voxis\\tsconfig.next.json")}
+2025-08-27T14:15:23.506977Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("frontend-voxis"), path: AnchoredSystemPathBuf("frontend-voxis") }}))
+2025-08-27T14:15:37.722294Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("frontend-voxis\\next-env.d.ts"), AnchoredSystemPathBuf("frontend-voxis\\tsconfig.json")}
+2025-08-27T14:15:37.722326Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("frontend-voxis"), path: AnchoredSystemPathBuf("frontend-voxis") }}))
+2025-08-27T14:17:50.315368Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-08-27")}
+2025-08-27T14:17:50.316032Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-27T14:21:42.458511Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo\\cookies\\.turbo-cookie"), AnchoredSystemPathBuf(".turbo\\cookies\\1.cookie"), AnchoredSystemPathBuf(".turbo\\cookies")}
+2025-08-27T14:21:42.458591Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-27T14:21:42.632723Z  WARN daemon_server: turborepo_lib::commands::daemon: daemon already running
+2025-08-27T14:21:43.267521Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo\\daemon\\ff61efafc2b97c55-turbo.log.2025-08-27")}
+2025-08-27T14:21:43.267555Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-27T14:23:41.469530Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("frontend-voxis\\src\\app\\favicon.ico")}
+2025-08-27T14:23:41.469586Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("frontend-voxis"), path: AnchoredSystemPathBuf("frontend-voxis") }}))
+2025-08-27T14:24:27.665561Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("frontend-voxis\\public\\assets\\14.png")}
+2025-08-27T14:24:27.665605Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("frontend-voxis"), path: AnchoredSystemPathBuf("frontend-voxis") }}))
+2025-08-27T14:24:35.378306Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("frontend-voxis\\public\\assets\\ecodia-dark (2).png"), AnchoredSystemPathBuf("frontend-voxis\\public\\assets\\14.png")}
+2025-08-27T14:24:35.378336Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("frontend-voxis"), path: AnchoredSystemPathBuf("frontend-voxis") }}))
+2025-08-27T14:24:38.268150Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("frontend-voxis\\public\\assets\\ecodia-dark.png"), AnchoredSystemPathBuf("frontend-voxis\\public\\assets\\ecodia-light.png")}
+2025-08-27T14:24:38.268179Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("frontend-voxis"), path: AnchoredSystemPathBuf("frontend-voxis") }}))
+2025-08-27T14:24:43.674522Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("frontend-voxis\\public\\assets\\ecodia-dark (2).png"), AnchoredSystemPathBuf("frontend-voxis\\public\\assets\\ecodia-dark.png")}
+2025-08-27T14:24:43.675044Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("frontend-voxis"), path: AnchoredSystemPathBuf("frontend-voxis") }}))
+2025-08-27T14:33:24.675608Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\qora\\core\\code_graph\\ingestor.py")}
+2025-08-27T14:33:24.679640Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-27T14:33:37.093806Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\qora\\core\\code_graph\\ingestor.py")}
+2025-08-27T14:33:37.107299Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-27T14:33:38.281443Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\qora\\core\\code_graph\\ingestor.py")}
+2025-08-27T14:33:38.281641Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-27T14:33:39.371104Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\qora\\core\\code_graph\\ingestor.py")}
+2025-08-27T14:33:39.371136Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-27T14:34:00.878510Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\qora\\core\\code_graph\\ingestor.py")}
+2025-08-27T14:34:00.878546Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-27T14:34:03.165480Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\qora\\core\\code_graph\\ingestor.py")}
+2025-08-27T14:34:03.165523Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-27T14:34:07.775852Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\qora\\core\\code_graph\\ingestor.py")}
+2025-08-27T14:34:07.775878Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-27T14:34:07.877449Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\qora\\core\\code_graph\\ingestor.py")}
+2025-08-27T14:34:07.877478Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-27T14:34:27.682683Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\qora\\core\\code_graph\\ingestor.py")}
+2025-08-27T14:34:27.683277Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-27T14:35:32.674019Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\qora\\core\\code_graph\\ingestor.py")}
+2025-08-27T14:35:32.674046Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-27T14:38:46.070744Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("D\u{f03a}\u{f05c}EcodiaOS\\.ecodia"), AnchoredSystemPathBuf("D\u{f03a}\u{f05c}EcodiaOS"), AnchoredSystemPathBuf("D\u{f03a}\u{f05c}EcodiaOS\\.ecodia\\approved_patches")}
+2025-08-27T14:38:46.070907Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-27T14:41:51.973839Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\qora\\core\\code_graph\\ingestor.py")}
+2025-08-27T14:41:51.973967Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))

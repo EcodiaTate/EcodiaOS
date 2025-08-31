@@ -1,0 +1,4 @@
+# file: D:\EcodiaOS\systems\unity\core\room\prompt_builder.py
+# hypothesis_version: 6.137.1
+
+[200, 1200, 'None.', '[redacted:phone]', '[redacted@email]', '[uuid]', 'agent', 'agent_output_summary', 'agent_registry.yaml', 'agents', 'assistant', 'attachments', 'cluster_context', 'cluster_hits', 'consensus', 'consensus_type', 'content', 'core', 'debate_protocol', 'external_refs', 'final_round', 'freeform', 'interruptible', 'key', 'majority', 'max_rounds', 'name', 'plurality', 'r', 'redact_pii', 'registries', 'role', 'round_robin', 'salience_reasons', 'salient_facts', 'score', 'scores', 'search_results', 'size', 'summary', 'text', 'type', 'unanimity', 'unity_log', 'user', 'utf-8', 'utils', '…', '📊 Salience Scores:', '📎 Attachments:', '📝 Summary: ']

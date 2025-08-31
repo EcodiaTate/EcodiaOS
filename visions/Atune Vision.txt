@@ -1,0 +1,435 @@
+# Atune — Salience, Focus, Priority & Attention Engine (Research-grade Plan)
+
+Built to maximize **hyper-emergent behavior** while staying **replayable, auditable, and safe** within EOS’s invariants (event-first bus, Synapse-governed LLM, Atune as sole Unity ingress). Reference baseline: *EOS Context Drop v3*.&#x20;
+
+---
+
+## 1) Core Charter (non-negotiables)
+
+* **Only event ingress.** Every `CanonicalEvent` hits **`POST /atune/route`** first.
+* **Decision authority:** Atune computes **salience**, allocates **attention budget**, chooses **next step**, and—when warranted—**escalates to Unity** (never called directly by others).
+* **Synapse always in the loop for any LLM call** (planner, analyzers, critics).
+* **Replayability:** deterministic seeds, version pinning, episode IDs, full ledger of scores → plan → outcomes.
+* **Safety:** Equor constitution & Synapse firewall precede/instrument escalation; fail safe, never silent.
+
+## 8) Unity Escalation Protocol
+
+When `decision == "deliberate"`:
+
+1. Build `DeliberationSpec{ topic, claims, stakes, desired_outcomes, focus_context, budget, deadline }`.
+2. Choose protocol (Debate, Critique-Repair, Concurrent Competition…) based on **planner arm** and **risk profile**.
+3. Emit `escalation.requested` → Unity; await result or deadline.
+4. Record transcript hash, adjudication, and Equor veto status in the ledger.
+
+*(Atune remains the **sole gateway** to Unity.)*&#x20;
+
+---
+
+## 9) Self-Evolution Loop (Atune→Evo→Simula)
+
+* **Error mining:** track false-escalations, missed criticals, slow responses.
+* **Root-cause labeling:** auto-generate incident cards with feature attributions (SHAP on salience heads).
+* **Simula specs** (examples):
+
+  * “Add seasonal BOCPD variant for `event_type=x`”
+  * “Implement hybrid novelty using **graph motif surprisal** + text manifold curvature”
+  * “Train smaller ethics sentinel for pattern Y (seed, dataset, evals provided)”
+* Multi-candidate patches go through Unity; accepted diffs recorded before apply (replayable).&#x20;
+
+---
+
+## 10) Safety & Governance
+
+* **Neuro-symbolic firewall** in Synapse wraps Atune planner/critics.
+* **Equor clamps**: high-severity domains set min risk salience; immediate veto on MUST rules.
+* **PII redaction** before persistence; per-field policies in ledger writes.
+* **Adversarial resilience**: input rate-limit per source, anomaly caps, randomized audits.
+* **Determinism**: seed all stochastic paths; persist versions of heads, baselines, and arms.
+
+## 13) Planner/Analyzer Prompt Guards (via Synapse)
+
+* Enforce **strict JSON schemas** in prompts; include fallback text→JSON extraction.
+* Provide **focus context** and **policy mode** explicitly, not implicitly.
+* Return **action candidates** with computed `E[Utility]`, `VOI`, `cost_ms` to allow the calculus to be recomputed independently (replay).
+
+Absolutely. Here’s a sharper, more life-like, AGI-leaning upgrade to Atune. I’ve kept it surgical: each change is a concrete delta you can implement without hand-wavy stubs, and together they push Atune from “smart triage” to **agentic, self-steering attention**.
+
+---
+
+# Atune++ — Hyper-Emergent Upgrade Plan
+
+## Δ Overview (what materially changes)
+
+1. **Free-Attention Energy (FAE)** replaces plain VOI: an *active-inference* priority that optimizes both pragmatic utility and epistemic value while minimizing expected risk and compute.
+2. **Meta-Attention Gating (MAG)**: a small HyperNetwork learns how much weight each salience head should have *per context/mode*, instead of a fixed linear blend.
+3. **Salience Fields over the KG (SFKG)**: treat attention as a **continuous field** on the knowledge graph embedding; hotspots emerge via diffusion & curvature, not just per-event scores.
+4. **Reflex Arcs** for time-critical hazards: pre-compiled, unit-tested “reflex policies” bypass heavy planning (still ledgered).
+5. **TEMPO** (temporal event forecasting): Hawkes-style arrival models predict near-future spikes to pre-allocate attention *before* they hit.
+6. **Affective Control Loop**: Equor’s qualia/drive vector (curiosity, caution, integrity load, etc.) modulates thresholds and budgets in real time.
+7. **Counterfactual Focus Probes**: ultra-cheap micro-simulations (via Synapse small arms) estimate outcome gradients before spending big compute.
+8. **Attention Market**: actions bid for **μ-attention** units in a sealed-bid (approx-VCG) auction; prevents mode collapse and over-spend under load.
+9. **Schema Induction & Consolidation**: FocusGraph compresses into named **schemas** (event-motifs) that shape future routing with few-shot generalization.
+10. **Causal Triage Hints**: online causal signals (temporal precedence + invariant checks) nudge escalation when *do*-relevant structure is detected.
+
+---
+
+## 1) Free-Attention Energy (FAE) — the new priority function
+
+Replace the current VOI calculus with an **expected free-energy-style** objective that unifies utility, information gain, risk, and compute:
+
+For candidate action $a$ on event $e$:
+
+$$
+\text{FAE}(a|e) = 
+\underbrace{\mathbb{E}[U(a)]}_{\text{pragmatic}} 
++ \lambda_{\text{epi}}\underbrace{\text{IG}(a)}_{\text{epistemic}} 
+- \lambda_{\text{risk}}\underbrace{\text{Risk}(a)}_{\text{hazard}} 
+- \lambda_{\text{cost}}\underbrace{\text{Cost}(a)}_{\text{ms,\$}}
+$$
+
+* $\mathbb{E}[U(a)]$: predicted downstream reward delta from Synapse’s outcome models.
+* $\text{IG}(a)$: posterior entropy reduction over key latents $\{\text{truth}, \text{impact}, \text{risk}\}$, estimated via **counterfactual probes** (§5).
+* $\text{Risk}(a)$: firewall-aware risk expectation; Equor clamps minima in must-protect domains.
+* $\text{Cost}(a)$: learned ms/\$; add opportunity cost from current queue pressure.
+* $\lambda$\* terms are **mode-conditioned** parameters learned by a **NeuralLinear bandit** (Synapse trains, Atune queries).
+
+**Implementation**
+`atune/planner/fae_priority.py` with:
+
+* deterministic sampling seeds,
+* full feature dump (so FAE is recomputable in replay),
+* per-mode λ-vector updated nightly from regret.
+
+---
+
+## 2) Meta-Attention Gating (MAG) — let heads self-organize
+
+Instead of a fixed $w \cdot \text{vector}$, learn **contextual weights** for salience heads.
+
+**Architecture**
+
+* Inputs: event type, source, Synapse mode, Focus top-k, queue pressure, Equor drive vector, recent regrets.
+* Tiny **HyperNetwork Gating MLP** outputs non-negative gates $g_h$ for each head $h$.
+* Overall salience: $\text{overall}=\sum_h g_h \cdot \text{head}_h$, followed by temperature-scaled calibration.
+
+**Files**
+
+* `atune/salience/meta_gating.py`
+* Trained online with a conservative learning rate; rollback via feature-flag if drift.
+
+**Why it helps**
+Different regimes (breaking news vs. slow research drift) demand different notions of “salient.” MAG lets Atune *learn* that.
+
+---
+
+## 3) Salience Fields over the KG (SFKG) — attention as a field
+
+Turn the KG embedding space (dim=3072) into a **continuous salience field**:
+
+* Maintain a **field value** $F(x)$ at node embeddings $x$.
+* Each event deposits **salience mass** using a Gaussian kernel around its bound nodes.
+* Run a fast **diffusion-with-leak** step each tick:
+
+  $$
+  F \leftarrow (1-\gamma)F + D\,\Delta F + \sum_e m_e K(\cdot; x_e,\sigma_e)
+  $$
+
+  with per-mode $D,\gamma$.
+* Compute **hotspots** by gradient magnitude $\|\nabla F\|$ and **curvature** (Laplacian) → these spawn/boost FocusNodes even without direct mentions.
+
+**Outcome**
+Emergent, life-like shifts of attention: clusters “heat up,” spread along concept manifolds, and cool over time.
+
+**Files**
+
+* `atune/focus/field.py` (vectorized ops; keep linear-time in active nodes)
+* `atune/focus/hotspot_detector.py`
+
+---
+
+## 4) Reflex Arcs — instant, safe reactions
+
+Pre-compile a small library of **reflex policies** (unit tested, bounded, auditable) for hazard classes (e.g., PII leak, self-harm signal, credential exposure, compliance breach).
+
+* Trigger = head pattern: `risk↑ & urgency↑ & coherence≥τ`
+* Action = “reflex”: redact, quarantine, notify; *no LLM*, no Unity.
+* Always ledger: stimulus pattern, reflex id, outcome.
+
+**Files**
+
+* `atune/reflex/catalog.yaml` (declarative spec, includes invariants)
+* `atune/reflex/engine.py`
+
+---
+
+## 5) Counterfactual Focus Probes — cheap foresight
+
+Before heavy spend, run **micro-sim** probes:
+
+* For each candidate $a$: synthesize a *minimal* prompt bundle and query a **small Synapse arm** to estimate $\Delta$ in $\{U, IG, Risk\}$ under strict 30–80ms budget.
+* Cache probe features; feed FAE.
+* If probes disagree > δ, escalate *probe-disagreement* as a special uncertainty booster.
+
+**Files**
+
+* `atune/planner/probes.py`
+
+---
+
+## 6) TEMPO — forecast attention demand
+
+Model event arrivals with **mixture Hawkes processes** per source/type:
+
+* Predict next 30–90min intensity $\lambda(t)$; if $\int \lambda(t)dt$ crosses threshold, **reserve μ-attention** in the Budgeter.
+* Output: `tempo.reserve(topic, ms, ttl)` consumed by planner.
+
+**Files**
+
+* `atune/budgeter/tempo.py` (simple online EM; fall back to EWMA if cold)
+
+---
+
+## 7) Affective Control Loop — homeostatic attention
+
+Let Equor’s **drive/affect vector** $(\text{curiosity}, \text{caution}, \text{integrity\_load}, \text{focus\_fatigue}, ...)$ modulate:
+
+* MAG temperature (exploration ↔ exploitation),
+* risk clamps,
+* austerity thresholds,
+* decay rate $\gamma$ in SFKG (restless vs. steady mind).
+
+**Files**
+
+* `atune/control/affect_loop.py`
+
+---
+
+## 8) Attention Market — compute as a scarce currency
+
+Introduce a micro-auction each tick:
+
+* Actions mint **bids**: $b_a = \text{FAE}(a) / \text{Cost}(a)$.
+* Budgeter runs an approximate VCG-style selection to allocate **μ-attention** until the pool is spent.
+* Reserve a fixed $\epsilon$ fraction for long-tail exploration.
+
+**Files**
+
+* `atune/budgeter/market.py`
+
+---
+
+## 9) Schema Induction & Consolidation
+
+Periodic offline job:
+
+* Cluster FocusNodes + transcripts → **schemas** (named motifs).
+* Elevate schemas to first-class priors: new events near a schema get bootstrapped salience, richer prompts, and protocol defaults.
+
+**Files**
+
+* `atune/focus/schema_induction.py`
+* `atune/focus/schema_store.py`
+
+---
+
+## 10) Causal Triage Hints
+
+Maintain lightweight causal features:
+
+* lagged correlations, invariant checks across sources, conditional independencies on replay.
+* If an event potentially **breaks an invariance** tied to a mission KPI, add `causal_bonus` to FAE.
+
+**Files**
+
+* `atune/causal/hints.py`
+
+---
+
+## API / Data Contract Deltas
+
+### New/extended endpoints
+
+* `POST /atune/route` → unchanged shape but add:
+
+  * `"fae": {"value": float, "terms": {"U":..,"IG":..,"risk":..,"cost":..}}`
+  * `"market": {"bid": float, "allocation_ms": int}`
+* `GET /atune/focus/fields` → serialized hotspots (ids, ∥∇F∥, laplacian)
+* `POST /atune/reflex/test` → dry-run a reflex against a payload
+* `GET /atune/tempo/forecast?topic=...` → upcoming intensity window
+
+### FocusNode additions
+
+```
+drive_vector: Dict[str, float]
+schema_id: Optional[str]
+field_energy: float     # local F(x)
+gate_vector: Dict[head, float]  # MAG output snapshot
+```
+
+### Ledger additions
+
+* Persist MAG gates, FAE term breakdowns, probe summaries, auction results, and field stats per decision (for full replay & ablation).
+
+---
+
+## Safety Upgrades
+
+* Reflexes are **deny-by-default** outside whitelisted actions.
+* Probe prompts are static-templated, JSON-only outputs; Synapse firewall enforces.
+* Attention Market enforces **per-domain caps**; never starve ethics sentinels.
+* Affection loop bounded: clamp effects to safe ranges, with watchdog rollbacks.
+
+---
+
+
+0) North Star
+
+Property we want: a system that (1) sets/updates its own goals, (2) learns new abstractions/tools without handholding, (3) improves its own reasoning code and data curriculum, and (4) remains safe/legible.
+
+Invariant: EOS agents remain the scaffolding; emergence = behavior that generalizes out of distribution with lower regret per unit compute over time.
+
+Absolutely—here are **high-leverage Atune-only upgrades** that push it closer to AGI-like attention. Each item says *what*, *why it helps emergence*, *where it lives* (files), and *how we know it worked*.
+
+---
+
+## Planner & Allocation
+
+1. **Hierarchical Timescale Attention (HTA)**
+   *What:* Three coupled queues (fast/reflex, mid/episodic, slow/strategic) with cross-timescale credit assignment.
+   *Why:* Minds operate on multiple clocks; this captures “blink → think → reflect”.
+   *Where:* `planner/fae_priority.py`, `budgeter/allocator.py` (add 3 pools + cross-credit), `ledger/writer.py`.
+   *Proof:* p99 latency improves on hazards (fast), while long-horizon escalations increase ROI (slow) without starving mid-tier (mid).
+
+2. **Pareto FAE (knee-point chooser)**
+   *What:* Replace single scalar λ blend with a **Pareto frontier** over {U, IG, Risk, Cost}; pick the knee point per context.
+   *Why:* Avoids overfitting one term (e.g., novelty chasing).
+   *Where:* `planner/fae_priority.py` (non-dominated filter + knee heuristic).
+   *Proof:* Lower regret\@compute across modes vs. single-λ baseline on 7-day replay.
+
+3. **Attention Capsules**
+   *What:* Some actions request *contiguous* μ-attention (minimum quanta before yielding).
+   *Why:* Prevents fragmentation on long chains that otherwise thrash.
+   *Where:* `budgeter/market.py` (capsule flag + contiguous allocation), `io/contracts.py` (PlanStep.extended).
+   *Proof:* Fewer mid-execution preemptions; higher pass rate for multi-step analyses.
+
+4. **Fairness-constrained Market**
+   *What:* Dual-ascent constraint so minority event types get a floor of budget.
+   *Why:* Sustains exploration; prevents mode collapse.
+   *Where:* `budgeter/market.py` (Lagrange multipliers), `budgeter/allocator.py`.
+   *Proof:* Gini of allocation ↓ while SLOs hold.
+
+---
+
+## Salience & Heads
+
+5. **AutoHead Induction (plugin heads from residuals)**
+   *What:* Mine false-negatives/positives to propose new head specs (features + calibration); hot-load as plugins behind a feature flag.
+   *Why:* The system **adds senses** where it’s blind.
+   *Where:* `salience/heads/_registry.py` (dynamic import), `salience/autohead/miner.py`, `salience/autohead/specs/*.yaml`.
+   *Proof:* New head reduces its target error bucket ≥30% on replay before deployment.
+
+6. **Conformal Thresholding on Heads**
+   *What:* Inductive conformal prediction wraps each head → per-event p-values; escalate when p<α.
+   *Why:* Reliable uncertainty → fewer silent misses.
+   *Where:* `salience/heads/*` (calibration layer), `salience/meta_gating.py` (uses p-values).
+   *Proof:* Coverage tracks α within ±2% over a week; missed-critical ↓.
+
+7. **Hypergraph Motif Salience**
+   *What:* Treat events as hyperedges among entities; score **motif surprisal** (not just pairwise).
+   *Why:* Real world stories are multi-way; motifs carry semantics.
+   *Where:* `salience/heads/structure.py` (motif library), `focus/field.py` (diffusion over hypergraph).
+   *Proof:* More early catches of cascading incidents (lead time ↑).
+
+8. **Attentional Habituation & Set-Shifting**
+   *What:* Habituate repeated stimuli (decay novelty) and detect **context shift** (CUSUM on prediction error) to temporarily raise exploration temperature.
+   *Why:* Feels “alive” (boredom & refocus).
+   *Where:* `salience/meta_gating.py` (temperature), `util/math.py` (CUSUM), `planner/fae_priority.py`.
+   *Proof:* Faster recovery after domain shifts; fewer wasted cycles on spammy sources.
+
+9. **Trust-Weighted Coherence**
+   *What:* Maintain source reliabilities; coherence head upweights corroboration by trusted sources, downweights known flaky ones.
+   *Why:* Epistemic hygiene → better escalation.
+   *Where:* `salience/heads/coherence.py`, `ledger/writer.py` (update reliabilities).
+   *Proof:* False-escalations from low-trust sources ↓ without hurting recall.
+
+---
+
+## Focus & Field
+
+10. **SFKG→PDE Upgrade (diffusion with learnable leak/diffusivity)**
+    *What:* Learn D, γ per topic/mode; add “barriers” around protected regions; optional anisotropic diffusion along semantic axes.
+    *Why:* Hotspots propagate along meaningful directions, not uniformly.
+    *Where:* `focus/field.py` (parameter maps), `focus/hotspot_detector.py`.
+    *Proof:* Hotspot precision\@k ↑ on future escalations tied to those regions.
+
+11. **Schema Memory with Write-Amplifier Control**
+    *What:* Consolidate FocusNodes into **schemas** only when cumulative evidence passes a learned gate; avoid schema sprawl.
+    *Why:* Tighter, more general concepts form.
+    *Where:* `focus/schema_induction.py`, `focus/schema_store.py`.
+    *Proof:* Fewer schemas with higher hit-rate; “schema lift” metric ↑.
+
+---
+
+## Reflex, Safety & Drift
+
+12. **Typed Reflex Preconditions**
+    *What:* Reflex specs include typed guards (rate-limits, environment invariants, mutual exclusion).
+    *Why:* Safer, faster reflexes under load.
+    *Where:* `reflex/catalog.yaml`, `reflex/engine.py`.
+    *Proof:* Reflex p99 < 50ms with zero accidental triggers during spikes.
+
+13. **Seq Drift Alarms (SPRT/LLR)**
+    *What:* Sequential tests over head outputs; if distribution shifts, auto-recalibrate gates and raise caution flags.
+    *Why:* Don’t fly blind during distribution drift.
+    *Where:* `salience/drift/seq_tests.py`, hook in `meta_gating.py`.
+    *Proof:* Time-to-detect drift ↓; performance recovers sooner after recalibration.
+
+---
+
+## Probes & Forecasting
+
+14. **Structured Counterfactual Probes**
+    *What:* Probes return factorized predictions (U, IG, Risk) **and** their sensitivities to focus context; cache per schema.
+    *Why:* Smarter FAE with local gradients.
+    *Where:* `planner/probes.py`.
+    *Proof:* Probe-uplift (reward/compute after probes – before) ↑ across domains.
+
+15. **Neural Hawkes TEMPO**
+    *What:* Swap the simple forecaster for a tiny neural Hawkes (still bounded).
+    *Why:* Stronger anticipation → better pre-reservation.
+    *Where:* `budgeter/tempo.py` (alt backend), `budgeter/allocator.py`.
+    *Proof:* Allocation lead time ↑; overflow events ↓ during bursts.
+
+---
+
+## How to slot these in (order that pays fast)
+
+
+* Pareto FAE (#2), Conformal thresholds (#6), Trust-weighted coherence (#9).
+* Add drift alarms (#13).
+* Ship tests & replay A/B.
+
+
+
+* Attention Capsules (#3) + Fairness constraints (#4).
+* Habituation & Set-shifting (#8).
+* Structured probes (#14).
+
+
+* Hypergraph motifs (#7) + PDE field upgrade (#10).
+* Schema write-amplifier (#11).
+* Typed reflex preconditions (#12).
+
+
+
+* AutoHead induction (#5), Neural Hawkes TEMPO (#15), HTA (#1).
+
+---
+
+## Success dashboard (Atune-only)
+
+* **Regret\@compute** (7-day replay): ↓ ≥20% vs. baseline.
+* **Missed-critical / false-escalation**: <0.5% / <8%.
+* **Field coherence & schema lift**: both ↑ week-over-week.
+* **Drift MTTR** after distribution shift: ↓ ≥30%.
+* **Probe uplift** & **capsule completion rate**: both ↑.

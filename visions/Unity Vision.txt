@@ -1,0 +1,458 @@
+# Unity (Deliberation) — Hyper-Emergent, Audit-Perfect, Fail-Closed
+
+## 0) Design Goals (what “un-improvable” means here)
+
+* **Truth-seeking under governance:** Deliberation is evidence-weighted, norm-constrained, and replayable. No silent heuristics.
+* **Separation of concerns:** Unity **orchestrates** structured debate; **Synapse learns** (bandits, policies). Unity never trains/learns.
+* **Deterministic replay:** Every outcome is reconstructable from **RCU** (Rules, Code, Universe) snapshot + inputs + transcript.
+* **Safety-first posture:** Fail-closed defaults; explicit **switchboard gates** around anything with side-effects or background loops.
+* **Intelligence through composition:** Unity produces **high-grade signals/artifacts** (argument maps, rationales, risk/uncertainty) that feed Synapse (and Simula/Equor) rather than duplicating them.
+
+---
+
+## 1) High-Level Architecture
+
+**Unity’s core role:** Given a *DeliberationSpec* and context, convene a **Room** of specialized participants (models/roles/tools), run a **protocol** (e.g., Critique-and-Repair → Cross-Exam → Adjudication), produce **artifacts** (argument graph, verdict, dissent notes, uncertainty), and **log** everything with RCU.
+
+### 1.1 Modules & Singletons (directory + responsibilities)
+
+* `systems/unity/core/room/`
+
+  * `orchestrator.py` — **DeliberationManager** (singleton). Plans/executes sessions, owns protocol state machine.
+  * `participants.py` — Participant registry (human, model, tool-proxy), capabilities (read-only tools), role prompts.
+  * `protocols/` — Pluggable protocol runners (see §3).
+  * `argument_map.py` — Builds and exports argument DAG (claims, evidence, attacks, supports).
+  * `adjudicator.py` — Rule-aware aggregator (Bayesian/Dempster-Shafer voting + constitutional checks).
+  * `verdicts.py` — Verdict schemas, confidence, dissent, conditions, required follow-ups.
+
+* `systems/unity/core/io/`
+
+  * `bus.py` — Event publish/subscribe to `core.llm.bus` (non-blocking notifications).
+  * `clients.py` — `SynapseClient`, `SimulaClient` thin wrappers (strictly typed).
+  * `rcu.py` — RCU snapshot capture (via `systems.synapse.core.snapshots`).
+  * `audit.py` — Episode/decision logging and `log_conflict` integration.
+
+* `systems/unity/core/neo/`
+
+  * `graph_writes.py` — Driverless `cypher_query`, `add_node`, `add_rel` helpers for argument graphs, verdicts, and histories.
+
+* `systems/unity/schemas.py` — Pydantic V2 request/response models (DeliberationSpec, RoomConfig, Verdict, TranscriptChunk, etc.).
+
+* `api/endpoints/unity/`
+
+  * `deliberate.py` — POST `/unity/deliberate` (sync request/response).
+  * `open_room.py` — POST `/unity/room/start` (long-running/streaming option, gated).
+  * `artifacts.py` — GET endpoints for transcripts/argument maps by `episode_id`.
+
+* `core/utils/net_api.py` — Register `EcodiaOS_ENDPOINTS.UNITY_*` constants.
+
+* `systems/synk/core/switchboard/` — Use existing `gatekit.py` for **every** background loop.
+
+---
+
+## 2) Data & Graph Model (Neo4j: single source of truth)
+
+Driverless only (`core.utils.neo.cypher_query`, `add_node`, etc.). Core node/rel shapes:
+
+### 2.1 Nodes
+
+* `:Deliberation { id, episode_id, created_at, spec_hash, protocol, policy_context_ref }`
+* `:Claim { id, text, modality, created_at, source_ref, created_by }`
+* `:Evidence { id, kind, summary, uri?, checksum?, score, provenance }`
+* `:Attack { id, rationale, rule_refs[] }` (an attack on a claim/evidence)
+* `:Support { id, rationale, rule_refs[] }`
+* `:Verdict { id, outcome: "APPROVE"|"REJECT"|"NEEDS_WORK"|"NO_ACTION", confidence, uncertainty, constraints[], dissent_count }`
+* `:TranscriptChunk { id, role, content, turn, meta }`
+* `:ConstitutionRule { id, name, version, priority, text, category }` (managed by Equor; **read-only** here)
+
+### 2.2 Relationships
+
+* `(:Deliberation)-[:HAS_CLAIM]->(:Claim)`
+* `(:Claim)-[:SUPPORTED_BY]->(:Evidence|:Support)`
+* `(:Claim)-[:ATTACKED_BY]->(:Attack)`
+* `(:Evidence)-[:PROVENANCE]->(:TranscriptChunk)`
+* `(:Deliberation)-[:HAS_TRANSCRIPT]->(:TranscriptChunk)`
+* `(:Deliberation)-[:RESULTED_IN]->(:Verdict)`
+* `(:Verdict)-[:CONSTRAINED_BY]->(:ConstitutionRule)`
+
+### 2.3 RCU & Episodes
+
+* Every deliberation is bound to a **Synapse episode\_id**.
+* At session start & close, store **RCU snapshot refs** on `:Deliberation` & `:Verdict`.
+
+---
+
+## 3) Deliberation Protocols (research-grade, pluggable)
+
+Unity exposes a **protocol runner interface**; each protocol is a finite-state machine with strict IO contracts. All “smart choices” (strategy selection, arm selection, thresholds) **delegate** to Synapse `/tasks/select_arm`.
+
+**Core protocols to implement (all first-class):**
+
+1. **Critique-and-Repair (C\&R) with Cross-Exam**
+
+   * Phases: Proposal → Multi-critic rounds (targeted rubrics) → Repair → Cross-Exam (critics interrogate repairs) → Adjudication.
+   * Use *role-specialized panels* (e.g., Safety, Factuality, Performance, Cost, UX, Compliance).
+
+2. **Debate-with-Judge (Multi-Round, Tool-aided)**
+
+   * Structured affirmative vs. negative with timed rounds, evidence submission, and a **Rule-bound Adjudicator** that must cite ConstitutionRules (Equor-sourced) when overruling.
+
+3. **Delphi / Socratic Aggregation**
+
+   * Anonymous rounds → feedback → convergence; apply **Bayesian aggregation** on expert priors and calibration scores.
+
+4. **Self-Consistency + Argument Mining**
+
+   * Generate N independent solutions/rationales, mine common sub-arguments into a DAG, prefer **minimal hitting set** of assumptions.
+
+5. **Counterfactual Stress-Test**
+
+   * For top candidate: generate counterfactuals (threat models, failure modes), quantify **Expected Policy Regret** (computed by Synapse policy evaluators), gate on risk.
+
+6. **Red-Team Circuit**
+
+   * Adversarial role submits **specific exploits/edge cases**; accept only if mitigations are provably bound into policy/patch spec (checked by rule links).
+
+> Each protocol returns **(artifacts, verdict, dissent, follow-ups)**. Protocol selection + hyperparameters come from **Synapse**.
+
+---
+
+## 4) Core Execution Flow (end-to-end)
+
+1. **Ingress** (API):
+
+   * Receive `DeliberationSpec` (topic, desired outcome type, inputs, constraints, required artifacts, protocol\_hint?).
+   * Validate with Pydantic V2.
+
+2. **Episode Binding & RCU**:
+
+   * If `episode_id` missing, request one from Synapse (policy: `unity/session/start`).
+   * Capture initial RCU (via `systems.synapse.core.snapshots`).
+
+3. **Room Assembly**:
+
+   * Use **participants registry** to instantiate roles (model capabilities are declared, *not learned*).
+   * Tools are **read-only** unless explicitly gated.
+
+4. **Protocol Selection (delegate to Synapse)**:
+
+   * Construct `TaskContext` (topic, risks, stakes, prior verdicts, environment meta).
+   * Call `SynapseClient.select_arm("/tasks/select_arm")` → returns `protocol_id`, hyperparams, rubric set, stopping criteria.
+
+5. **Run Protocol** (FSM):
+
+   * Produce transcript chunks; build **argument DAG** incrementally.
+   * Call out to Synapse for any adaptive branching (e.g., “add a red-team round?”).
+   * For any code patch proposals produced by participants, **publish event** to bus (`unity.patch_proposed`) instead of applying; Simula handles empirical validation.
+
+6. **Adjudication**:
+
+   * Apply **Constitution** (Equor rules read-only). If ambiguous → **fail-closed**.
+   * Aggregate votes using **Bayesian model averaging** with calibration priors; compute uncertainty.
+
+7. **Verdict + Follow-ups**:
+
+   * `APPROVE` → produce Constraints + Preconditions (what must be true), *no actions are taken here*; bus event for downstream.
+   * `NEEDS_WORK` → attach **actionable deltas**; optionally schedule a narrower re-deliberation.
+   * `REJECT`/`NO_ACTION` → log rationale; bus event for halt.
+
+8. **Audit & Persist**:
+
+   * Write argument map, transcript, verdict to Neo (driverless).
+   * Capture closing **RCU snapshot**.
+   * Emit `unity.deliberation_completed` event with artifact refs.
+
+9. **Return** (sync response) with artifact IDs, verdict, confidence, uncertainty, dissent summary.
+
+---
+
+## 5) Safety, Governance, and Control
+
+* **Switchboard gates** around:
+
+  * Long-running/streaming rooms.
+  * Any tool that could mutate state or perform I/O beyond read-only (default off).
+  * Auto-re-deliberation loops.
+
+* **Fail-closed policy**:
+
+  * Ambiguous constitutional applicability → default **reject/no-action**.
+  * Consensus not reached under time/round cap → **NO\_ACTION** with escalation path.
+
+* **Conflict SDK**:
+
+  * Wrap every protocol phase; on unhandled exception → `log_conflict` (async), include episode\_id + minimal repro.
+
+* **Determinism knobs**:
+
+  * Record all model settings/hyperparams; where stochastic, store seeds and N-sample counts for self-consistency protocols.
+
+---
+
+## 6) APIs & Contracts (Pydantic V2)
+
+All paths registered in `core/utils/net_api.py::EcodiaOS_ENDPOINTS`.
+
+### 6.1 Key Schemas (outline)
+
+```python
+# systems/unity/schemas.py
+from pydantic import BaseModel, Field, ConfigDict
+from typing import List, Optional, Literal, Dict, Any
+
+class InputRef(BaseModel):
+    kind: Literal["text","doc","code","graph_ref","url","artifact_ref"]
+    value: str
+    meta: Dict[str, Any] = {}
+
+class DeliberationSpec(BaseModel):
+    topic: str
+    goal: Literal["assess","select","approve_patch","risk_review","policy_review","design_review"]
+    inputs: List[InputRef] = []
+    constraints: List[str] = []
+    protocol_hint: Optional[str] = None
+    episode_id: Optional[str] = None
+    urgency: Literal["low","normal","high"] = "normal"
+    require_artifacts: List[Literal["argument_map","transcript","verdict","dissent","rcu_snapshot"]] = ["verdict"]
+
+class VerdictModel(BaseModel):
+    outcome: Literal["APPROVE","REJECT","NEEDS_WORK","NO_ACTION"]
+    confidence: float = Field(ge=0, le=1)
+    uncertainty: float = Field(ge=0, le=1)
+    constraints: List[str] = []
+    dissent: Optional[str] = None
+    followups: List[str] = []
+    constitution_refs: List[str] = []  # Equor rule ids
+
+class DeliberationResponse(BaseModel):
+    episode_id: str
+    deliberation_id: str
+    verdict: VerdictModel
+    artifact_ids: Dict[str, str]  # {"argument_map":"neo:node:123", ...}
+```
+
+### 6.2 Endpoints
+
+* `POST EcodiaOS_ENDPOINTS.UNITY_DELIBERATE` (`/unity/deliberate`)
+
+  * body: `DeliberationSpec`
+  * returns: `DeliberationResponse`
+* `POST EcodiaOS_ENDPOINTS.UNITY_ROOM_START` (streaming, gated)
+
+  * returns room token + SSE/WebSocket URL for live transcripts
+* `GET EcodiaOS_ENDPOINTS.UNITY_ARTIFACTS/:deliberation_id`
+
+  * returns typed artifact refs (argument graph, transcript, verdict)
+
+> **All** policy/strategy choices are made via `SynapseClient.select_arm(TaskContext)`; Unity never embeds its own learner.
+
+---
+
+## 7) Integration Points (to Synapse, Simula, Equor, Event Bus)
+
+### 7.1 Synapse (authoritative brain)
+
+* **Standard Cognitive Request**
+  `TaskContext` (topic, stakes, risk profile, existing policies, environment) → `select_arm`
+
+  * Returns: `protocol_id`, role set, #rounds, stopping criteria, rubric list, voting rule, safety margins, retry logic.
+* **Policy Graph Interop**
+  Unity can propose *tasks* (e.g., “create PolicyArm for ‘Patch-Safety-Premerge’”) by emitting bus events; **Synapse** owns creation/learning.
+
+### 7.2 Simula (empirical validation & patch testing)
+
+* Unity **never** runs code/tests.
+
+  * On patch proposal inside deliberation, **publish** `unity.patch_proposed` with: patch diff ref, acceptance criteria extracted, risk notes.
+  * When Simula completes evaluation, Unity may be notified (`simula.evaluation_result`) → optional **re-deliberation** (gated) if result conflicts with prior assumptions.
+
+### 7.3 Equor (identity, constitution, ethos)
+
+* Unity reads Equor-managed **ConstitutionRules** and **IdentityFacets** (role prompts, norms).
+* Protocol runners must **cite rule ids** whenever a decision is blocked/overruled by constitution.
+* Equor can **update** rule versions; Unity persists which version applied via RCU.
+
+### 7.4 Event Bus (non-blocking)
+
+Key topics Unity publishes:
+
+* `unity.deliberation_started`
+* `unity.transcript_chunk`
+* `unity.argument_updated`
+* `unity.verdict_proposed`
+* `unity.verdict_finalized`
+* `unity.patch_proposed`
+* `unity.deliberation_completed`
+
+Subscribers include: Synapse (for learning signals), Simula (for patch eval), Observability, and Governance dashboards.
+
+---
+
+## 8) Argument Map & Adjudication (the “secret sauce”)
+
+### 8.1 Argument DAG construction
+
+* Normalize every statement into `{claim, support|attack, evidence_ref, rule_refs, creator, turn}`.
+* Deduplicate semantically identical claims using **embedding-based blocking** (*read-only* embedding tools) + string canonicalization.
+* Compute per-claim **credence** via:
+
+  * Evidence strength (source credibility, Simula eval outcomes),
+  * Attack severity (safety, spec violation),
+  * Rule weight (constitutional priorities),
+  * Panel calibration priors (from Synapse; Unity only **consumes**).
+
+### 8.2 Aggregation (policy-bound)
+
+* Default: **Bayesian model averaging** over panel votes with calibration priors.
+* Safety gate: **Lexicographic veto**—if any high-priority constitution rule is violated, **REJECT/NO\_ACTION** regardless of vote.
+* Uncertainty derives from variance across panels + coverage of required rubrics.
+
+---
+
+## 9) Protocol FSM Skeleton (illustrative)
+
+```python
+# systems/unity/core/protocols/base.py
+class ProtocolRunner(ABC):
+    def __init__(self, spec: DeliberationSpec, ctx: TaskContext, mgr: DeliberationManager): ...
+    async def run(self) -> ProtocolResult: ...
+```
+
+```python
+# Critique-and-Repair with Cross-Exam
+States: PROPOSE -> CRITIQUE[i] -> REPAIR[i] -> CROSS_EXAM -> ADJUDICATE -> CLOSE
+Stop when: Synapse stopping criteria met OR fail-closed triggers (time/round cap) OR adjudicator veto.
+```
+
+All model/tool calls are **async**; transcripts streamed to bus and persisted periodically.
+
+---
+
+## 10) Observability & Audit
+
+* **Audit log** entries:
+
+  * `episode_id`, `deliberation_id`, RCU start/end, protocol id/version, participants, seeds, model versions, Synapse arm used, gate states.
+* **Metrics** (export via bus):
+
+  * time-to-verdict, #rounds, critic density, attack/support ratio, dissent rate, safety-veto rate, uncertainty on approve vs reject, re-deliberation frequency after Simula results.
+* **Repro command**:
+
+  * Store a `replay_spec` blob (all inputs + protocol params + seeds). `/unity/replay/:id` (gated) can reconstruct the run.
+
+---
+
+## 11) Testing & Verification Plan
+
+* **Unit**: protocol FSM transitions, adjudicator math, rule veto paths, graph writes (driverless mocks), API schema validation.
+* **Property-based**: argument map invariants (no cycles, support/attack typing), fail-closed on ambiguous rules.
+* **Chaos**: inject malformed evidence, timeouts; assert `NO_ACTION` or clean `REJECT` with `log_conflict`.
+* **Replay**: sample runs must reproduce verdicts w/in epsilon confidence.
+* **Security**: tools run in read-only contexts; red-team protocol asserts no side-effects without gates enabled.
+
+---
+
+## 12) Performance & Scaling
+
+* **Async fan-out** for multi-critic rounds; bounded concurrency with back-pressure.
+* **Transcript chunking** to Neo in batches via driverless bulk ops.
+* **Argument map** in memory + periodic checkpoints; final write on CLOSE.
+* **Large inputs**: Unity requests **summarized evidence bundles** via Synapse tools; Unity never crawls the world on its own.
+
+---
+
+## 13) Example Driverless Graph Writes (outline)
+
+* `graph_writes.py` offers:
+
+  * `record_transcript_chunk(delib_id, chunk: TranscriptChunk)`
+  * `upsert_claim(delib_id, claim_text, created_by) -> claim_id`
+  * `link_support(claim_id, evidence_id, rationale, rule_refs)`
+  * `link_attack(claim_id, attack_id, rationale, rule_refs)`
+  * `finalize_verdict(delib_id, verdict: VerdictModel, constitution_ids, rcu_ref)`
+
+All call `cypher_query(...)` or `add_node(...)` helpers; **no** direct drivers.
+
+---
+
+## 14) Security & Permissions
+
+* **Role-based capabilities** on participants: e.g., “SafetyCritic” can read code/evidence and cite rules; cannot write anywhere.
+* **Tool registry** is read-only by default; mutating tools require explicit switchboard enable + policy allowlist by Synapse.
+* **Data egress**: redact PII in transcripts (reuse Unity logger redaction patterns).
+
+Unity H-Series (Deliberation)
+
+Each stage is additive. All adaptive/learned choices are delegated to Synapse via /tasks/select_arm. Unity never trains.
+
+H0 — Foundation / Replay Baseline
+
+Objective: Deterministic, auditable deliberation runs.
+
+Capabilities: DeliberationManager (singleton), Debate + C&R protocols, driverless graph writes, RCU snapshots, Pydantic schemas, fail-closed adjudicator.
+
+Safety gates: room start (gated), streaming (gated).
+
+Artifacts: transcript, verdict, argument DAG.
+
+Go/No-Go: Bit-exact replay on 20 seeded runs; 100% driverless coverage.
+
+H1 — Multi-Panel Critique & Adjudication
+
+Objective: Expert panels with rule-aware judging.
+
+Capabilities: role-specialized critics (Safety/Factuality/Cost/Compliance/UX), rubric packs from Synapse, rule-citing adjudicator (Equor rules read-only).
+
+Synapse: selects protocol + panels + stopping criteria.
+
+Metrics: dissent rate, rule-veto rate, uncertainty width.
+
+Go/No-Go: All vetoes cite rule IDs; uncertainty monotone ↓ with rounds.
+
+H2 — Bayesian Aggregation + Calibration Priors
+
+Objective: Principled verdicts under uncertainty.
+
+Capabilities: Bayesian model averaging of panel votes using calibration priors from Synapse; lexicographic safety veto.
+
+Metrics: Brier score vs. post-hoc ground truth (from Simula outcomes).
+
+Go/No-Go: Calibrated panels outperform uncalibrated ≥15% on held-out tasks.
+
+H3 — Cross-Exam + Counterfactual Stress-Test
+
+Objective: Attack-resilience before approval.
+
+Capabilities: Cross-exam state machine; counterfactual generation; Expected Policy Regret estimates (Synapse evaluators); red-team rounds.
+
+Event bus: unity.patch_proposed to Simula; simula.evaluation_result may trigger bounded re-deliberation (gated).
+
+Go/No-Go: ≥90% of seeded failure modes are surfaced pre-approval.
+
+H4 — Argument Mining & Minimal Hitting Sets
+
+Objective: Compress reasoning into stable cores.
+
+Capabilities: Self-consistency sampling; argument DAG dedup; compute minimal assumption sets supporting verdicts.
+
+Metrics: assumption set size, contradiction density.
+
+Go/No-Go: 30%+ reduction in assumptions with unchanged verdicts on replay.
+
+H5 — Meta-Deliberation & Policy Feedback
+
+Objective: Unity critiques Unity (safely).
+
+Capabilities: meta-critic that reviews protocol trajectories; proposes tasks (not policies) to Synapse to add/retire rubric packs or adjust caps.
+
+Safety: proposal publishing only; Synapse owns PolicyGraph changes.
+
+Go/No-Go: Demonstrated reduction of rework rate ≥20% across 100 sessions.
+
+H6 — Federated Consensus (Optional, gated)
+
+Objective: Multi-room consensus for high-stakes.
+
+Capabilities: parallel rooms with diverse configs; consensus protocol over verdicts; quorum + veto thresholds set by Synapse.
+
+Go/No-Go: No external effects; fail-closed on quorum lapse; end-to-end replay.

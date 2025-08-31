@@ -1,0 +1,147 @@
+**CRITICAL INSTRUCTIONS FOR CHATGPT** THESE DOCUMENTS ARE THE ABSOLUTE LOWEST STANDARD. ALWAYS AIM TO IMPLEMENT MORE THAN IS HERE TO ACHEIVE HIGHER COGNITION
+
+
+# PATCH: docs/evo/Evo\_Unimprovable\_Foundation.md  *(full-file drop-in, design spec — no code)*
+
+## 0) Charter (Scope & Non-Goals)
+
+**Scope:** Evo continuously metabolises unresolved **:Conflict** into high-quality, replayable **Evolution Proposals** with convergent evidence and explicit risk envelopes.
+**Non-Goals:** Evo does **not** (a) allocate compute budgets, (b) run online experiments, (c) select the winning proposal, or (d) enforce governance. Those are outside Evo. Evo prepares the dossier so others can decide.
+
+---
+
+## 1) First Principles (system invariants)
+
+1. **Spec-First or Spec-Make:** No fix without a specification. If none exists, Evo proposes/derives one before any repair (from traces, docs, or invariants).
+2. **Convergent Evidence:** Each proposal bundles orthogonal evidence types (tests, fuzzing signals, invariants/proofs, counterexamples, forecasts). No single metric can carry adoption.
+3. **Replayability:** Every artefact (inputs, seeds, envs, diffs) lives in a **Replay Capsule** with cryptographic IDs and a provenance ledger (WhyTrace-compatible).
+4. **Monotone Safety:** Proposals must never reduce satisfied invariants; if they trade constraints, the trade is explicit and machine-checkable.
+5. **Separation of Concerns:** Evo generates and evidences; external entities select, roll out, or veto.
+6. **Counterexample Harvesting:** Any failure yields a **Minimal Reproducer** that becomes a new **:Conflict** or strengthens specs.
+7. **Auditability by Construction:** A proposal is a signed dossier: what changed, why it helps, how we know, how to roll back, and how to re-establish the same verdict elsewhere.
+
+---
+
+## 2) Evo’s Internal Substrate (the data Evo thinks with)
+
+* **Conflict Graph:** Typed nodes (`failure`, `disagreement`, `followup`, `drift`, `perf_regression`, `safety_breach`) with severity, timestamps, embeddings, dependencies, and provenance.
+* **Hypothesis Set:** For a targeted slice of the graph, Evo spawns multiple **Hypotheses** (candidate changes and rationales).
+* **Evidence Bundle:** For each hypothesis, Evo accumulates structured evidence (see §5).
+* **Evolution Proposal (EP):** A curated, self-contained package: change set(s), delta-intent summary, spec impact table, risk envelope, rollback plan, capsule IDs, and open questions.
+* **Counterexample Vault:** Reduced failing cases linked back to conflicts to prevent regression amnesia.
+* **Provenance Ledger:** Hash-addressed, append-only trail (who/what/when/why), aligned to WhyTrace semantics.
+
+---
+
+## 3) The Evo Loop (phases)
+
+1. **Ingest:** Periodically sweep **:Conflict**; triage by severity/novelty/dependency structure.
+2. **Spec-First Phase:** If a conflict lacks formalised expectations, Evo synthesises or extracts a spec (pre/post, temporal, resource, interface, or policy-like constraints).
+3. **Hypothesis Factory:** Spawn diverse candidate changes (portfolio in §4), each with its rationale and expected impact surface.
+4. **Evidence Orchestration:** For each hypothesis, enumerate the **Evidence Suite** (tests, fuzzing, invariants/proofs, forecast/simulation, diff risk analysis) and collect results into a normalised vector + artefacts.
+5. **Dossier Assembly:** Merge related hypotheses when they form a coherent patchset; articulate **theory-of-change** graphs, confidence intervals/limits, and explicit unknowns.
+6. **Handover:** Emit **Evolution Proposals** for external selection/governance. Track downstream verdicts to learn which evidences were decisive (telemetry only; no in-Evo policy learning).
+
+---
+
+## 4) Hypothesis Factory (diverse generators; Evo’s “creativity”)
+
+> Evo carries a **portfolio** of generation mechanisms; it can run one, many, or all. Results are parallel and non-binding.
+
+* **Symbolic Repair & Synthesis:** Program sketching / constraint-guided synthesis to repair localised logic while satisfying asserted contracts.
+* **Evolutionary/Mutation Repair:** Intent-preserving mutations with selection pressure from oracles (augmented by property tests to avoid overfitting).
+* **AST-Aware Refactors:** Structure-preserving edits that reduce technical debt, improve interface clarity, or remove code smells implicated in conflicts.
+* **Spec Mining Before Fixing:** Behavioural invariant mining (value invariants, protocol orderings, resource bounds) from traces/logs to build/strengthen specs, then derive fixes.
+* **Identity/Behaviour Proposals:** When conflicts stem from model/identity drift or brittle behaviours, Evo proposes **behavioural deltas** and the probes to evaluate them (example prompts, expected counters, regression grids).
+* **Micro-Kernel Optimisation:** For perf conflicts, propose micro-optimised variants for hot paths, with correctness shells derived from specs and micro-bench artefacts.
+* **Configuration/Topology Changes:** Non-code changes (timeouts, retries, caching, batching, routing) with predicted impact and back-pressure safety notes.
+
+> Each hypothesis must declare: **scope of change**, **assumed invariants**, **anticipated gains**, **blast radius**, and **rollback triggers**.
+
+---
+
+## 5) Evidence & Verification (what constitutes “known”)
+
+Evo standardises evidence into a **convergent bundle**; weights/decisions are not Evo’s concern, but **completeness and quality** are.
+
+* **Unit/Integration & Property-Based Tests:** Baseline regression + generative checks over input spaces.
+* **Coverage-Guided Fuzzing:** Crash/edge discovery with coverage deltas and stability stats.
+* **Invariants & Contracts:** Pre/post/resource/temporal obligations evaluated against candidate changes; counterexamples are harvested.
+* **Protocol/Workflow Checks:** For multi-step behaviours, simulate or statically check that safety/progress properties remain intact (e.g., deadlock freedom, bounded retries, monotone state transitions).
+* **Forecast/Backtest:** Offline, time-shifted replay against historical traces/logs to estimate impact bounds.
+* **Diff Risk Analysis:** Semantic diffing (AST/control-flow) to flag risky edit patterns; maps to “areas to test harder.”
+* **Rollback Plan Validity:** Evidence that the proposed rollback is complete, fast, and side-effect free (dry-run artefacts, dependency diagrams).
+
+All artefacts are packed into the **Replay Capsule** with fixed seeds, toolchain/version pins, and environment manifests.
+
+---
+
+## 6) Evolution Proposal (EP) — canonical dossier shape
+
+1. **Executive Summary:** Conflict set addressed, rationale, crisp theory-of-change, expected measurable deltas.
+2. **Change Set(s):** Diffs/config deltas/behavioural prompts; intent captured in natural language and machine-readable hints.
+3. **Spec Impact Table:** For each obligation: {pre→post status, proof/evidence refs, counterexamples (if any), mitigations}.
+4. **Evidence Bundle:** Normalised vector + artefacts (tests/fuzzing/invariants/forecasts).
+5. **Risk Envelope:** Blast radius mapping, known unknowns, hazard analysis, rollback plan.
+6. **Replay Capsule IDs:** Hashes and locations for capsule(s); single-command re-execution notes.
+7. **Open Questions:** What Evo could not establish; assumptions that deserve scrutiny.
+8. **Telemetry Hooks:** What to watch post-adoption (metrics/events), without prescribing thresholds.
+
+---
+
+## 7) World-First Cognitive Extensions (Evo-native, selection-agnostic)
+
+* **Dialectical Conflict Mining:** Evo actively manufactures **tension tests** (spec vs mined-spec, latency vs consistency, safety vs capability) to surface hidden contradictions and generate new **:Conflict** with high learning value.
+* **Spec Tournaments:** Compete multiple candidate specs for the same module (strict vs permissive vs adaptive) and show which specs best explain traces while preserving safety—before proposing code changes.
+* **Local Theory-of-Change Graphs:** For each EP, Evo emits a small causal graph tracing “edit → mechanism → metric” with falsifiable probes, improving transparency and downstream decision quality.
+* **Genome Maps of the Codebase:** Evo maintains a map of **mutation-sensitive loci** (files/regions where small changes yield large behavioural shifts) to focus evidence budgets and craft safer patches.
+* **Counterexample Distiller:** Minimises failing inputs to their essence; clusters them into **Conflict Families** to reveal systemic issues beyond any single bug.
+* **Exploratory Mode with Safe Pacing:** Evo can generate **high-risk, high-reward** EPs pre-flagged as “exploratory” with oversized safety envelopes and richer capsules, enabling research-grade improvements without changing selection rules.
+
+---
+
+## 8) Metrics about Evo (not system-wide KPIs)
+
+* **Proposal Quality Index:** Coverage of evidence modalities, spec delta balance, capsule completeness.
+* **Conflict Burn-Down (Quality-Adjusted):** Weighted by severity/recurrence rather than raw counts.
+* **Counterexample Yield:** % of failures distilled to minimal reproducers; average size reduction.
+* **Specification Coverage:** Fraction of hot paths and interfaces with explicit obligations.
+* **Replay Fidelity:** Rate of bit-for-bit replays across environments.
+* **Time-to-Dossier:** Latency from **:Conflict** to first EP ready for external review.
+
+---
+
+## 9) Operational Modes
+
+* **Steady-State:** Continuous scanning; small batches; priority to severe or highly connected conflicts.
+* **Surge:** When conflict volume spikes, Evo narrows to spec-making and counterexample distillation to stabilise the substrate first.
+* **Sabbatical:** Periodic windows dedicated to refactors/spec hardening without tying to fresh conflicts (technical-debt reduction EPs).
+
+---
+
+## 10) Risks & Mitigations (within Evo’s remit)
+
+* **Overfitting to Tests:** Use property-based and fuzzing evidence; require spec progression or neutrality.
+* **Spec Drift:** Store mined specs beside human ones; mark confidence and provenance; never silently replace.
+* **Non-Determinism:** Capsule everything (inputs, seeds, env manifests); reject evidence lacking full replay metadata.
+* **Unknown Blast Radius:** Demand dependency diagrams and rollback rehearsals inside the EP.
+
+---
+
+## 11) Example (single-page narrative)
+
+* **Conflict:** Intermittent timeout on a streaming endpoint under bursty load.
+* **Spec-First:** Evo derives a temporal/resource spec (bounded queue growth, backpressure within N ms).
+* **Hypotheses:** (a) introduce adaptive batching, (b) reorder retry/backoff sequence, (c) micro-optimise codec.
+* **Evidence:** Tests for queue invariants, fuzzing with burst patterns, temporal checks on backpressure, forecast using historical burst logs, diff-risk on concurrency edits.
+* **EP:** Presents (a)+(c) combined; shows invariants strengthened, latency p50/p95 forecast shifts with CI, and full rollback script + capsule IDs.
+* **Handover:** External deciders choose if/when to roll out; Evo archives verdict and counterexamples.
+
+---
+
+## 12) What Evo Emits (and only these)
+
+* **Evolution Proposals** (EPs) with replayable evidence.
+* **Counterexamples** (reproducers) and **Specs** (derived or hardened).
+* **Telemetry** about proposal formation quality and replay fidelity.
+  Evo does **not** emit decisions, policies, or live toggles.

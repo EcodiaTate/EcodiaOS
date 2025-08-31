@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AtuneSchemaNamingOutput",
+  "type": "object",
+  "required": ["schema_name"],
+  "properties": {
+    "schema_name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "A short, abstract, conceptual name (e.g., 'API_Failure_Alerts')."
+    }
+  },
+  "additionalProperties": false}

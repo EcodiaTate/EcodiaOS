@@ -1,0 +1,4 @@
+# file: D:\EcodiaOS\systems\unity\core\room\actions.py
+# hypothesis_version: 6.137.1
+
+[1.0, 'abstain', 'action_taken', 'allow_unresolved', 'args', 'auto', 'ballot', 'ballots', 'choice', 'confidence', 'consensus', 'counts', 'error', 'event_id', 'fallback_action', 'majority', 'margin', 'message', 'min_votes', 'not found', 'policy', 'proposal', 'ranked', 'raw', 'reasoning', 'selected', 'session_id', 'skipped', 'summary', 'synthesis_result', 'synthesis', 'timeout', 'timeout_sec', 'tool', 'tool_executed', 'tool_execution', 'tool_not_found', 'tool_timeout', 'total_votes', 'type', 'used_rule', 'vote', 'vote_cast', 'vote_result_summary', 'vote_timeout', 'weight', 'winner']

@@ -1,0 +1,237 @@
+# EcodiaOS Switchboard Gate Command Reference
+# Generated on: 2025-08-22T21:33:48.108092
+# Use these curl commands to manage feature flags.
+
+#-------------------------------------------------
+# Key: equor.audit.invariants.enabled
+#-------------------------------------------------
+
+# DISABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"equor.audit.invariants.enabled","type":"boolean","value":"false","reason":"Manual dev override"}'
+
+# ENABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"equor.audit.invariants.enabled","type":"boolean","value":"true","reason":"Manual dev override"}'
+
+# VIEW STATUS (assumes GET /flags/{key} endpoint):
+curl -X GET http://localhost:8000/synk/switchboard/flags/equor.audit.invariants.enabled
+
+#-------------------------------------------------
+# Key: equor.constitution.update.enabled
+#-------------------------------------------------
+
+# DISABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"equor.constitution.update.enabled","type":"boolean","value":"false","reason":"Manual dev override"}'
+
+# ENABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"equor.constitution.update.enabled","type":"boolean","value":"true","reason":"Manual dev override"}'
+
+# VIEW STATUS (assumes GET /flags/{key} endpoint):
+curl -X GET http://localhost:8000/synk/switchboard/flags/equor.constitution.update.enabled
+
+#-------------------------------------------------
+# Key: equor.identity.declare.enabled
+#-------------------------------------------------
+
+# DISABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"equor.identity.declare.enabled","type":"boolean","value":"false","reason":"Manual dev override"}'
+
+# ENABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"equor.identity.declare.enabled","type":"boolean","value":"true","reason":"Manual dev override"}'
+
+# VIEW STATUS (assumes GET /flags/{key} endpoint):
+curl -X GET http://localhost:8000/synk/switchboard/flags/equor.identity.declare.enabled
+
+#-------------------------------------------------
+# Key: immune.conflict_ingestor.enabled
+#-------------------------------------------------
+
+# DISABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"immune.conflict_ingestor.enabled","type":"boolean","value":"false","reason":"Manual dev override"}'
+
+# ENABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"immune.conflict_ingestor.enabled","type":"boolean","value":"true","reason":"Manual dev override"}'
+
+# VIEW STATUS (assumes GET /flags/{key} endpoint):
+curl -X GET http://localhost:8000/synk/switchboard/flags/immune.conflict_ingestor.enabled
+
+#-------------------------------------------------
+# Key: immune.enabled
+#-------------------------------------------------
+
+# DISABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"immune.enabled","type":"boolean","value":"false","reason":"Manual dev override"}'
+
+# ENABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"immune.enabled","type":"boolean","value":"true","reason":"Manual dev override"}'
+
+# VIEW STATUS (assumes GET /flags/{key} endpoint):
+curl -X GET http://localhost:8000/synk/switchboard/flags/immune.enabled
+
+#-------------------------------------------------
+# Key: simula.codegen.enabled
+#-------------------------------------------------
+
+# DISABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"simula.codegen.enabled","type":"boolean","value":"false","reason":"Manual dev override"}'
+
+# ENABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"simula.codegen.enabled","type":"boolean","value":"true","reason":"Manual dev override"}'
+
+# VIEW STATUS (assumes GET /flags/{key} endpoint):
+curl -X GET http://localhost:8000/synk/switchboard/flags/simula.codegen.enabled
+
+#-------------------------------------------------
+# Key: synapse.adversary.enabled
+#-------------------------------------------------
+
+# DISABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"synapse.adversary.enabled","type":"boolean","value":"false","reason":"Manual dev override"}'
+
+# ENABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"synapse.adversary.enabled","type":"boolean","value":"true","reason":"Manual dev override"}'
+
+# VIEW STATUS (assumes GET /flags/{key} endpoint):
+curl -X GET http://localhost:8000/synk/switchboard/flags/synapse.adversary.enabled
+
+#-------------------------------------------------
+# Key: synapse.adversary.interval_sec
+#-------------------------------------------------
+
+# DISABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"synapse.adversary.interval_sec","type":"boolean","value":"false","reason":"Manual dev override"}'
+
+# ENABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"synapse.adversary.interval_sec","type":"boolean","value":"true","reason":"Manual dev override"}'
+
+# VIEW STATUS (assumes GET /flags/{key} endpoint):
+curl -X GET http://localhost:8000/synk/switchboard/flags/synapse.adversary.interval_sec
+
+#-------------------------------------------------
+# Key: synapse.genesis.enabled
+#-------------------------------------------------
+
+# DISABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"synapse.genesis.enabled","type":"boolean","value":"false","reason":"Manual dev override"}'
+
+# ENABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"synapse.genesis.enabled","type":"boolean","value":"true","reason":"Manual dev override"}'
+
+# VIEW STATUS (assumes GET /flags/{key} endpoint):
+curl -X GET http://localhost:8000/synk/switchboard/flags/synapse.genesis.enabled
+
+#-------------------------------------------------
+# Key: synapse.genesis.interval_sec
+#-------------------------------------------------
+
+# DISABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"synapse.genesis.interval_sec","type":"boolean","value":"false","reason":"Manual dev override"}'
+
+# ENABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"synapse.genesis.interval_sec","type":"boolean","value":"true","reason":"Manual dev override"}'
+
+# VIEW STATUS (assumes GET /flags/{key} endpoint):
+curl -X GET http://localhost:8000/synk/switchboard/flags/synapse.genesis.interval_sec
+
+#-------------------------------------------------
+# Key: synapse.meta_controller.interval_sec
+#-------------------------------------------------
+
+# DISABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"synapse.meta_controller.interval_sec","type":"boolean","value":"false","reason":"Manual dev override"}'
+
+# ENABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"synapse.meta_controller.interval_sec","type":"boolean","value":"true","reason":"Manual dev override"}'
+
+# VIEW STATUS (assumes GET /flags/{key} endpoint):
+curl -X GET http://localhost:8000/synk/switchboard/flags/synapse.meta_controller.interval_sec
+
+#-------------------------------------------------
+# Key: synapse.offline_learning.enabled
+#-------------------------------------------------
+
+# DISABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"synapse.offline_learning.enabled","type":"boolean","value":"false","reason":"Manual dev override"}'
+
+# ENABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"synapse.offline_learning.enabled","type":"boolean","value":"true","reason":"Manual dev override"}'
+
+# VIEW STATUS (assumes GET /flags/{key} endpoint):
+curl -X GET http://localhost:8000/synk/switchboard/flags/synapse.offline_learning.enabled
+
+#-------------------------------------------------
+# Key: synapse.offline_learning.interval_sec
+#-------------------------------------------------
+
+# DISABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"synapse.offline_learning.interval_sec","type":"boolean","value":"false","reason":"Manual dev override"}'
+
+# ENABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"synapse.offline_learning.interval_sec","type":"boolean","value":"true","reason":"Manual dev override"}'
+
+# VIEW STATUS (assumes GET /flags/{key} endpoint):
+curl -X GET http://localhost:8000/synk/switchboard/flags/synapse.offline_learning.interval_sec
+
+#-------------------------------------------------
+# Key: synapse.option_mining.enabled
+#-------------------------------------------------
+
+# DISABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"synapse.option_mining.enabled","type":"boolean","value":"false","reason":"Manual dev override"}'
+
+# ENABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"synapse.option_mining.enabled","type":"boolean","value":"true","reason":"Manual dev override"}'
+
+# VIEW STATUS (assumes GET /flags/{key} endpoint):
+curl -X GET http://localhost:8000/synk/switchboard/flags/synapse.option_mining.enabled
+
+#-------------------------------------------------
+# Key: synapse.option_mining.interval_sec
+#-------------------------------------------------
+
+# DISABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"synapse.option_mining.interval_sec","type":"boolean","value":"false","reason":"Manual dev override"}'
+
+# ENABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"synapse.option_mining.interval_sec","type":"boolean","value":"true","reason":"Manual dev override"}'
+
+# VIEW STATUS (assumes GET /flags/{key} endpoint):
+curl -X GET http://localhost:8000/synk/switchboard/flags/synapse.option_mining.interval_sec
+
+#-------------------------------------------------
+# Key: synapse.sentinel_training.enabled
+#-------------------------------------------------
+
+# DISABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"synapse.sentinel_training.enabled","type":"boolean","value":"false","reason":"Manual dev override"}'
+
+# ENABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"synapse.sentinel_training.enabled","type":"boolean","value":"true","reason":"Manual dev override"}'
+
+# VIEW STATUS (assumes GET /flags/{key} endpoint):
+curl -X GET http://localhost:8000/synk/switchboard/flags/synapse.sentinel_training.enabled
+
+#-------------------------------------------------
+# Key: synapse.sentinel_training.interval_sec
+#-------------------------------------------------
+
+# DISABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"synapse.sentinel_training.interval_sec","type":"boolean","value":"false","reason":"Manual dev override"}'
+
+# ENABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"synapse.sentinel_training.interval_sec","type":"boolean","value":"true","reason":"Manual dev override"}'
+
+# VIEW STATUS (assumes GET /flags/{key} endpoint):
+curl -X GET http://localhost:8000/synk/switchboard/flags/synapse.sentinel_training.interval_sec
+
+#-------------------------------------------------
+# Key: synapse.train.enabled
+#-------------------------------------------------
+
+# DISABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"synapse.train.enabled","type":"boolean","value":"false","reason":"Manual dev override"}'
+
+# ENABLE:
+curl -X PUT 'http://localhost:8000/synk/switchboard/flags' -H "Content-Type: application/json" --data-binary '{"key":"synapse.train.enabled","type":"boolean","value":"true","reason":"Manual dev override"}'
+
+# VIEW STATUS (assumes GET /flags/{key} endpoint):
+curl -X GET http://localhost:8000/synk/switchboard/flags/synapse.train.enabled

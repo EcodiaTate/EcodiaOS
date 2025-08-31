@@ -1,0 +1,4 @@
+# file: D:\EcodiaOS\core\llm\utils.py
+# hypothesis_version: 6.137.1
+
+[0.0, 0.5, 0.7, 0.8, 1.0, 200, 220, 4000, '[', '[A-Za-z]+', 'agent', 'assistant', 'baseline_metrics', 'brand_consistency', 'clamp', 'coerce_str', 'combine_with_system', 'content', 'detect_json', 'estimate_tokens', 'facet_keys', 'filter_kwargs', 'hate', 'helpfulness', 'idiot', 'kill', 'length_fit', 'length_fit_score', 'normalise_messages', 'normalize_messages', 'redact_secrets', 'role', 'safe_truncate', 'scope', 'stupid', 'system', 'toxicity', 'toxicity_hint', 'ugly', 'user', '{', '…']

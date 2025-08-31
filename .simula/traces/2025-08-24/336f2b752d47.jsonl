@@ -1,0 +1,2 @@
+{"type": "job_start", "job": {"agent": "simula_v12_governed", "goal": "Add a hello file"}, "ts": "2025-08-24T14:41:25.625490+00:00"}
+{"type": "job_end", "status": "error", "duration_ms": 390705.589049001, "extra": {"exc": "TypeError(\"SynapseClient.log_outcome() got an unexpected keyword argument 'outcome'\")"}, "ts": "2025-08-24T14:47:56.246243+00:00"}

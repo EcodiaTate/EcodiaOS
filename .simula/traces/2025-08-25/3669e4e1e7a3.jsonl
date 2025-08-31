@@ -1,0 +1,2 @@
+{"type": "job_start", "job": {"agent": "simula_v12_governed", "goal": "Add smoke test + prepare CI; ensure pytest passes"}, "ts": "2025-08-25T04:26:11.875607+00:00"}
+{"type": "job_end", "status": "error", "duration_ms": 7276.062277000165, "extra": {"exc": "ValueError('Invalid target at index 0: expected a mapping (dictionary).')"}, "ts": "2025-08-25T04:26:19.151668+00:00"}

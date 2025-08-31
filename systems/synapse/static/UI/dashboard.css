@@ -1,0 +1,17 @@
+/* Basic styling for the dashboard */
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; }
+header { display: flex; align-items: center; justify-content: space-between; background-color: #1e1e1e; padding: 1rem 2rem; border-bottom: 1px solid #333; }
+h1 { margin: 0; }
+.card { background-color: #1e1e1e; border-radius: 8px; margin: 1.5rem; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+h2 { margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 0.5rem; }
+#stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; }
+.stat-item { text-align: center; background-color: #2a2a2a; padding: 1rem; border-radius: 6px; }
+.stat-item h4 { margin: 0 0 0.5rem 0; color: #aaa; }
+.stat-item p { margin: 0; font-size: 1.5rem; font-weight: bold; }
+#qd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; }
+.niche-item { background: #2a2a2a; padding: 1rem; border-radius: 6px; font-size: 0.9rem; }
+.niche-item strong { color: #4e9af1; }
+.search-bar { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+#episode-id-input { flex-grow: 1; background: #2a2a2a; border: 1px solid #444; color: #e0e0e0; padding: 0.5rem; border-radius: 4px; }
+#fetch-episode-btn { background-color: #4e9af1; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
+#episode-trace-output { background-color: #0d0d0d; padding: 1rem; border-radius: 4px; max-height: 500px; overflow: auto; white-space: pre-wrap; word-wrap: break-word; }

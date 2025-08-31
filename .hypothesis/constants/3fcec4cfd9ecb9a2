@@ -1,0 +1,4 @@
+# file: D:\EcodiaOS\systems\unity\core\room\flow.py
+# hypothesis_version: 6.137.1
+
+[0.25, 0.75, 0.9, 'Unity', 'ai_hiring', 'args', 'attempt', 'call_id', 'calls', 'cluster_context', 'cluster_hits', 'cluster_keys', 'confidence', 'conflict', 'conflict_escalated', 'consensus', 'consensus_resolved', 'decision', 'description', 'efficiency', 'empty_query', 'error', 'escalate_conflict', 'escalated', 'ethics', 'event_id', 'execute_tool', 'judge_decision', 'key', 'medium', 'memory_search', 'merged', 'no_cluster_keys', 'no_tool_name', 'outcome', 'parse_fallback', 'per_cluster', 'proposal', 'query', 'reason', 'resolved', 'result', 'results', 'running', 'severity', 'status', 'synthesis', 'synthesis_loop', 'synthesis_result', 'synthesis', 'tags', 'tool', 'tool_execute_skipped', 'tool_executed', 'tool_name', 'tool_search', 'tool_search_results', 'tool_search_skipped', 'tools', 'type', 'unknown', 'unknown_action', 'unresolved', 'vote', 'vote_result']

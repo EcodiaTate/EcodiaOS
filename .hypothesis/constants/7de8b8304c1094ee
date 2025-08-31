@@ -1,0 +1,4 @@
+# file: D:\EcodiaOS\systems\unity\core\room\judge.py
+# hypothesis_version: 6.137.1
+
+[0.2, 120, 512, 1000, 1024, 'INSTRUCTION_MESSAGE', 'No session context.', 'Unity', '_metrics', 'analytical', 'call_id', 'calls', 'cluster_context', 'cluster_hits', 'cluster_keys', 'content', 'context', 'critical', 'decision', 'decision_type', 'description', 'elapsed_ms', 'escalate_conflict', 'execute_tool', 'has_cluster_keys', 'high', 'invalid', 'json_parse_ok', 'judge', 'judge_dict', 'key', 'low', 'medium', 'memory_search', 'metrics', 'not_a_dict', 'ok', 'optional', 'outcome', 'parse_fallback', 'per_cluster', 'proposal', 'query', 'raw_text', 'reason', 'required', 'result', 'role', 'salience_reasons', 'score', 'scores', 'severity', 'size', 'status', 'summary', 'synthesis', 'system', 'tags', 'text', 'tool_name', 'tool_search', 'type', 'unity', 'unity_judge', 'unity_judge_decision', 'unityroom', 'unityroom_judge', 'unresolved', 'user', 'vote', '…', '📊 Salience Scores:']

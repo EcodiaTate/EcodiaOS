@@ -1,0 +1,4 @@
+# file: D:\EcodiaOS\systems\unity\core\room\consensus.py
+# hypothesis_version: 6.137.1
+
+[0.0, 0.5, 1.0, 1000, 'abstain', 'agent_priority', 'agent_priority→lex', 'choice', 'confidence', 'consensus_resolved', 'counts', 'fallback:', 'fallback_resolved', 'highest_confidence', 'highest_weight', 'highest_weight→lex', 'insufficient_votes', 'irv', 'lex', 'majority', 'none', 'plurality', 'proceed_unresolved', 'random', 'ranked', 'supermajority', 'synthesis', 'total', 'unanimity', 'weight']

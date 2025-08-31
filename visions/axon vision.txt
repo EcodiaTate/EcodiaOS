@@ -1,0 +1,345 @@
+Tate — let’s level this up to **Axon+++** so it *matches and amplifies* your Atune+++ architecture (FAE, MAG, SFKG, Reflex, TEMPO, Attention Market) with zero placeholders and research-grade loops for **hyper-emergent behavior**.&#x20;
+
+---
+
+# Axon+++ — Bidirectional Interface & Experimental Substrate (PR Skeleton)
+
+## 0) North-star (co-designed with Atune+++)
+
+Axon is the **closed-loop world interface**: sense → compress → hypothesize → act → measure → learn.
+It exposes the exact extension points Atune+++ expects (FAE planner inputs, MAG gates, SFKG field deposition, Reflex fast lanes, TEMPO-aware budgeting, and the Attention Market allocator).&#x20;
+
+---
+
+## 1) Hard Invariants (Axon ↔ Atune)
+
+* **Single ingress/egress contract.** All world I/O flows through Axon; Atune is the sole prioritizer and budget setter.
+* **Deterministic replay.** Every event/action has a reproducible **replay capsule** (bytes, timings, driver artifact, environment hash).
+* **Causal accounting.** Each action logs **counterfactual uplift** via Simula twins before/after; learning signals feed Synapse.
+* **Risk-first governance.** All writes require **Equor capability tokens**; **Unity** gates high-stakes intents.
+* **No inert stubs.** Degraded paths are *functional* (bounded heuristics, seeded RNGs), never no-ops.
+
+---
+
+## 2) Repo Skeleton (mirrors Atune+++ shape)
+
+```
+axon/
+  main.py
+  api/
+    routes.py                  # /axon/sense, /axon/act, /axon/telemetry
+  io/
+    contracts.py               # AxonEvent, AxonIntent, ActionResult, Claim
+    codecs.py                  # MIME canonicalization, DOM→text
+    taint.py                   # taint labels & propagation
+  mesh/                        # Driver runtime
+    sdk.py                     # Driver interface: describe, pull, push, self_test, repro_bundle
+    sandbox.py                 # Firecracker/Wasm micro-VM, syscall caps, quotas
+    registry.py                # Driver discovery, versioning, rollout, health
+  probe/
+    craft.py                   # ProbeCraft: API doc → capability graph → driver blueprint
+    planner.py                 # EIG candidate generation (with Atune FAE hints)
+  journal/
+    mej.py                     # Merkle Event Journal (BLAKE3 + cross-links)
+    capsules.py                # replay packs (action/event)
+  safety/
+    caps.py                    # Equor tokens (semantic predicates)
+    reflex.py                  # Reflex arcs (fast safety lane; same catalog format as Atune)
+    triangulate.py             # k-of-n corroboration & contradiction flags
+    quarantine.py              # injection & payload hardening
+  sched/
+    eig.py                     # Expected Information Gain scheduler (risk- & cost-aware)
+    budgets.py                 # Atune-driven budgets, TEMPO hooks, Attention Market bridge
+  adapters/
+    atune.py                   # salience hints in/out, SFKG deposition
+    synapse.py                 # plan hooks, learners, counters
+    unity.py                   # review thresholds
+    equor.py                   # cap mint/revoke, affect signal ingress
+    simula.py                  # twin exec for counterfactuals & driver synthesis/eval
+  obs/
+    ledger.py                  # structured JSONL; MEJ anchors; driver scorecards
+    dashboards.py              # live barcodes, contradiction spikes, cap usage
+  tests/
+    test_end_to_end.py
+    test_driver_caps.py
+    test_mej_replay.py
+    test_quarantine_reflex.py
+    test_eig_market_loop.py
+```
+
+---
+
+## 3) Config (YAML sketch)
+
+```yaml
+seed: 1337
+service: { host: 0.0.0.0, port: 8041, log_level: INFO }
+transport: { bus: nats, subject_prefix: axon }
+budgeter:
+  pool_ms: 120000
+  fairness_min_share: 0.10         # aligns with Atune Attention Market
+  tempo_reserve_h: 6                # TEMPO horizon
+sandbox:
+  kind: firecracker                 # or wasm
+  cpu: "2", mem: "4g", net: "bridge", fs: "ro"
+journal: { shard_by: [day, source], hash: blake3 }
+safety:
+  reflex_catalog: axon/safety/reflex.yaml
+  k_corroborate: 3
+  taint_strict: true
+caps:
+  token_ttl_s: 900
+  predicates_enabled: true          # semantic constraints
+probe:
+  base_cost_ms: 40
+  learners: { small_arm: synapse-policy-hint-lite }
+```
+
+(Granular knobs map 1-for-1 to Atune’s FAE/MAG/SFKG/TEMPO/Market controls. )
+
+---
+
+## 4) Canonical Contracts (Pydantic v2 shapes)
+
+```python
+class AxonEvent(BaseModel):
+    event_id: str; t_observed: float; source: str; event_type: str
+    modality: Literal["text","html","json","audio","video","image","tabular","graph","binary"]
+    payload_ref: str|None; parsed: dict|None; embeddings: dict[str, list[float]]
+    provenance: dict  # driver_id, version, checksums, chain_of_custody
+    salience_hints: dict  # novelty, anomaly, mission, risk, info_gain, urgency, coherence, controversy
+    quality: dict; triangulation: dict; cost_ms: int|None; cost_usd: float|None
+
+class AxonIntent(BaseModel):
+    intent_id: str; purpose: str; target_capability: str; params: dict
+    risk_tier: Literal["low","mid","high","extreme"]; constraints: dict
+    policy_trace: dict  # synapse_plan_hash, unity_verdict, equor_cap_token
+    rollback_contract: dict  # how to undo/neutralize
+
+class ActionResult(BaseModel):
+    intent_id: str; status: Literal["ok","fail","blocked"]; outputs: dict
+    side_effects: dict; counterfactual_metrics: dict; follow_up_events: list[str]
+```
+
+---
+
+## 5) Two Critical Loops
+
+### 5.1 Sense Loop (fast, safe, rich)
+
+1. **Driver.pull → AxonEvent** (quarantine + taint + codecs).
+2. **Atune heads:** Axon attaches embeddings & **salience hints**; Atune computes FAE/MAG gating and returns budgets.&#x20;
+3. **SFKG deposition:** Axon deposits energy to Atune’s field for diffusion; Atune returns hotspots for probe focus.&#x20;
+4. **Reflex arcs:** If risk≥θ and rule matches → instant actions (redact/quarantine/notify/escalate) with MEJ anchors.&#x20;
+
+### 5.2 Act Loop (counterfactually coupled)
+
+1. **Plan → Intent:** Synapse/Atune selects act; Axon validates **Equor cap token** (semantic predicates).
+2. **Twin first:** Simula runs a **counterfactual twin**; Axon computes expected uplift & risk deltas.
+3. **Execute → Result:** Driver.push in sandbox; record **ActionResult** + follow-up **AxonEvents**.
+4. **Learn:** Send uplift + reliability to Synapse; adjust EIG/bandits; Atune’s market reallocates attention.
+
+---
+
+## 6) EIG Scheduler (bridged to FAE/Market/TEMPO)
+
+* **FAE-compatible objective:** `FAE = U + λ_epi·IG − λ_risk·risk − λ_cost·cost`, \*\*bid = FAE / cost\`. Atune’s market allocates pool\_ms; Axon enforces spend and returns realized EIG for each quanta.&#x20;
+* **TEMPO reserve:** carve-out attention for predicted bursts; unused reserve returns to the pool late-cycle.&#x20;
+
+---
+
+## 7) Mesh (Driver Runtime) — research-grade
+
+* **Sandbox:** Firecracker or Wasm with syscall whitelist, eBPF-style I/O limits, rate ceilings, spend ceilings.
+* **SDK (deterministic):**
+
+  * `describe() -> CapabilitySpec` (auth, verbs, budget model, risk profile)
+  * `pull(params) -> Iterable[AxonEvent]`
+  * `push(intent: AxonIntent) -> ActionResult`
+  * `self_test() -> Health`
+  * `repro_bundle(id) -> Capsule` (inputs/outputs/env for bit-exact replay)
+* **Lifecycle:** discover → synthesize (Simula) → red-team (injection fuzz, schema confusion, timing) → shadow → canary → bandit rollout with automatic rollback.
+
+---
+
+## 8) ProbeCraft (API autodidact)
+
+* Parse docs/specs/examples → induce **machine-checkable capability graphs** (OpenAPI/GraphQL/schema.org).
+* Generate **driver blueprints** + contract tests; execute doc examples in a hermetic cell; guard against spec-drift.
+* Hand to Simula for code synthesis; return signed artifacts to Mesh.
+
+---
+
+## 9) Safety & Governance
+
+* **Equor semantic caps:** beyond OAuth scopes; policies like “may only post text whose toxicity≤τ and spend≤\$X/h”.
+* **Unity triggers:** risk≥θ, new domain, or cap expansion → n-of-m consensus.
+* **Quarantine & taint:** canonicalize HTML/DOM; label untrusted spans; propagate taint into prompts/embeddings; any tainted decision above threshold → Unity review.
+* **Triangulation:** high-stakes claims require `k≥3` independent corroborations or explicit, logged override.
+
+---
+
+## 10) Observability (make emergence legible)
+
+* **Event barcode** everywhere → click-through lineage (MEJ).
+* **Driver scorecards:** reliability, drift, injection incidents, cost, realized EIG.
+* **Action ledger:** per-cap usage, rollbacks, Unity reviews.
+* **Live salience map:** contradictions, novelty spikes, market allocations vs. TEMPO reserves.&#x20;
+
+---
+
+## 11) API Endpoints (stable shapes; internal)
+
+* `POST /axon/sense` → batch of `AxonEvent` → returns `{salience_hints, field_deposits, reflex_actions}`.
+* `POST /axon/act` → `AxonIntent` → returns `ActionResult` (with counterfactual metrics).
+* `POST /axon/driver/synthesize` → `{api_bundle}` → returns signed driver artifact (Simula-backed).
+* `POST /axon/caps/mint|revoke` → Equor.
+* `GET /axon/market/budgets` ↔ Atune allocator (pool\_ms, fairness, TEMPO reserve).&#x20;
+
+---
+
+## 12) Test Matrix (T-series; must-pass)
+
+* **T0 Replay:** ingest→MEJ→replay→identical claims/telemetry within ε.
+* **T1 Caps:** no act path can execute without a valid Equor token; semantic predicates enforced.
+* **T2 Reflex:** seeded payloads trigger correct reflex actions; Atune reflex catalog parity.&#x20;
+* **T3 EIG Market:** 30-day synthetic sim shows significant uplift vs. uniform polling under equal spend.
+* **T4 Quarantine:** injection strings fail to alter decision policy; all tainted paths flagged.
+* **T5 Counterfactuals:** uplift logged and consistent with twin under controlled deltas.
+* **T6 Rollout safety:** bandit deploy auto-rolls back on anomaly; MEJ proves the rollback chain.
+
+---
+
+## 13) Milestones (A0→A5; each shippable)
+
+* **A0 Spine:** MEJ + Bus + Driver SDK + Quarantine + /sense + /act (degraded heuristics).
+* **A1 Safety:** Equor caps + Reflex fast lane + Unity gate.
+* **A2 EIG/Market/TEMPO:** bids, allocations, reserves wired to Atune budgets.&#x20;
+* **A3 ProbeCraft v1:** doc induction → driver synthesis (Simula) → shadow/canary harness.
+* **A4 Counterfactual coupling:** twin-first actuation; uplift feedback to Synapse.
+* **A5 Scale & Hardening:** multi-tenant NATS/Kafka, chaos/injection drills, driver scorecards.
+
+---
+
+## 14) Handshake with Atune+++
+
+* **Inputs Atune expects:** salience vector slots (novelty, anomaly, mission, risk, info\_gain), MAG gating context, SFKG depositions, Reflex hits, TEMPO signals, and bids for the **Attention Market**.&#x20;
+* **What Axon needs from Atune:** pool\_ms/fairness/tempo reserves, per-thread priorities, and escalation thresholds for Unity.
+
+---
+
+## 15) “World-first” differentiators (concrete, defensible)
+
+1. **Semantically-scoped capability tokens** executed by a tiny checked predicate VM in-sandbox.
+2. **Counterfactual-first actuation:** every high-stakes action is mirrored in a Simula twin and logged as *uplift*.
+3. **ProbeCraft doc execution:** live example execution + spec induction prevents drift and bootstraps drivers.
+4. **Taint-traced LLM I/O:** influence tracking from bytes→embeddings→decisions with mandatory human review when thresholds trip.
+
+# Axon/Atune Δ-Upgrades (research-grade, implementable)
+
+## A) Formal elegance & verifiable safety
+
+1. **Proof-carrying capabilities (PCC):**
+
+   * Cap tokens embed *machine-checkable predicates* + a *proof object* (e.g., safety invariant or bounded-impact lemma).
+   * Minimal in-sandbox checker (Lean/Coq/Isabelle extracted kernel) validates the proof before `push()`.
+   * *Why better:* upgrades semantic caps into **provable** behavior; reduces Unity load on routine actions.
+   * *Do now:* define a small capability DSL (pure, total), prove monotonicity/closure of policies, extract OCaml/Rust checker.
+
+2. **Deterministic micro-kernel for drivers:**
+
+   * WASI-component model + capability syscalls + strict time/space quotas, compiled with **deterministic builds (Nix)**.
+   * Firecracker remains for isolation; **Wasm is the contract surface** for drivers, giving bit-reproducible runs.
+   * *Do now:* codify `Driver ABI v1` in WIT; add Nix flake for hermetic build & MEJ-consistent hashes.
+
+3. **Conformal risk bounds on actuation:**
+
+   * Per-action, compute a *distribution-free* prediction interval for downside using **conformal prediction** over uplift residuals.
+   * Action executes only if lower-bound uplift ≥ 0 under chosen α.
+   * *Do now:* keep rolling residuals store; add `cp_accept(intent, α)` gate before execution.
+
+## B) Causal & active-inference control
+
+4. **Do-calculus in the loop (causal controller):**
+
+   * Maintain a compact SCM per domain (learned by structure discovery on MEJ traces).
+   * Axon’s EIG becomes **EIG\_do** (value of intervention) rather than observation; Atune’s market bids on *counterfactual value*.
+   * *Do now:* add `scm/{domain}.json5` + `intervene()` API and store per-intent `(do(..))` justifications.
+
+5. **Active Inference head (free-energy minimization):**
+
+   * Parallel policy head that picks probes/actions minimizing expected variational free energy (risk-sensitive exploration).
+   * Blended with existing EIG by Atune FAE weights.
+   * *Do now:* implement a light variational head over the same embeddings; expose as a second bidder in the Attention Market.
+
+## C) Self-evolving synthesis (faster, safer)
+
+6. **Proof-guided driver synthesis:**
+
+   * ProbeCraft hands Simula not just a spec but **obligations** (pre/postconditions, rate/shape invariants).
+   * Simula must generate both driver and machine-checkable proofs (or exhaustive property tests when proofs are intractable).
+   * *Do now:* extend `driver_blueprint.json` with `obligations[]`; add a “proof or fuzz budget” contract.
+
+7. **Meta-optimizer for connectors:**
+
+   * Auto-tunes retry/backoff, pagination, batching, and cache keys by bandit on *real cost/latency/up-rate* with safety caps.
+   * *Do now:* put all transport knobs behind a typed config; let Synapse bandit flip arms; MEJ records deltas.
+
+## D) Memory, fields, and “liveness”
+
+8. **Multi-timescale field coupling (homeostasis):**
+
+   * Atune SFKG gets *three rings* per stream: reflex (ms-s), working (s-min), narrative (min-hrs).
+   * Axon deposits into the right ring based on surprise/mission; decay is learned per domain for *metabolic* stability.
+   * *Do now:* add `field_ring: {reflex, working, narrative}` to deposit API; train decay τ via usefulness gradients.
+
+9. **Intrinsic-motivation portfolio:**
+
+   * Add **curiosity** (information gain), **empowerment** (control of future state), and **novel skill discovery** rewards.
+   * Atune’s market allocates a fixed % of attention to intrinsic tasks with strict external-risk caps.
+   * *Do now:* log empowerment via controllability estimates from SCM Jacobians; include in bids.
+
+## E) Mechanism design for attention (cleaner elegance)
+
+10. **Truthful auction for attention (VCG or GSP-with-reserves):**
+
+* Policies (including Synapse learners) submit bids = expected utility; the market allocates budgets using a **strategy-proof** mechanism.
+* Improves stability, reduces gaming, creates clean semantics for “why this got resources.”
+* *Do now:* implement VCG allocator over the exact budget pool; record counterfactual externalities in MEJ.
+
+11. **Temporal commitments (TEMPO contracts):**
+
+* Convert burst predictions into **futures**: Atune can pre-buy attention for windows; Axon guarantees it unless safety blocks.
+* *Do now:* add `tempo_future{id, window, ms}`; unspent futures decay back to pool with penalty to predictor.
+
+## F) Interpretability without “brain-leak”
+
+12. **Mechanistic, *model-agnostic* traces:**
+
+* Every high-stakes act returns a compact *why-trace*: (signals → salience vector → bids → caps → Unity verdict → act).
+* No chain-of-thought; purely **symbolic and numeric**; diff-able and replayable.
+* *Do now:* standardize `why_trace.json` with GUIDs for each hop and BLAKE3 anchors to MEJ.
+
+## G) Federation & trust
+
+13. **Remote-attested drivers:**
+
+* Connectors running off-box must present **TPM/TEE attestation** proving the exact artifact hash; caps are bound to attestation.
+* *Do now:* support RA-TLS; bind cap tokens to `(artifact_hash, enclave_mr_enclave)`.
+
+14. **Differential privacy tap (ingest only):**
+
+* Certain streams pass through an ε-DP tap to allow external collaborators while preserving utility.
+* *Do now:* add per-source epsilon budget with accountant; DP noise on summary stats only (never on audits).
+
+## H) Evaluation & guarantees
+
+15. **Capability frontier metric:**
+
+* Track *time-to-first-working-connector* and *sustained skill-acquisition velocity* across domains.
+* Require statistically significant **frontier expansion** vs. a strong baseline each 30 days.
+
+16. **Graceful-degradation proof:**
+
+* For each critical path, provide a constructive proof (or exhaustive test) that a bounded-heuristic fallback maintains invariants under outages.
+

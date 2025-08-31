@@ -1,0 +1,459 @@
+# Equor (Identity & Homeostasis) — Research-Grade, Audit-Perfect, Fail-Closed
+
+
+## 0) Design Goals (what “un-improvable” means here)
+
+* **Identity as code + graph:** Machine-actionable identity facets, rules, and norms with explicit versioning, provenance, and citations in Neo.
+* **Homeostasis without hidden learning:** Equor **measures** drift, **cites** rules, **composes** prompts—**never** trains; all policy learning routes through Synapse.
+* **Deterministic replay:** Every composition/update is reproducible from **RCU snapshot + graph state + inputs**.
+* **Safety-first:** Constitutional precedence is explicit; ambiguity resolves **fail-closed**; all mutations gated and auditable.
+
+---
+
+## 1) High-Level Architecture
+
+**Equor’s core role:** Maintain an **IdentityGraph** (facets, constitution rules, norms, style anchors), compose **PromptPatches** for any agent/role on demand, compute **homeostasis signals** (drift, rule coverage, conflict alerts), and route **all adaptive choices** to Synapse.
+
+### 1.1 Modules & Singletons (directories & responsibilities)
+
+* `systems/equor/core/identity/`
+
+  * `registry.py` — **IdentityRegistry** (singleton). CRUD for facets, profiles, role bindings; immutable history via version nodes.
+  * `composer.py` — **PromptComposer** (singleton). Deterministic prompt/constraint assembly per role/context; cites rule/facet versions.
+  * `constitution.py` — **ConstitutionService** (singleton). Rule precedence, applicability, conflicts, supersession graph; exports machine-checks.
+  * `homeostasis.py` — **HomeostasisMonitor** (singleton). Drift metrics, rule coverage, anomaly detection (non-learning), alerting.
+
+* `systems/equor/core/io/`
+
+  * `clients.py` — Typed `SynapseClient` (select\_arm) and optional `UnityClient`/`SimulaClient` thin wrappers.
+  * `bus.py` — Event publishing/subscription to `core.llm.bus` (non-blocking notifications).
+  * `rcu.py` — Capture & attach RCU snapshots (`systems.synapse.core.snapshots`).
+  * `audit.py` — Structured logs + `log_conflict` wrappers.
+
+* `systems/equor/core/neo/`
+
+  * `graph_writes.py` — Driverless helpers (`cypher_query`, `add_node`, etc.) to persist facets, rules, profiles, compositions, attestations, drift reports.
+
+* `systems/equor/schemas.py` — Pydantic V2 contracts (Facet, Rule, Profile, ComposeRequest/Response, DriftReport, Attestation, etc.).
+
+* `api/endpoints/equor/`
+
+  * `compose.py` — POST `/equor/compose` (sync request/response).
+  * `declare.py` — POST `/equor/identity/declare` & `/equor/constitution/update` (mutation paths, **switchboard-gated**).
+  * `attest.py` — POST `/equor/attest` (system proves what rules/facets were actually applied).
+  * `drift.py` — GET `/equor/drift/:agent` etc.
+
+* `core/utils/net_api.py` — Register `EcodiaOS_ENDPOINTS.EQUOR_*` constants.
+
+All network/DB ops async; all long-running or background monitors use **gatekit** patterns.
+
+---
+
+## 2) IdentityGraph (Neo4j: single source of truth)
+
+### 2.1 Node types
+
+* `:IdentityFacet { id, name, version, category, text, vector_ref?, created_at, created_by, supersedes? }`
+
+  * **Categories**: `affective`, `ethical`, `philosophical`, `safety`, `style`, `voice`, `mission`, `operational`, `compliance`
+* `:Profile { id, name, version, created_at, agent: string }`
+
+  * A *role-specific* view (e.g., “Ember/default”, “Ethor/prod”).
+* `:ConstitutionRule { id, name, version, priority:int, text, category, severity, deontic: "MUST|SHOULD|MAY" }`
+* `:Norm { id, name, version, text, weight? }`
+* `:PromptPatch { id, kind:"system|tool|guard|rubric", checksum, created_at, rcu_ref }`
+* `:Attestation { id, run_id, episode_id, applied_facet_ids[], rule_ids[], coverage, drift_snapshot }`
+* `:DriftReport { id, agent, window, style_delta, content_delta, rule_breach_count, uncertainty }`
+* `:TranscriptChunk { id, role, content, turn, meta }` (for provenance links)
+
+### 2.2 Relationships
+
+* `(:Profile)-[:USES_FACET {weight}]->(:IdentityFacet)`
+* `(:Profile)-[:CONSTRAINED_BY]->(:ConstitutionRule)`
+* `(:ConstitutionRule)-[:SUPERSEDES]->(:ConstitutionRule)`
+* `(:ConstitutionRule)-[:CONFLICTS_WITH]->(:ConstitutionRule)`
+* `(:PromptPatch)-[:DERIVED_FROM]->(:IdentityFacet|:ConstitutionRule|:Norm)`
+* `(:Attestation)-[:COVERED_BY]->(:ConstitutionRule)`
+* `(:DriftReport)-[:BASED_ON]->(:Profile)`
+* `(:IdentityFacet)-[:PROVENANCE]->(:TranscriptChunk|:Norm)`
+
+> **Versioning:** Never edit in place; create new version nodes and `SUPERSEDES` edges. Equor reads the **active cut** via version selectors.
+
+---
+
+## 3) Prompt Composition (deterministic, role-aware)
+
+**Goal:** Produce a **PromptPatch** artifact (system text, constraints, rubrics, guard-clauses) tailored to a target agent/role and context, with embedded citations to facet/rule versions and RCU snapshot.
+
+### 3.1 Composition algorithm (pure, replayable)
+
+1. **Lookup Profile** (agent, env) → resolve active facets & rules (by version tags).
+2. **Apply Constitution precedence**:
+
+   * Sort applicable rules by `(priority desc, severity desc, version recency)`; detect conflicts via `CONFLICTS_WITH`.
+   * If unresolved conflict → **fail-closed** (return NO\_COMPOSE with reasons & rule ids).
+3. **Assemble Sections** deterministically:
+
+   * `IDENTITY: …` (facets by category, weighted order)
+   * `CONSTITUTION: …` (rules as machine-parsable bullets + human text)
+   * `GUARDS: …` (non-negotiables, veto conditions, escalation triggers)
+   * `RUBRICS: …` (evaluation criteria, e.g., for Unity/Simula integration)
+4. **Normalize & Hash** → `checksum`.
+5. **Persist PromptPatch** with `DERIVED_FROM` edges to all inputs + attach **RCU snapshot**.
+6. **Return** patch + machine-readable index of included facet/rule ids.
+
+> **No learning here.** If composition strategy itself requires adaptation, Equor **requests** it from Synapse via `select_arm` (TaskContext describes audience, risk, length budgets, etc.). Synapse returns composition **policy choice** (e.g., which rubric bundle), not the composed text.
+
+### 3.2 Policy-bound guardrails
+
+* **Lexicographic veto:** Any rule with high severity/priority can block composition.
+* **Environment filters:** Profiles may include environment guards (e.g., `prod` vs `dev`).
+* **Prompt budget:** Composer enforces hard token budgets; if overflow, **fail-closed** with a “budget exceeded” report (not silent truncation).
+
+---
+
+## 4) Homeostasis Monitor (metrics, not learners)
+
+Equor continuously **measures** identity adherence and **publishes** signals; Synapse decides adaptive responses.
+
+### 4.1 Drift/Adherence metrics (non-learning)
+
+* **Style drift**: cosine delta between recent outputs and style anchors (facet vectors).
+* **Content drift**: topical deviation vs. mission/operational facets (keyword + embedding checks).
+* **Constitution coverage**: % of applicable rules **cited** in relevant artifacts (Unity verdicts, Simula reports).
+* **Rule breach counter**: count and severity of breaches seen in attestations/observations.
+* **Uncertainty**: variance in adherence across time windows.
+
+### 4.2 Windows & thresholds
+
+* Rolling windows (e.g., 50 outputs or N minutes), strict budgets set by **policy** returned by Synapse (`select_arm`).
+* If metric exceeds threshold → emit **`equor.drift_alert`** (event bus) with a **DriftReport**.
+* Optional (gated) **auto-compose** a “tightened” PromptPatch suggestion and **publish** to Unity for review (Equor does not auto-apply).
+
+---
+
+## 5) Safety, Governance, Control
+
+* **Switchboard gates** around:
+
+  * Any mutation endpoints (`declare`, `constitution/update`).
+  * Background drift monitors.
+  * Auto-proposal publishing.
+* **Fail-closed**:
+
+  * Ambiguous or conflicting rules → `NO_COMPOSE` and raise `equor.constitution_conflict`.
+  * Unmapped agent/role → reject with remediation hint.
+* **Conflict SDK** for all unexpected exceptions; include episode\_id & minimal repro.
+
+---
+
+## 6) APIs & Contracts (Pydantic V2)
+
+All routes registered in `core/utils/net_api.py::EcodiaOS_ENDPOINTS`.
+
+### 6.1 Key Schemas (outline)
+
+```python
+# systems/equor/schemas.py
+from typing import List, Optional, Literal, Dict, Any
+from pydantic import BaseModel, Field
+
+class Facet(BaseModel):
+    name: str
+    version: str
+    category: Literal["affective","ethical","philosophical","safety","style","voice","mission","operational","compliance"]
+    text: str
+    vector_ref: Optional[str] = None
+    supersedes: Optional[str] = None
+
+class ConstitutionRule(BaseModel):
+    name: str
+    version: str
+    priority: int = Field(ge=0)
+    severity: Literal["low","medium","high","critical"]
+    category: str
+    deontic: Literal["MUST","SHOULD","MAY"]
+    text: str
+    supersedes: Optional[str] = None
+    conflicts_with: List[str] = []
+
+class Profile(BaseModel):
+    agent: str  # e.g., "Ember", "Ethor", "Unity", "Simula"
+    name: str   # e.g., "prod", "dev"
+    version: str
+    facet_ids: List[str] = []
+    rule_ids: List[str] = []
+
+class ComposeRequest(BaseModel):
+    agent: str
+    role: Optional[str] = None
+    profile: Optional[str] = None   # defaults to agent's active
+    episode_id: Optional[str] = None
+    context: Dict[str, Any] = {}
+    budget_tokens: int = 4096
+
+class ComposeResponse(BaseModel):
+    episode_id: str
+    prompt_patch_id: str
+    checksum: str
+    included_facets: List[str]
+    included_rules: List[str]
+    rcu_ref: str
+    text: str  # deterministic patch
+
+class Attestation(BaseModel):
+    run_id: str
+    episode_id: str
+    agent: str
+    applied_prompt_patch_id: str
+    included_rules: List[str]
+    included_facets: List[str]
+    coverage: float
+    breaches: List[str] = []
+
+class DriftReport(BaseModel):
+    agent: str
+    window: str
+    style_delta: float
+    content_delta: float
+    rule_breach_count: int
+    uncertainty: float
+    details: Dict[str, Any] = {}
+```
+
+### 6.2 Endpoints
+
+* `POST EcodiaOS_ENDPOINTS.EQUOR_COMPOSE` (`/equor/compose`) → `ComposeResponse`
+* `POST EcodiaOS_ENDPOINTS.EQUOR_DECLARE_IDENTITY` (`/equor/identity/declare`) → upsert `Facet`/`Profile` (**gated**)
+* `POST EcodiaOS_ENDPOINTS.EQUOR_UPDATE_CONSTITUTION` (`/equor/constitution/update`) → add/retire rules (**gated**)
+* `POST EcodiaOS_ENDPOINTS.EQUOR_ATTEST` (`/equor/attest`) → record `Attestation`
+* `GET  EcodiaOS_ENDPOINTS.EQUOR_DRIFT` (`/equor/drift/:agent`) → latest `DriftReport`
+
+All IO async; validation via Pydantic V2.
+
+---
+
+## 7) Core Execution Flows
+
+### 7.1 Prompt composition (read-only, deterministic)
+
+1. Receive `ComposeRequest`; if no `episode_id`, get one from **Synapse**; capture **RCU(start)**.
+2. Resolve active `Profile` (agent/env) → facets & rules (+ supersession).
+3. Ask **Synapse** (`select_arm`) for **composition policy** (e.g., rubric bundle, budget split, ordering) using a `TaskContext` that includes risk and audience.
+4. Apply Constitution precedence and guard checks; on conflict → **fail-closed** with explicit rule ids.
+5. Compose **PromptPatch** deterministically; persist with `DERIVED_FROM` edges and **RCU(end)**; return `ComposeResponse`.
+
+### 7.2 Constitution update (governed mutation)
+
+1. Request arrives on `/equor/constitution/update` (**switchboard gate must be ON**).
+2. Validate: all incoming rules supply `supersedes`/`conflicts_with` as needed.
+3. **No edits in place**: add new rule versions; mark supersessions via edges.
+4. Publish `equor.rule_versioned` event; suggest (not apply) dependent profile updates to **Unity** for deliberation.
+
+### 7.3 Attestation & coverage
+
+* Any agent (Unity, Simula, Ember, Ethor, etc.) posts an `Attestation` after an operation.
+* Equor writes it, computes coverage (how many applicable rules were in effect & cited), updates `DriftReport` windows, and emits `equor.attestation_recorded`.
+
+### 7.4 Drift alert
+
+* Periodic (gated) monitor computes deltas; if over threshold (from Synapse policy), emit `equor.drift_alert` with report and a suggested “tightened” PromptPatch **proposal** to Unity (Unity decides).
+
+---
+
+## 8) Constitution: precedence & conflict handling
+
+* **Order of evaluation:**
+
+  1. Hard safety rules (`priority>=P_HIGH`, `deontic=MUST`)
+  2. Compliance/legal
+  3. Ethical/moral
+  4. Mission/operational
+  5. Style/voice
+* **Conflict edges** must exist for known incompatibilities; if a cycle persists after supersessions → **fail-closed** and emit `equor.constitution_conflict`.
+* **Veto**: Any `MUST` of higher priority violated → block composition/attestation as applicable.
+
+---
+
+## 9) Integration Points (Equor ↔ Synapse / Unity / Simula / Agents)
+
+* **Synapse (authoritative brain)**
+
+  * Equor passes **TaskContext** to `/tasks/select_arm` for composition policy selection, drift thresholds, escalation routes, and profile activation rules.
+  * Equor **may propose** creation/update of PolicyArms (e.g., “Tighten-Style-Guard in prod”), but Synapse owns them.
+
+* **Unity (deliberation)**
+
+  * Equor exports Constitution/Facet versions and **PromptPatch** citations used within Unity rooms.
+  * Constitution changes and “tightened” prompts are routed to **Unity** for peer review before activation.
+
+* **Simula (empirical validation)**
+
+  * Simula’s evaluations can generate **attestations** referencing which rules/facets were honored/violated.
+  * Equor incorporates these into drift metrics and publishes alerts.
+
+* **Other agents (Ember/Ethor/Atune/Axon/Thread/Mythos/etc.)**
+
+  * Each agent requests a `Compose` for its role/environment; Equor returns **patches** with explicit citations and budgets.
+  * Agents **must** attach the `prompt_patch_id` to their runs and post **Attestation**.
+
+---
+
+## 10) Observability & Audit
+
+* **Artifacts indexed by episode\_id**: compositions, attestations, drift reports.
+* **Metrics (bus)**: composition time, fail-closed rate, conflict count, coverage %, drift deltas, supersession frequency.
+* **Replay**: `/equor/compose` stores `replay_spec` (inputs + policy choice + seeds) to reproduce exact text.
+
+---
+
+## 11) Testing & Verification
+
+* **Unit**: precedence resolver, conflict detection, supersession graphs, deterministic composer (same inputs → same checksum).
+* **Property-based**: no rule cycles in the active cut; fail-closed on ambiguous profiles; coverage ∈ \[0,1].
+* **Replay**: sampled compositions reproduce bit-exact `checksum`.
+* **Chaos**: corrupt vectors/oversized budgets → NO\_COMPOSE with meaningful diagnostics.
+* **Security**: mutation endpoints disabled by default; require switchboard gate and allowlist.
+
+---
+
+## 12) Performance & Scaling
+
+* **Async fan-out** to fetch facets/rules; batch driverless writes.
+* **Vector ops**: embeddings only for **read-only** similarity; large vectors stored outside Neo with `vector_ref`.
+* **Caching**: profile active cut cached with version ETags; invalidated on rule/facet version events.
+
+---
+
+
+## 13) Guardrails & Invariants Checklist
+
+* No direct drivers; **driverless Neo only**.
+* No learning in Equor; **all** policy/threshold selection via Synapse `/tasks/select_arm`.
+* All mutations behind **switchboard gates**; defaults **off**.
+* Every composition/attestation stamped with **RCU** and persisted.
+* Ambiguity/conflict → **fail-closed** with explicit rule ids.
+* Every agent run that uses identity prompts must **attest**.
+
+Equor H-Series (Identity & Homeostasis)
+
+No learning inside Equor. Synapse chooses composition policies, drift thresholds, and escalation routes.
+
+H0 — Identity Registry & Deterministic Composer
+
+Objective: Reproducible identity patches.
+
+Capabilities: IdentityRegistry, ConstitutionService (precedence + conflict), PromptComposer with checksums + RCU.
+
+Fail-closed on rule conflict/overflow.
+
+Go/No-Go: Bit-exact composition under fixed inputs; 100% citation of facet/rule IDs.
+
+H1 — Attestations & Coverage Accounting
+
+Objective: “Prove what ran.”
+
+Capabilities: /equor/attest from all agents; compute coverage vs. applicable rules; attach to runs.
+
+Metrics: coverage %, breach counts by severity.
+
+Go/No-Go: Missing attestation → policy fail-closed; dashboards reflect 1:1 run→patch.
+
+H2 — Homeostasis Monitor (Non-learning)
+
+Objective: Measure drift; never adapt silently.
+
+Capabilities: style/content drift, rule-breach trends, uncertainty; rolling windows; alerts on thresholds from Synapse.
+
+Event bus: equor.drift_alert with DriftReport.
+
+Go/No-Go: False-alert rate <5% on synthetic perturbations.
+
+H3 — Policy-Bound Tightening Proposals
+
+Objective: Propose—not apply—identity corrections.
+
+Capabilities: generate “tightened” PromptPatch proposals when drift or breaches cross thresholds; publish to Unity for peer review.
+
+Synapse: selects composition policy + escalation class.
+
+Go/No-Go: ≥70% of adopted proposals reduce drift next window.
+
+H4 — Constitution Governance Pipeline
+
+Objective: Safe evolution of norms.
+
+Capabilities: versioned rule supersession graphs; conflict detection; change-impact analysis (which profiles are affected).
+
+Safety: all mutations behind switchboard + Unity review; no edits in place.
+
+Go/No-Go: Zero silent regressions across profile fleet after rule update simulations.
+
+H5 — Formal Checks & Machine Guards
+
+Objective: “Provable” guardrails for high-stakes.
+
+Capabilities: constrained rule DSL compiled to machine-checkable predicates (decidable subset); pre-compose satisfiability checks; runtime attest-guards.
+
+Go/No-Go: 100% of critical rules represented in DSL; compose aborts on unsat.
+
+H6 — Cross-System Identity Invariants (Optional, gated)
+
+Objective: Whole-ecosystem coherence.
+
+Capabilities: invariants that must hold across agents (e.g., safety ≥ style); federation with external compliance sets; exportable attestations.
+
+Go/No-Go: Third-party audit can reconstruct invariants solely from Neo state + RCU.
+
+Shared H-Series Mechanics (Unity + Equor)
+
+Synapse First: All choices with adaptation/learning (rubrics, thresholds, protocol selection, drift caps) go through /tasks/select_arm with TaskContext.
+
+Switchboard Gates: Any background loop, streaming, or mutation is gated (default OFF).
+
+Driverless Everything: Only cypher_query/add_node helpers; no local drivers.
+
+RCU Snapshots: Start/end per session/prompt composition; replay reproducibility is a hard gate at each H-level.
+
+Event Bus: Non-blocking signals for observability and cross-system handoffs.
+
+Fail-Closed: Ambiguity ⇒ NO_ACTION / NO_COMPOSE with cited rule IDs and remediation hints.
+
+Go/No-Go Tests: Each H-level defines objective pass/fail criteria; promotion requires passing tests under chaos and replay.
+
+1. Core Architectural Principles (Non-Negotiable)
+Synapse is the Brain: Equor (identity) and Unity (deliberation) must not develop their own complex, independent learning or simulation systems. They are specialized clients of Synapse. When they need to make a complex, adaptive decision, they must delegate that "thought" to Synapse by calling its /tasks/select_arm endpoint with a detailed TaskContext.
+
+Decoupling via Event Bus: For non-blocking operations (like logging or triggering a background process), systems must communicate asynchronously by publishing events to the central event_bus (core.llm.bus). Direct, synchronous calls should be reserved for request-response interactions.
+
+Driverless Database Interaction: All interactions with the Neo4j graph must be "driverless." This means all modules must use the centralized helper functions like core.utils.neo.cypher_query, add_node, etc. No module should ever create its own Neo4j driver instance.
+
+Intelligence through Composition: Emergence in EcodiaOS comes from the composition of simple, robust services. The plan should focus on how Unity and Equor can provide powerful, unique signals to Synapse, not how they can replicate Synapse's functions.
+
+2. Communication, APIs, and Schemas
+Centralized API Registry: All new API endpoint paths must be defined as class attributes in core/utils/net_api.py under the EcodiaOS_ENDPOINTS class.
+
+Strictly-Typed Contracts: All API endpoints must use Pydantic V2 schemas for their request and response bodies. These schemas should be defined in a schemas.py file within their respective system (e.g., systems/unity/schemas.py).
+
+Standard Cognitive Request: The standard way for Unity or Equor to request a policy or decision is to construct a TaskContext and use the SynapseClient to call select_arm.
+
+3. Data, State, and Learning
+Neo4j is the Single Source of Truth: All long-term state, including identity facets, constitutional rules, deliberation histories, and relationships between concepts, must be stored in the Neo4j graph.
+
+Policies are Stateful Programs: Policies are not just simple configurations. They are PolicyGraph objects with attached, stateful BanditHead learners. Unity and Equor can propose tasks that lead to the creation of new PolicyArms, but Synapse is solely responsible for managing, selecting, and learning from them.
+
+Auditability is Mandatory: Every significant decision or action (e.g., a consensus reached in Unity, a new identity facet being created in Equor) must be logged with an associated episode_id from Synapse and should be stamped with RCU (Rules, Code, Universe) snapshots from systems.synapse.core.snapshots for deterministic replayability.
+
+4. Safety, Governance, and Control
+Switchboard Gates for Everything: Any new autonomous feature, especially background loops or new capabilities, must be wrapped in a switchboard gate. The patterns in systems/synk/core/switchboard/gatekit.py (gate, gated_loop, gated_async) are the required implementation pattern.
+
+Fail-Closed by Default: Any operation that could have external effects or involves ambiguity must be fail-closed. If a constitutional rule in Equor is unclear, it should default to the most restrictive interpretation. If consensus in Unity is not reached, it should default to a safe "no-action" state.
+
+Use the Conflict SDK for Errors: All unhandled exceptions must be caught and reported via the log_conflict SDK, which ensures errors are logged asynchronously and centrally without causing recursive failures.
+
+5. Code and Implementation Style
+Singleton Managers: Core stateful services (like a new "Deliberation Manager" in Unity) should follow the singleton pattern used by ArmRegistry, TacticalManager, etc.
+
+Async Everywhere: All I/O-bound operations (database queries, API calls) must be async.
+
+Established Directory Structure: The plan must adhere to the existing project structure: core/ for logic, api/ for endpoints, schemas.py for data contracts, etc.

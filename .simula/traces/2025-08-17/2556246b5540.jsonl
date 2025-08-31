@@ -1,0 +1,9 @@
+{"type": "job_start", "job": {"agent": "simula", "mode": "autonomous", "task": "Your primary goal is to read the Java properties file located at 'config.properties', \nparse its key-value pairs, and re"}, "ts": "2025-08-17T04:47:49.647119+00:00"}
+{"type": "llm_call", "model": "gemini-2.0-flash", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-17T04:47:53.234121+00:00"}
+{"type": "llm_call", "model": "gemini-2.0-flash", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-17T04:47:57.118039+00:00"}
+{"type": "tool_start", "name": "log_conflict", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-17T04:47:57.145452+00:00"}
+{"type": "tool_end", "name": "log_conflict", "ok": true, "err": null, "extra": {}, "duration_ms": 246.50543200004904, "result": {"_redacted": true}, "ts": "2025-08-17T04:47:57.391959+00:00"}
+{"type": "llm_call", "model": "gemini-2.0-flash", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-17T04:48:06.810166+00:00"}
+{"type": "tool_start", "name": "log_event_to_graph", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-17T04:48:06.833406+00:00"}
+{"type": "tool_end", "name": "log_event_to_graph", "ok": true, "err": null, "extra": {}, "duration_ms": 1188.6997279998468, "result": {"_redacted": true}, "ts": "2025-08-17T04:48:08.022079+00:00"}
+{"type": "job_end", "status": "ok", "duration_ms": 18282.77737799999, "extra": {}, "ts": "2025-08-17T04:48:08.049462+00:00"}

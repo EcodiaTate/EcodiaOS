@@ -1,0 +1,13 @@
+id: atune.next_step.planning
+version: 1.14.0
+scope: atune.next_step.planning
+identity:
+  agent: "Atune"
+outputs:
+  schema_ref: "core/prompting/schemas/atune_next_step_choice_output.json"
+  parse_mode: "auto_repair"
+context_lenses:
+  - "retrieval.semantic"
+  - "event.canonical"
+partials:
+  - "atune_next_step_planning"

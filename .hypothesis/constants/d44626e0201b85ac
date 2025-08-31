@@ -1,0 +1,4 @@
+# file: D:\EcodiaOS\core\llm\format_shim.py
+# hypothesis_version: 6.137.1
+
+['Task', 'anthropic', 'atune', 'axon', 'claude-3.5-sonnet', 'contra', 'eido', 'ember', 'equor', 'ethics', 'ethor', 'evo', 'gemini-2.5-flash', 'google', 'gpt-5', 'include_audience', 'include_kinds', 'include_tags', 'mythos', 'nova', 'openai', 'prompt', 'public', 'qora', 'scope', 'simula', 'style', 'synk', 'tags', 'thread', 'tone', 'unity', 'universal', 'voxis']

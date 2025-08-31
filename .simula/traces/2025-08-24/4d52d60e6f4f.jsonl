@@ -1,0 +1,2 @@
+{"type": "job_start", "job": {"agent": "simula_v12_governed", "goal": "Add a hello file"}, "ts": "2025-08-24T15:38:00.737565+00:00"}
+{"type": "job_end", "status": "ok", "duration_ms": 27521.338165999623, "extra": {}, "ts": "2025-08-24T15:38:28.251016+00:00"}

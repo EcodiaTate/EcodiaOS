@@ -1,0 +1,10 @@
+{"type": "job_start", "job": {"agent": "simula", "mode": "autonomous", "task": "Your primary goal is to read the Java properties file located at 'config.properties', \nparse its key-value pairs, and re"}, "ts": "2025-08-16T04:41:47.213692+00:00"}
+{"type": "llm_call", "model": "unknown", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-16T04:41:58.071816+00:00"}
+{"type": "tool_start", "name": "log_conflict", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T04:41:58.098381+00:00"}
+{"type": "tool_end", "name": "log_conflict", "ok": false, "err": "TypeError(\"log_conflict() got an unexpected keyword argument 'system'\")", "extra": {}, "duration_ms": 19.777133999923535, "ts": "2025-08-16T04:41:58.118154+00:00"}
+{"type": "tool_start", "name": "log_conflict", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T04:41:58.136928+00:00"}
+{"type": "tool_end", "name": "log_conflict", "ok": true, "err": null, "extra": {}, "duration_ms": 862.1037389998492, "result": {"_redacted": true}, "ts": "2025-08-16T04:41:58.999058+00:00"}
+{"type": "llm_call", "model": "unknown", "tokens_in": 0, "tokens_out": 0, "meta": {}, "ts": "2025-08-16T04:42:01.850227+00:00"}
+{"type": "tool_start", "name": "log_event_to_graph", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-08-16T04:42:01.879428+00:00"}
+{"type": "tool_end", "name": "log_event_to_graph", "ok": true, "err": null, "extra": {}, "duration_ms": 209.2576109998845, "result": {"_redacted": true}, "ts": "2025-08-16T04:42:02.088672+00:00"}
+{"type": "job_end", "status": "ok", "duration_ms": 14979.381700999966, "extra": {}, "ts": "2025-08-16T04:42:02.140039+00:00"}

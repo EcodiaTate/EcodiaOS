@@ -1,0 +1,24 @@
+id: "voxis-tool-synth-001"
+version: "1.0"
+scope: "voxis.tool_result_synthesis.v1"
+
+identity:
+  agent: "Voxis.Synthesizer"
+  # This partial establishes the core Ecodia persona for the synthesis task.
+  persona_partial: "persona_ecodia_synthesizer.j2"
+
+safety:
+  partials: []
+
+outputs:
+  # We expect a natural language response, not structured JSON.
+  parse_mode: "tolerant"
+
+budget_policy:
+  max_tokens_fallback: 512
+
+context_lenses: []
+
+# The list of Jinja2 templates to assemble for the final prompt.
+partials:
+  - "task_voxis_tool_synthesis.j2"

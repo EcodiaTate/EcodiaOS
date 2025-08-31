@@ -1,0 +1,7 @@
+{
+  "skills": [
+    { "name": "safe_rename", "module": "systems.synapse.skills.safe_rename", "arms": ["analyze_usages", "apply_rename", "run_hygiene"] },
+    { "name": "extract_interface", "module": "systems.synapse.skills.extract_interface", "arms": ["analyze_methods", "create_interface", "adapt_callers", "run_hygiene"] },
+    { "name": "introduce_adapter", "module": "systems.synapse.skills.introduce_adapter", "arms": ["generate_adapter", "wire_adapter", "run_hygiene"] }
+  ]
+}

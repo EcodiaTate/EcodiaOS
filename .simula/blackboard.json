@@ -1,0 +1,7 @@
+{
+  "ping": "pong",
+  "test_goal": {
+    "step": 1,
+    "action": "run_tests"
+  }
+}

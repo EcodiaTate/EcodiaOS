@@ -1,0 +1,2 @@
+{"type": "job_start", "job": {"agent": "simula_v12_governed", "goal": "Add smoke test + prepare CI; ensure pytest passes"}, "ts": "2025-08-25T04:19:59.416017+00:00"}
+{"type": "job_end", "status": "error", "duration_ms": 6812.986659999979, "extra": {"exc": "AttributeError(\"'EventBus' object has no attribute '_subs'\")"}, "ts": "2025-08-25T04:20:06.663084+00:00"}

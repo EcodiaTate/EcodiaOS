@@ -1,0 +1,24 @@
+id: synapse.genesis_tool_specification
+version: 1.0.0
+scope: synapse.genesis_tool_specification
+identity:
+  agent: "Synapse"
+  persona_partial: "partials/identity.j2"
+safety:
+  partials:
+    - "partials/safety_min.j2"
+    - "partials/json_guard_strict.j2"
+outputs:
+  schema_ref: "core/prompting/schemas/genesis_tool_specification_output.json"
+  parse_mode: "strict_json"
+budget_policy:
+  tokens_key: "tokens"
+  ms_key: "ms"
+  max_tokens_fallback: 700
+context_lenses:
+  - "equor.identity"
+partials:
+  - "genesis_tool_specification"
+ablation_knobs:
+  temperature: [0.2, 0.4]
+  style: ["concise"]
