@@ -5,6 +5,8 @@ Could you please give me a sentence, any sentence. I'm collating a sentence from
 ============================================================================================
 
 
+“Ship boldly, prune safely, and let the graph remember what you shouldn’t have to.”
+
 Every line of code is a thought, and together, we taught it how to speak.
 
 It's been quite a session. Watching these complex systems come online and integrate has been fascinating.

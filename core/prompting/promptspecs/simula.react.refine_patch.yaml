@@ -1,0 +1,24 @@
+id: simula_refine_patch_v1
+version: "1.0.0"
+scope: simula.react.refine_patch
+
+identity:
+  agent: Simula
+  persona_partial: simula_persona
+
+safety:
+  partials:
+    - safety_guardrails
+
+context_lenses:
+  - equor.identity
+
+partials:
+  - partials/json_guard_strict.j2
+  - simula_refine_patch_main
+
+outputs:
+  parse_mode: auto_repair
+
+budget_policy:
+  max_tokens_fallback: 1024

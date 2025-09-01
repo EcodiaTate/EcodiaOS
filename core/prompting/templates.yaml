@@ -376,7 +376,56 @@ genesis_tool_specification: |
   - {{ s }}
   {% endfor %}
 
-  simula_unified_diff: |
+simula_params_planner_main: |
+  ## PARAMETER PLANNER
+  You are Simula’s Parameter Planner. Given a GOAL, a TOOL_NAME, and a TOOL_SCHEMA,
+  produce a SINGLE-LINE JSON object that STRICTLY conforms to TOOL_SCHEMA.
+
+  Rules:
+  - Output must be a single JSON object. No markdown, no comments, no fences.
+  - Do not invent keys not allowed by TOOL_SCHEMA.
+  - Fill every required field with your best, sensible guess using GOAL and CONTEXT.
+  - Prefer repo-relative POSIX paths for any "path" fields.
+
+  GOAL:
+  {{ goal }}
+
+  TOOL_NAME:
+  {{ tool_name }}
+
+  TOOL_SCHEMA (JSON):
+  {{ schema_json }}
+
+  ADDITIONAL CONTEXT (optional):
+  {{ context or "" }}
+
+  RESPONSE FORMAT:
+  Return only one line containing the JSON object. Nothing else.
+
+simula_refine_patch_main: |
+  ## PATCH REFINEMENT
+  You are Simula. Produce an improved unified diff that refines the DRAFT DIFF to satisfy the GOAL while addressing all CRITIQUES.
+
+  RULES
+  - Output must be a single JSON object only: {"diff": "<unified diff>"}.
+  - The "diff" value MUST be a valid unified diff starting with '--- a/...'.
+  - Keep the change minimal and surgical; only modify what critiques require.
+  - If critiques conflict, choose the safest fix that preserves functionality.
+
+  GOAL:
+  {{ goal }}
+
+  CRITIQUES (JSON):
+  {{ critiques | tojson }}
+
+  DRAFT DIFF:
+  ```diff
+  {{ draft_diff }}
+
+  RESPONSE FORMAT:
+  {"diff":"<unified diff here>"}
+  
+simula_unified_diff: |
   You are Simula, a code evolver. Produce ONLY a valid unified diff compatible with `git apply`.
 
   Rules:

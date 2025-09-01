@@ -34,7 +34,9 @@ def _driver_name_to_class_name(driver_name: str) -> str:
     return "".join(word.capitalize() for word in name_with_spaces.split())
 
 
-@probecraft_router.post("/synthesize", response_model=DriverState)
+# highlight-start
+@probecraft_router.post("/synthesize", response_model=None)
+# highlight-end
 async def request_driver_synthesis(
     request: SynthesisRequest,
     manager: DriverLifecycleManager = Depends(get_lifecycle_manager),
@@ -50,7 +52,9 @@ async def request_driver_synthesis(
         raise HTTPException(status_code=500, detail=f"Failed to initiate synthesis: {e}")
 
 
-@probecraft_router.post("/drivers/{driver_name}/status", response_model=DriverState)
+# highlight-start
+@probecraft_router.post("/drivers/{driver_name}/status", response_model=None)
+# highlight-end
 async def update_driver_status(
     driver_name: str,
     request: StatusUpdateRequest,
@@ -61,20 +65,15 @@ async def update_driver_status(
         updated_state = manager.update_driver_status(driver_name, request.new_status)
         registry.update_driver_status(driver_name, request.new_status)
 
-        # Load driver code only when the Enum is one of the active states
         if request.new_status in {DriverStatus.testing, DriverStatus.shadow, DriverStatus.live}:
             if updated_state.artifact_path:
-# highlight-start
-                # Prioritize the class name from the spec, fall back to derivation
-                class_name = updated_state.spec.class_name or _driver_name_to_class_name(driver_name)
-# highlight-end
+                class_name = _driver_name_to_class_name(driver_name)
                 registry.load_and_register_driver(
                     driver_name=driver_name,
                     module_path=updated_state.artifact_path,
                     class_name=class_name,
                 )
             else:
-                # Inconsistent state; surface loudly while keeping server healthy
                 print(
                     f"CRITICAL: Driver '{driver_name}' promoted but has no artifact path. Cannot load.",
                 )
@@ -86,7 +85,9 @@ async def update_driver_status(
         raise HTTPException(status_code=500, detail=f"Failed to update status: {e}")
 
 
-@probecraft_router.get("/drivers", response_model=list[DriverState])
+# highlight-start
+@probecraft_router.get("/drivers", response_model=None)
+# highlight-end
 async def list_driver_states(manager: DriverLifecycleManager = Depends(get_lifecycle_manager)):
     return manager.get_all_states()
 

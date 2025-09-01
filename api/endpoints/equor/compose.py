@@ -10,7 +10,6 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 
 # Make sure to import the centralized helper
-from core.utils.net_api import _resolve_endpoint
 from core.utils.neo.cypher_query import cypher_query
 from systems.equor.core.identity.composer import CompositionError, PromptComposer
 from systems.equor.core.neo import graph_writes

@@ -7,6 +7,18 @@ from typing import Any
 from systems.simula.agent import qora_adapters as _qora
 from systems.simula.nscs import agent_tools as _nscs
 from systems.simula.agent import nova_adapters as _nova 
+from pathlib import Path
+
+_NOISE_KEYS = {"type", "$schema", "returns", "additionalProperties", "properties", "required"}
+
+def _scrub_noise(p: dict[str, Any] | None) -> dict[str, Any]:
+    if not isinstance(p, dict):
+        return {}
+    q = dict(p)
+    for k in list(q.keys()):
+        if k in _NOISE_KEYS:
+            q.pop(k, None)
+    return q
 
 def _wrap(func: Callable[..., Any]) -> Callable[[dict[str, Any]], Awaitable[dict[str, Any]]]:
     sig = inspect.signature(func)
@@ -14,7 +26,8 @@ def _wrap(func: Callable[..., Any]) -> Callable[[dict[str, Any]], Awaitable[dict
     params_list = list(sig.parameters.values())
     call_as_params_dict = len(params_list) == 1 and params_list[0].name in {"params", "payload"} 
     async def runner(params: dict[str, Any]) -> dict[str, Any]:
-        params = params or {}
+    # extra defensive scrub in case orchestrator didn't strip noise
+        params = _scrub_noise(params)        
         call = func(params) if call_as_params_dict else func(**params)
         return await call if is_async else call
     return runner
@@ -39,6 +52,7 @@ TOOLS: dict[str, Callable[[dict[str, Any]], Awaitable[dict[str, Any]]]] = {
     "file_search": _wrap(_nscs.file_search),
     "read_file": _wrap(_nscs.read_file),
     "write_code": _wrap(_nscs.write_file),
+    "write_file": _wrap(_nscs.write_file),
     "delete_file": _wrap(_nscs.delete_file),
     "rename_file": _wrap(_nscs.rename_file),
     "create_directory": _wrap(_nscs.create_directory),
@@ -79,3 +93,21 @@ TOOLS: dict[str, Callable[[dict[str, Any]], Awaitable[dict[str, Any]]]] = {
     "package_artifacts": _wrap(_nscs.package_artifacts),
     "record_recipe": _wrap(_nscs.record_recipe),
 }
+
+
+# ------- Optional advanced/experimental tools (added only if present) -------
+if hasattr(_nscs, "local_select_patch"):
+    TOOLS["local_select_patch"] = _wrap(getattr(_nscs, "local_select_patch"))
+if hasattr(_nscs, "list_repo_files"):
+    TOOLS["list_repo_files"] = _wrap(getattr(_nscs, "list_repo_files"))
+else:
+    # alias for some code paths that expect 'list_repo_files'
+    TOOLS["list_repo_files"] = _wrap(_nscs.list_files)
+
+# Memory/skill helpers (safe no-ops if your build doesn't expose them)
+for _opt in ("memory_read", "memory_write", "continue_hierarchical_skill", "request_skill_repair"):
+    if hasattr(_nscs, _opt):
+        TOOLS[_opt] = _wrap(getattr(_nscs, _opt))
+
+# Export explicitly
+__all__ = ["TOOLS"]

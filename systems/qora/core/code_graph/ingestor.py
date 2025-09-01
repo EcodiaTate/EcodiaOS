@@ -7,7 +7,8 @@ import hashlib
 import logging
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Set
+import os
 
 # Optional ADR front matter support (pip package: python-frontmatter)
 try:
@@ -88,18 +89,72 @@ def _node_source_and_doc(node: ast.AST, source: str) -> tuple[str, str]:
 # =============================================================================
 # Git integration (optional; fall back to full scan)
 # =============================================================================
-async def _get_last_commit_from_graph() -> str | None:
+async def _get_last_commit_from_graph(state_id: str = "default") -> str | None:
     rows = await cypher_query(
-        "MATCH (s:IngestState {id:'default'}) RETURN s.last_commit AS last LIMIT 1"
+        """
+        MATCH (s:IngestState {id:$id})
+        RETURN CASE WHEN s.last_commit = '' THEN null ELSE s.last_commit END AS last
+        LIMIT 1
+        """,
+        {"id": state_id},
     )
-    return rows[0]["last"] if rows and rows[0].get("last") else None
+    last = rows[0]["last"] if rows else None
 
+# NEW: list tracked M/D relative to HEAD and untracked A (py only)
+def _git_worktree_changes(repo_root: Path) -> list[tuple[str, Path | None, Path | None]]:
+    """
+    Returns (status, old_path, new_path) for worktree changes since HEAD, covering:
+    - Unstaged tracked (ws)
+    - Staged tracked (index, --cached)
+    - Untracked new files
+    """
+    changes: list[tuple[str, Path | None, Path | None]] = []
+    seen: set[tuple[str, str, str]] = set()  # (st, old_rel or "", new_rel or "")
 
-async def _set_last_commit_in_graph(commit: str) -> None:
+    def _lines(cmd: list[str]) -> list[str]:
+        try:
+            out = subprocess.check_output(cmd, cwd=str(repo_root)).decode()
+            return out.splitlines()
+        except Exception:
+            return []
+
+    ws = _lines(["git", "diff", "--name-status", "--find-renames", "--diff-filter=AMDR", "HEAD", "--", "*.py"])
+    idx = _lines(["git", "diff", "--cached", "--name-status", "--find-renames", "--diff-filter=AMDR", "HEAD", "--", "*.py"])
+    new = _lines(["git", "ls-files", "--others", "--exclude-standard", "--", "*.py"])
+
+    def _add(st: str, oldp: Path | None, newp: Path | None):
+        key = (st, str(oldp.relative_to(repo_root)) if oldp else "", str(newp.relative_to(repo_root)) if newp else "")
+        if key in seen:
+            return
+        seen.add(key)
+        changes.append((st, oldp, newp))
+
+    for line in ws + idx:
+        if not line.strip():
+            continue
+        parts = line.split("\t")
+        tag = parts[0]
+        if tag.startswith("R"):
+            oldp, newp = repo_root / parts[1], repo_root / parts[2]
+            _add("R", oldp, newp)
+        else:
+            st, pth = tag, parts[1]
+            if st in ("A", "M"):
+                _add(st, None, repo_root / pth)
+            elif st == "D":
+                _add("D", repo_root / pth, None)
+
+    for p in new:
+        if p.strip():
+            _add("A", None, repo_root / p)
+
+    return changes
+
+async def _set_last_commit_in_graph(commit: str, state_id: str = "default") -> None:
     await cypher_query(
-        "MERGE (s:IngestState {id:'default'}) "
+        "MERGE (s:IngestState {id:$id}) "
         "SET s.last_commit = $c, s.updated_at = timestamp()",
-        {"c": commit},
+        {"id": state_id, "c": commit},
     )
 
 
@@ -112,15 +167,35 @@ def _git_head(repo_root: Path) -> str | None:
         return None
 
 
-def _git_changed_py(repo_root: Path, since_commit: str) -> list[Path]:
+def _git_changes(repo_root: Path, since_commit: str) -> list[tuple[str, Path | None, Path | None]]:
+    """
+    Returns list of (status, old_path, new_path) where status in {'A','M','D','R'}.
+    Paths are absolute Path objects rooted at repo_root.
+    """
     try:
         out = subprocess.check_output(
-            ["git", "diff", "--name-only", f"{since_commit}..HEAD", "--", "*.py"],
+            ["git", "diff", "--name-status", "--find-renames", "--diff-filter=AMDR", f"{since_commit}..HEAD", "--", "*.py"],
             cwd=str(repo_root),
-        ).decode()
-        return [repo_root / p for p in out.splitlines() if p.strip()]
+        ).decode().splitlines()
     except Exception:
         return []
+
+    changes: list[tuple[str, Path | None, Path | None]] = []
+    for line in out:
+        if not line.strip():
+            continue
+        parts = line.split("\t")
+        tag = parts[0]
+        if tag.startswith("R"):  # e.g., R100
+            oldp, newp = parts[1], parts[2]
+            changes.append(("R", repo_root / oldp, repo_root / newp))
+        else:
+            st, pth = tag, parts[1]
+            if st in ("A", "M"):
+                changes.append((st, None, repo_root / pth))
+            elif st == "D":
+                changes.append((st, repo_root / pth, None))
+    return changes
 
 
 def _all_py_files(repo_root: Path) -> list[Path]:
@@ -253,6 +328,15 @@ async def _pass_one_create_nodes(
     file_module = _path_to_module(file_path, repo_root)
     file_hash = _hash_text(source_code)
 
+# Early exit: if file content hash unchanged (and not force), skip nodes+rels work.
+    if not force:
+        prev = await cypher_query(
+            "OPTIONAL MATCH (f:CodeFile {path:$path}) RETURN f.hash AS h",
+            {"path": rel_path},
+        )
+
+        if prev and prev[0].get("h") == file_hash:
+            return 0
     # Upsert CodeFile by path (keep fqn for backward compatibility)
     await cypher_query(
         f"MERGE (f:{LABEL_CODEFILE} {{path:$path}}) "
@@ -407,6 +491,16 @@ async def _clear_outgoing_rels_for_file(rel_path: str) -> None:
         {"path": rel_path},
     )
 
+async def _delete_file_graph(rel_path: str) -> None:
+    """Remove a CodeFile and its defined Code symbols (and their incident rels)."""
+    await cypher_query(
+        f"""
+        MATCH (f:{LABEL_CODEFILE} {{path:$path}})
+        OPTIONAL MATCH (f)-[:DEFINES]->(c:{LABEL_CODE})
+        DETACH DELETE f, c
+        """,
+        {"path": rel_path},
+    )
 
 async def _pass_two_create_relationships(
     file_key: str,  # rel_path string used as key in file_cache
@@ -571,6 +665,7 @@ async def patrol_and_ingest(
     force: bool = False,
     changed_only: bool = True,
     dry_run: bool = False,
+    state_id: str | None = None,
 ) -> dict[str, Any]:
     """
     Main entry point.
@@ -579,6 +674,7 @@ async def patrol_and_ingest(
     - Relationships are rebuilt only for touched files.
     """
     repo_root = Path(root_dir).resolve()
+    state = state_id or os.getenv("QORA_INGEST_STATE_ID", "default")
 
     # Ensure indices/constraints
     from .schema import ensure_all_graph_indices
@@ -591,25 +687,52 @@ async def patrol_and_ingest(
     files_processed = 0
 
     head = _git_head(repo_root)
-    last = await _get_last_commit_from_graph() if head else None
+    last = await _get_last_commit_from_graph(state) if head else None
 
-    if force or not changed_only or not head or not last:
-        candidates = _all_py_files(repo_root)
+    candidates: Set[Path] = set()
+
+    if not (force or not changed_only or not head or not last):
+        # normal commit-to-commit diff
+        changes = _git_changes(repo_root, last)
+        dels = 0
+        for st, oldp, newp in changes:
+            if st == "D" and oldp:
+                rel = str(oldp.relative_to(repo_root)).replace("\\", "/")
+                await _delete_file_graph(rel)
+                dels += 1
+            elif st == "R" and oldp and newp:
+                rel_old = str(oldp.relative_to(repo_root)).replace("\\", "/")
+                await _delete_file_graph(rel_old)
+                candidates.add(newp)
+            elif st in ("A", "M") and newp:
+                candidates.add(newp)
+
+        # If the commit diff is empty, consider worktree changes (uncommitted edits)
+        if not candidates and dels == 0:
+            wt_changes = _git_worktree_changes(repo_root)
+            for st, oldp, newp in wt_changes:
+                if st == "D" and oldp:
+                    rel = str(oldp.relative_to(repo_root)).replace("\\", "/")
+                    await _delete_file_graph(rel)
+                elif st in ("A", "M", "R") and newp:
+                    candidates.add(newp)
+
+        if not candidates:
+            candidates = set(_all_py_files(repo_root))
     else:
-        diffed = _git_changed_py(repo_root, last)
-        candidates = diffed if diffed else _all_py_files(repo_root)
+             candidates = set(_all_py_files(repo_root))
 
-    # PASS 1: upsert nodes for candidate files
+    # ---------- PASS 1: upsert nodes for candidate files ----------
     file_cache: Dict[str, Dict[str, Any]] = {}
-    for file_path in candidates:
+    for file_path in sorted(candidates):
         up = await _pass_one_create_nodes(file_path, repo_root, file_cache, force=force)
         if up > 0:
             total_nodes += up
             files_processed += 1
 
-    # PASS 2: clear/rebuild relationships only for files we touched
+      # ---------- PASS 2: clear/rebuild relationships only for files we touched ----------
     module_to_file_path = {info["module"]: key for key, info in file_cache.items()}
-    for file_key in file_cache.keys():
+    for file_key in list(file_cache.keys()):
         await _clear_outgoing_rels_for_file(file_key)
         rels = await _pass_two_create_relationships(file_key, file_cache, module_to_file_path)
         total_rels += rels
@@ -619,7 +742,7 @@ async def patrol_and_ingest(
     total_nodes += adr_nodes
 
     if head and not dry_run:
-        await _set_last_commit_in_graph(head)
+        await _set_last_commit_in_graph(head, state)
 
     return {
         "ok": True,
@@ -630,4 +753,6 @@ async def patrol_and_ingest(
         "mode": "force_full" if force else ("changed_only" if changed_only else "full_scan"),
         "head": head,
         "since": last,
+        "state_id": state,
     }
+# touch

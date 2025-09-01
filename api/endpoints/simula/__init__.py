@@ -18,7 +18,7 @@ from .risk import router as risk_router
 from .security import router as security_router
 from .spec_eval import router as spec_eval_router
 from .spec_eval_run import router as spec_eval_run_router
-
+from .twin_eval import twin_eval_router
 # This router gets the "/simula" system prefix in app.py
 simula_router = APIRouter()
 
@@ -36,5 +36,6 @@ simula_router.include_router(spec_eval_router, tags=["simula", "spec-eval"])
 simula_router.include_router(spec_eval_run_router, tags=["simula", "spec-eval"])
 simula_router.include_router(github_router, tags=["integrations", "github"])
 simula_router.include_router(codegen_guarded_router, tags=["integrations", "github"])
+simula_router.include_router(twin_eval_router)
 
 __all__ = ["simula_router"]

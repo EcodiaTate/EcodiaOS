@@ -1,10 +1,82 @@
-Of course. It has been a pleasure working with you to bring EcodiaOS to life. Here are the requested updates to the eos_bible.md to reflect the new systems we've built, followed by a sentence to remember our collaboration.
+# EOS Bible — API Response Hygiene (Compact)
 
-## Canonical Guide Update: eos_bible.md
-Based on our work, here are the necessary additions to your canonical guide. These sections codify the new patterns and services we've implemented.
+**Golden rule:** pick **one** lane per route — **typed** (`response_model`) *or* **manual** (`JSONResponse`). **Never both.**
+
+## Rules
+
+* **Typed lane:** declare `response_model=Model`; return a **dict/Model**; add headers via `Response`; **no `JSONResponse`**.
+* **Manual lane:** return **`JSONResponse(content=..., headers=..., status_code=...)`**; **no `response_model`**, no `Response` param mutation.
+* **Bodies:** wrap in **Pydantic v2** models (no raw `dict[str, Any]` for complex shapes).
+* **Serializables:** convert non-JSON types (`Path`, `set`, `Enum`, `datetime`) via `model_dump(mode="json")` or preformat.
+* **Status:** 200 = success, 202 = accepted/background, 204 = no body.
+* **Tracing headers (always):** `x-ecodia-immune: 1`, `x-decision-id: <propagate-or-mint>`.
+* **Background:** schedule with `loop.create_task(...)` (or `BackgroundTask`); log exceptions inside the task.
+
+## Canonical patterns
+
+**A) Typed (validation + OpenAPI)**
+
+```python
+class Accepted(BaseModel):
+    accepted: bool; root: str; force: bool; dry_run: bool
+    base_rev: str | None = None; message: str
+
+@router.post("/reindex", response_model=Accepted, status_code=202)
+async def reindex(body: ReindexReq | None = Body(None), response: Response = None):
+    req = body or ReindexReq()
+    if response: 
+        response.headers["x-ecodia-immune"]="1"
+        response.headers.setdefault("x-decision-id","admin-reindex")
+    asyncio.get_running_loop().create_task(do_work(req))
+    return Accepted(accepted=True, root=req.root, force=req.force,
+                    dry_run=req.dry_run, base_rev=req.base_rev, message="Reindex started")
+```
+
+**B) Manual (you own bytes & headers)**
+
+```python
+@router.post("/reindex", status_code=202)
+async def reindex(body: ReindexReq | None = Body(None)) -> JSONResponse:
+    req = body or ReindexReq()
+    asyncio.get_running_loop().create_task(do_work(req))
+    return JSONResponse(
+        status_code=202,
+        headers={"x-ecodia-immune":"1","x-decision-id":"admin-reindex"},
+        content={"accepted":True,"root":req.root,"force":req.force,
+                 "dry_run":req.dry_run,"base_rev":req.base_rev,"message":"Reindex started"}
+    )
+```
+
+## Anti-patterns (ban)
+
+* `response_model` **and** returning `JSONResponse`.
+* Mutating a `Response` param **and** returning a new `JSONResponse`.
+* Returning unserializable objects (e.g., `Path`, `set`, raw `datetime`) without encoding.
+* Accepting complex bodies as `dict[str, Any]` (opaque 422s).
+* Import/define collisions where a **function** shadows a Pydantic model (breaks schema gen).
+
+## Cross-service calls
+
+* Use `post(ENDPOINTS.X, json=...)`; on 200, validate upstream shape before relaying.
+* If overlay missing: catch `AttributeError` → 500 with actionable detail.
+
+## Git/Incremental indexing (HEAD-safe)
+
+* Detect repo/base (`HEAD` or `base_rev`); if absent → **full scan**, don’t call `git diff`.
+* Set `GIT_DISCOVERY_ACROSS_FILESYSTEM=1`; set `GIT_DIR`/`GIT_WORK_TREE` iff `.git` exists.
+* Log mode: `incremental from <sha>` vs `full-scan (reason: …)`.
+
+## Test checklist
+
+* Status & shape correct; OpenAPI builds clean; serialization of edge types OK.
+* Background task fires without blocking; errors logged with `x-decision-id`.
+* Headers present (`x-ecodia-immune`, `x-decision-id`).
+* HEAD-less repo path returns 202 and runs full scan.
+
+**Mantra:** *Choose the lane. Keep it typed or keep it manual. Everything else is noise.*
+
 
 New Chapter: Voxis — Conversational Agent
-(Add this as a new top-level chapter in your eos_bible.md)
 
 Purpose & role
 Voxis is the primary conversational interface for EcodiaOS. It serves as the bridge between the user and the entire EcodiaOS cognitive architecture. Its core responsibility is to orchestrate a real-time, emotionally aware, and agentic dialogue.

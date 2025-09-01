@@ -22,20 +22,17 @@ async def run_in_twin(intent: AxonIntent) -> ActionResult:
     body = intent.model_dump()
     started = time.perf_counter()
 
-    path = None
+    # Preferred: Synapse simulate (per bible's canonical ops)
     try:
-        # Preferred: Synapse simulate (per bible's canonical ops)
         if hasattr(ENDPOINTS, "SYNAPSE_SIMULATE"):
-            path = ENDPOINTS.SYNAPSE_SIMULATE
-        # Fallback: Simula twin eval, also using the overlay
-        elif hasattr(ENDPOINTS, "SIMULA_TWIN_EVAL"):
-            path = ENDPOINTS.SIMULA_TWIN_EVAL
-        
-        if not path:
-             raise ValueError("No simulation endpoint (SYNAPSE_SIMULATE or SIMULA_TWIN_EVAL) found in API overlay.")
-
-        data = await _post_json(path, body)
-
+            data = await _post_json(getattr(ENDPOINTS, "SYNAPSE_SIMULATE"), body)
+        else:
+            # Fallbacks that keep dev flows unblocked
+            path = (
+                getattr(ENDPOINTS, "SIMULA_TWIN_EVAL", None)
+                or "/simula/twin/eval"
+            )
+            data = await _post_json(path, body)
     except Exception as e:
         # Fail-safe prediction (prevents downstream overconfidence)
         dur_ms = (time.perf_counter() - started) * 1000.0

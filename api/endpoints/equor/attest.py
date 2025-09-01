@@ -12,13 +12,8 @@ attest_router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-# REFACTORED: The _validate_attestation function is no longer needed
-# because FastAPI will handle validation automatically in the endpoint signature.
-
 @attest_router.post("/attest")
 async def receive_attestation(
-    # REFACTORED: Accept the Pydantic model directly instead of a generic dict.
-    # FastAPI will now automatically validate the incoming JSON against the Attestation model.
     attestation: Attestation
 ) -> dict[str, Any]:
     """
@@ -46,8 +41,7 @@ async def receive_attestation(
             "now": now_iso,
         }
 
-        # Create Attestation node and link to Episode (if Episode present)
-        # NOTE: No maps in properties; only strings/numbers/arrays.
+        # NOTE: Fixes Neo4j deprecation: explicit variable scope clause for subquery.
         query = """
         MERGE (a:Attestation {id: $run_id})
         ON CREATE SET a.created_at = datetime($now)
@@ -58,8 +52,7 @@ async def receive_attestation(
           a.last_seen = datetime($now)
 
         WITH a
-        CALL {
-          WITH a
+        CALL (a) {
           WITH a, $episode_id AS eid
           WHERE eid IS NOT NULL AND eid <> ''
           MERGE (e:Episode {id: eid})
@@ -72,11 +65,16 @@ async def receive_attestation(
         """
 
         await cypher_query(query, params=params)
-        return {"ok": True, "run_id": run_id, "episode_id": episode_id, "persisted": True, "breaches": breaches}
+        return {
+            "ok": True,
+            "run_id": run_id,
+            "episode_id": episode_id,
+            "persisted": True,
+            "breaches": breaches,
+        }
 
     except HTTPException:
         raise
     except Exception as e:
         logger.exception("Failed to persist attestation run_id=%s", getattr(attestation, "run_id", "<none>"))
-        # Don’t leak internals in prod; simple error payload is fine.
         raise HTTPException(status_code=500, detail=f"Could not persist attestation: {e}")

@@ -8,24 +8,8 @@ from pathlib import Path
 from typing import Any
 
 from core.utils.net_api import ENDPOINTS, get_http_client
-from systems.qora.client import (
-    qora_exec_by_query as _qora_exec_by_query,
-)
-from systems.qora.client import (
-    qora_exec_by_uid as _qora_exec_by_uid,
-)
-from systems.qora.client import (
-    qora_schema as _qora_schema,
-)
-
-# Qora ARCH (catalog/exec) — keep existing client for backward compatibility
-from systems.qora.client import (
-    qora_search as _qora_search,
-)
 from systems.simula.code_sim.fuzz.hypo_driver import run_hypothesis_smoke
 from systems.simula.code_sim.repair.engine import attempt_repair
-from systems.simula.code_sim.sandbox.sandbox import DockerSandbox
-from systems.simula.code_sim.sandbox.seeds import seed_config
 
 # Sandbox utilities (quality)
 try:
@@ -35,9 +19,18 @@ except Exception:  # soft import for environments without sandbox
     DockerSandbox = None  # type: ignore
     seed_config = lambda: {}  # type: ignore
 
+try:
+    from systems.simula.agent.tools_advanced import (
+        local_select_patch as local_select_patch,
+        rebase_patch as rebase_patch,
+        format_patch as format_patch,
+        record_recipe as record_recipe,
+        run_ci_locally as run_ci_locally,
+    )
+except Exception:
+    # keep startup resilient if advanced deps aren’t available in a given env
+    pass
 # ---------------- Qora HTTP Adapters (no local clients) ---------------------
-# Uses ENDPOINTS (if present) with sane fallbacks to the literal paths from your OpenAPI.
-
 
 async def _post(path: str, payload: dict[str, Any], timeout: float = 30.0) -> dict[str, Any]:
     http = await get_http_client()
@@ -54,6 +47,7 @@ async def _get(path: str, params: dict[str, Any], timeout: float = 30.0) -> dict
 
 
 # --- Qora ARCH (search/schema/execute) ---
+
 async def _qora_search(query: str, top_k: int = 5) -> dict[str, Any]:
     url = getattr(ENDPOINTS, "QORA_ARCH_SEARCH", "/qora/arch/search")
     return await _post(url, {"query": query, "top_k": int(top_k)})
@@ -67,7 +61,8 @@ async def _qora_schema(uid: str) -> dict[str, Any]:
 
 
 async def _qora_exec_by_uid(uid: str, args: dict[str, Any]) -> dict[str, Any]:
-    url = getattr(ENDPOINTS, "QORA_ARCH_EXEC_UID", "/qora/arch/execute-by-uid")
+    # POST /qora/arch/execute-by-uid
+    url = getattr(ENDPOINTS, "QORA_ARCH_EXECUTE_BY_UID", "/qora/arch/execute-by-uid")
     return await _post(url, {"uid": uid, "args": args})
 
 
@@ -79,7 +74,8 @@ async def _qora_exec_by_query(
     safety_max: int = 3,
     system: str = "*",
 ) -> dict[str, Any]:
-    url = getattr(ENDPOINTS, "QORA_ARCH_EXEC_QUERY", "/qora/arch/execute-by-query")
+    # POST /qora/arch/execute-by-query
+    url = getattr(ENDPOINTS, "QORA_ARCH_EXECUTE_BY_QUERY", "/qora/arch/execute-by-query")
     return await _post(
         url,
         {
@@ -93,13 +89,16 @@ async def _qora_exec_by_query(
 
 
 # --- Qora Dossier (builder) ---
+
 async def _get_dossier(target_fqname: str, *, intent: str) -> dict[str, Any]:
     # POST /qora/dossier/build
     url = getattr(ENDPOINTS, "QORA_DOSSIER_BUILD", "/qora/dossier/build")
-    return await _post(url, {"target_fqname": target_fqname, "intent": intent})
+    # NOTE: backend expects "symbol", NOT "target_fqname"
+    return await _post(url, {"symbol": target_fqname, "intent": intent})
 
 
 # --- Qora Blackboard KV ---
+
 async def _bb_write(key: str, value: Any) -> dict[str, Any]:
     url = getattr(ENDPOINTS, "QORA_BB_WRITE", "/qora/bb/write")
     return await _post(url, {"key": key, "value": value})
@@ -112,7 +111,6 @@ async def _bb_read(key: str) -> Any:
 
 
 # ---------------- Qora ARCH (execute system tools) --------------------------
-
 
 async def execute_system_tool(params: dict[str, Any]) -> dict[str, Any]:
     uid = params.get("uid")
@@ -160,7 +158,6 @@ async def execute_system_tool_strict(params: dict[str, Any]) -> dict[str, Any]:
 
 
 # ---------------- World Model & Memory (Qora WM) ----------------------------
-
 
 async def get_context_dossier(params: dict[str, Any]) -> dict[str, Any]:
     target = params.get("target_fqname")
@@ -290,7 +287,9 @@ async def run_tests_k(params: dict[str, Any]) -> dict[str, Any]:
     paths: list[str] = params.get("paths") or ["tests"]
     k_expr: str = params.get("k_expr") or ""
     timeout_sec: int = int(params.get("timeout_sec") or 600)
-    async with DockerSandbox(seed_config()).session() as sess:
+    if DockerSandbox is None:
+        return {"status": "error", "reason": "Sandbox unavailable"}
+    async with DockerSandbox(seed_config()).session() as sess:  # type: ignore
         ok, logs = await sess.run_pytest_select(paths, k_expr, timeout=timeout_sec)
         return {"status": "success" if ok else "failed", "k": k_expr, "logs": logs}
 
@@ -312,8 +311,7 @@ async def apply_refactor(params: dict[str, Any]) -> dict[str, Any]:
         return {"status": "success"}
 
 
-# systems/simula/agent/tools.py  (append safe repair tool exposing engine)
-
+# ---------------- Safe repair + wrappers ------------------------------------
 
 async def run_repair_engine(params: dict[str, Any]) -> dict[str, Any]:
     paths: list[str] = params.get("paths") or []
@@ -322,14 +320,13 @@ async def run_repair_engine(params: dict[str, Any]) -> dict[str, Any]:
     return {"status": out.status, "diff": out.diff, "tried": out.tried, "notes": out.notes}
 
 
-# systems/simula/agent/tools.py  (append safe wrappers)
-
-
 async def run_tests_xdist(params: dict[str, Any]) -> dict[str, Any]:
     paths: list[str] = params.get("paths") or ["tests"]
     nprocs = params.get("nprocs") or "auto"
     timeout_sec = int(params.get("timeout_sec") or 900)
-    async with DockerSandbox(seed_config()).session() as sess:
+    if DockerSandbox is None:
+        return {"status": "error", "reason": "Sandbox unavailable"}
+    async with DockerSandbox(seed_config()).session() as sess:  # type: ignore
         ok, logs = await sess.run_pytest_xdist(paths, nprocs=nprocs, timeout=timeout_sec)
         return {"status": "success" if ok else "failed", "nprocs": nprocs, "logs": logs}
 
@@ -349,7 +346,6 @@ async def run_fuzz_smoke(params: dict[str, Any]) -> dict[str, Any]:
 
 
 # ---------------- Hierarchical skills (thin HTTP wrappers) ------------------
-
 
 async def continue_hierarchical_skill(params: dict[str, Any]) -> dict[str, Any]:
     episode_id = params.get("episode_id")

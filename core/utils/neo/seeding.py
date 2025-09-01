@@ -5,7 +5,7 @@ import logging
 from typing import Any
 
 from core.utils.neo.cypher_query import cypher_query
-from seed_flags import SEED_FLAGS, upsert_flag # Re-use our existing logic
+from scripts.seed_flags import SEED_FLAGS, upsert_flag # Re-use our existing logic
 
 async def seed_initial_flags():
     """

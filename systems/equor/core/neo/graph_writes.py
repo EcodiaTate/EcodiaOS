@@ -1,5 +1,3 @@
-# systems/equor/core/neo/graph_writes.py
-
 import uuid
 from typing import Any
 
@@ -54,18 +52,14 @@ async def save_prompt_patch(response: ComposeResponse, request: ComposeRequest) 
     await add_node("PromptPatch", patch_properties)
     for facet_id in response.included_facets:
         await add_relationship(
-            from_node_label="PromptPatch",
-            from_node_props={"id": response.prompt_patch_id},
-            to_node_label="Facet",
-            to_node_props={"id": facet_id},
+            src_match={"label": "PromptPatch", "match": {"id": response.prompt_patch_id}},
+            dst_match={"label": "Facet", "match": {"id": facet_id}},
             rel_type="DERIVED_FROM",
         )
     for rule_id in response.included_rules:
         await add_relationship(
-            from_node_label="PromptPatch",
-            from_node_props={"id": response.prompt_patch_id},
-            to_node_label="ConstitutionRule",
-            to_node_props={"id": rule_id},
+            src_match={"label": "PromptPatch", "match": {"id": response.prompt_patch_id}},
+            dst_match={"label": "ConstitutionRule", "match": {"id": rule_id}},
             rel_type="DERIVED_FROM",
         )
     return response.prompt_patch_id
@@ -76,17 +70,13 @@ async def save_attestation(attestation: Attestation) -> str:
     properties = {"id": attestation_id, **attestation.model_dump(exclude_none=True)}
     await add_node("Attestation", properties)
     await add_relationship(
-        from_node_label="Attestation",
-        from_node_props={"id": attestation_id},
-        to_node_label="PromptPatch",
-        to_node_props={"id": attestation.applied_prompt_patch_id},
+        src_match={"label": "Attestation", "match": {"id": attestation_id}},
+        dst_match={"label": "PromptPatch", "match": {"id": attestation.applied_prompt_patch_id}},
         rel_type="USED",
     )
     await add_relationship(
-        from_node_label="Episode",
-        from_node_props={"id": attestation.episode_id},
-        to_node_label="Attestation",
-        to_node_props={"id": attestation_id},
+        src_match={"label": "Episode", "match": {"id": attestation.episode_id}},
+        dst_match={"label": "Attestation", "match": {"id": attestation_id}},
         rel_type="HAS_ATTESTATION",
     )
     return attestation_id
@@ -141,10 +131,8 @@ async def save_qualia_state(state: QualiaState) -> str:
     properties = state.model_dump()
     await add_node("QualiaState", properties)
     await add_relationship(
-        from_node_label="Episode",
-        from_node_props={"id": state.triggering_episode_id},
-        to_node_label="QualiaState",
-        to_node_props={"id": state.id},
+        src_match={"label": "Episode", "match": {"id": state.triggering_episode_id}},
+        dst_match={"label": "QualiaState", "match": {"id": state.id}},
         rel_type="EXPERIENCED",
     )
     return state.id
