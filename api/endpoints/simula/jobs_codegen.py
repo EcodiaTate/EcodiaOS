@@ -1,99 +1,79 @@
 # api/endpoints/simula/jobs_codegen.py
-# FINAL: collision-proof & pydantic v2 safe
-# NOTE: intentionally NO "from __future__ import annotations" so annotations are concrete.
-
 import logging
 import time
+from typing import Optional
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Response
-from pydantic import BaseModel, Field, ConfigDict
 
-# If you actually need this, keep it; otherwise comment it out while debugging
+from systems.simula.agent.scl_orchestrator import SCL_Orchestrator  # <-- NEW
+from systems.simula.nscs.agent_tools import get_context_dossier
+from systems.simula.schema import SimulaCodegenIn, SimulaCodegenOut, SimulaCodegenTarget
 from systems.synk.core.switchboard.gatekit import route_gate
+
+from ._helpers import _derive_target_fqn  # Assuming helpers exist
 
 codegen_router = APIRouter()
 log = logging.getLogger("simula.api.codegen")
 
-# ---------- MODELS (unique names to avoid collisions) ----------
-
-class SimulaCodegenTarget(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    path: str = Field(..., description="Repo-relative path")
-    signature: str | None = None
-
-class SimulaCodegenIn(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    spec: str = Field(..., min_length=10)
-    targets: list[SimulaCodegenTarget] = Field(default_factory=list)
-    budget_ms: int | None = None
-
-class SimulaCodegenOut(BaseModel):
-    job_id: str
-    status: str
-    message: str | None = None
-
-# Import-time sanity: if any of these aren’t classes, explode now.
-assert isinstance(SimulaCodegenIn, type) and issubclass(SimulaCodegenIn, BaseModel), "SimulaCodegenIn shadowed!"
-assert isinstance(SimulaCodegenOut, type) and issubclass(SimulaCodegenOut, BaseModel), "SimulaCodegenOut shadowed!"
-# --- sanity: model_fields must be a dict (pydantic v2) ---
-
-if callable(SimulaCodegenIn.model_fields):
-    mf = SimulaCodegenIn.model_fields
-   
-    # blow up right here so you get a clean import-time traceback
-    raise RuntimeError("[DIAG] SimulaCodegenIn.model_fields was replaced by a function")
-
-assert isinstance(SimulaCodegenIn.model_fields, dict), "model_fields must be a dict on v2"
-
-# --- Back-compat exports for old imports ---
-CodegenRequest  = SimulaCodegenIn
-CodegenResponse = SimulaCodegenOut
-__all__ = ["SimulaCodegenIn", "SimulaCodegenOut", "CodegenRequest", "CodegenResponse", "start_agent_job", "codegen_router"]
-
-# ---------- ROUTE ----------
 
 @codegen_router.post(
     "/jobs/codegen",
     dependencies=[route_gate("simula.codegen.enabled", True)],
-    response_model=SimulaCodegenOut,  # now explicit & safe
-    summary="Activate the Simula Strategic Agent",
+    response_model=SimulaCodegenOut,
+    summary="Activate the Simula Synaptic Control Loop",
 )
 async def start_agent_job(req: SimulaCodegenIn, response: Response) -> SimulaCodegenOut:
-    """
-    Activates the Simula agent to achieve the specified goal ('spec').
-    """
-    from systems.simula.agent.orchestrator_main import AgentOrchestrator  # keep import local
-
     request_id = uuid4().hex
+    session_id = req.session_id or uuid4().hex
     response.headers["X-Request-ID"] = request_id
     t0 = time.perf_counter()
 
-    log.info("start codegen req_id=%s goal='%s' hints=%d", request_id, req.spec, len(req.targets))
+    graph_fqn, _, first_path = _derive_target_fqn(req.targets, req.spec)
+    log.info("start codegen req_id=%s goal='%s' target_fqname=%s", request_id, req.spec, graph_fqn)
 
-    objective_dict = {
-        "id": f"obj_{request_id}",
-        "title": (req.spec or "Untitled Codegen Task")[:120],
-        "description": req.spec,
-        "initial_hints": [t.model_dump() for t in req.targets],
-    }
+    # Prepare the context BEFORE calling the orchestrator
+    dossier = {}
+    if graph_fqn:
+        log.info("Fetching context dossier for target: %s", graph_fqn)
+        try:
+            dossier_response = await get_context_dossier(
+                target_fqname=graph_fqn, intent="implement"
+            )
+            if dossier_response.get("status") == "success":
+                dossier = dossier_response.get("result", {}).get("dossier", {})
+            else:
+                log.warning(
+                    "Could not get dossier for '%s': %s.",
+                    graph_fqn,
+                    dossier_response.get("reason", ""),
+                )
+        except Exception as e:
+            log.error("Exception while fetching dossier: %s", e, exc_info=True)
 
     try:
-        agent = AgentOrchestrator()
-        result = await agent.run(
+        # Instantiate and run the SCL Orchestrator
+        orchestrator = SCL_Orchestrator(session_id=session_id)
+        result = await orchestrator.run(
             goal=req.spec,
-            objective_dict=objective_dict,
-            budget_ms=req.budget_ms,
+            dossier=dossier,
+            target_fqname=graph_fqn,
         )
-    except Exception as e:
-        log.exception("req_id=%s exception during agent run", request_id)
-        raise HTTPException(status_code=500, detail=f"Agent execution failed: {e!r}")
 
+    except Exception as e:
+        log.exception("req_id=%s exception during SCL orchestration", request_id)
+        raise HTTPException(status_code=500, detail=f"SCL Orchestrator failed: {e!r}")
+
+    # Handle the response
     duration = round(time.perf_counter() - t0, 3)
     status = (result or {}).get("status", "unknown")
-    message = (result or {}).get("message") or (result or {}).get("reason")
+    message = (result or {}).get("reason") or (result or {}).get("deliberation", {}).get("reason")
+
+    response.headers["X-Job-Status"] = status
+    if graph_fqn:
+        response.headers["X-Target-FQN"] = graph_fqn
+    if first_path:
+        response.headers["X-Target-Path"] = first_path
 
     log.info("finish codegen req_id=%s status=%s duration=%.3fs", request_id, status, duration)
-    response.headers["X-Job-Status"] = status
-
     return SimulaCodegenOut(job_id=request_id, status=status, message=message)

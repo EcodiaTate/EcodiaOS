@@ -13,6 +13,7 @@ from systems.axon.schemas import AxonIntent
 
 ab_router = APIRouter()
 
+
 @ab_router.post("/run")
 async def run_ab(
     intent: AxonIntent,
@@ -25,13 +26,15 @@ async def run_ab(
     REGISTRY.counter("axon.ab.run.calls").inc()
     trial = await run_ab_trial(intent, decision_id=x_decision_id)
     try:
-        journal.write_entry({
-            "type": "ab_trial",
-            "intent_id": intent.intent_id,
-            "capability": intent.target_capability,
-            "results": trial,
-            "decision_id": x_decision_id,
-        })
+        journal.write_entry(
+            {
+                "type": "ab_trial",
+                "intent_id": intent.intent_id,
+                "capability": intent.target_capability,
+                "results": trial,
+                "decision_id": x_decision_id,
+            }
+        )
     except Exception:
         pass
     return trial

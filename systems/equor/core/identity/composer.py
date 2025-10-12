@@ -19,9 +19,9 @@ class CompositionError(Exception):
 class _ProfileData:
     agent: str
     name: str
-    facet_ids: List[str]
-    rule_ids: List[str]
-    settings: Dict[str, Any]
+    facet_ids: list[str]
+    rule_ids: list[str]
+    settings: dict[str, Any]
 
 
 async def _get_profile(agent: str, name: str) -> _ProfileData:
@@ -30,17 +30,17 @@ async def _get_profile(agent: str, name: str) -> _ProfileData:
     We return plain properties via `properties(p)` to avoid driver-specific node wrappers.
     """
     rows = await cypher_query(
-      """
+        """
       MATCH (p:Profile {agent:$agent, name:$name})
       RETURN properties(p) AS p
       LIMIT 1
       """,
-      {"agent": agent, "name": name},
+        {"agent": agent, "name": name},
     )
     if not rows:
         raise CompositionError(f"No active profile named '{name}' found for agent '{agent}'.")
 
-    p: Dict[str, Any] = rows[0].get("p") or {}
+    p: dict[str, Any] = rows[0].get("p") or {}
     facet_ids = p.get("facet_ids") or []
     rule_ids = p.get("rule_ids") or []
 
@@ -51,10 +51,16 @@ async def _get_profile(agent: str, name: str) -> _ProfileData:
     except Exception:
         settings = {}
 
-    return _ProfileData(agent=agent, name=name, facet_ids=list(facet_ids), rule_ids=list(rule_ids), settings=settings)
+    return _ProfileData(
+        agent=agent,
+        name=name,
+        facet_ids=list(facet_ids),
+        rule_ids=list(rule_ids),
+        settings=settings,
+    )
 
 
-async def _load_facets(facet_ids: List[str], agent: str, name: str) -> List[Dict[str, Any]]:
+async def _load_facets(facet_ids: list[str], agent: str, name: str) -> list[dict[str, Any]]:
     """
     Prefer IDs; fall back to graph links if none were set on the profile.
     Return each facet as a plain property map.
@@ -81,7 +87,7 @@ async def _load_facets(facet_ids: List[str], agent: str, name: str) -> List[Dict
     return [r["f"] for r in rows or []]
 
 
-async def _load_rules(rule_ids: List[str], agent: str, name: str) -> List[Dict[str, Any]]:
+async def _load_rules(rule_ids: list[str], agent: str, name: str) -> list[dict[str, Any]]:
     if rule_ids:
         rows = await cypher_query(
             """
@@ -104,7 +110,7 @@ async def _load_rules(rule_ids: List[str], agent: str, name: str) -> List[Dict[s
     return [r["r"] for r in rows or []]
 
 
-def _choose_id(d: Dict[str, Any]) -> str:
+def _choose_id(d: dict[str, Any]) -> str:
     # Best-effort ID chooser across heterogeneous nodes
     return str(
         d.get("id")
@@ -112,23 +118,24 @@ def _choose_id(d: Dict[str, Any]) -> str:
         or d.get("facet_id")
         or d.get("uuid")
         or d.get("name")
-        or ""
+        or "",
     )
 
 
-def _materialize_patch_text(
+async def _materialize_patch_text(
     agent: str,
     profile: str,
     episode_id: str,
-    facets: List[Dict[str, Any]],
-    rules: List[Dict[str, Any]],
-    settings: Dict[str, Any],
-) -> Tuple[str, List[str], List[str]]:
-    facet_lines: List[str] = []
-    rule_lines: List[str] = []
+    facets: list[dict[str, Any]],
+    rules: list[dict[str, Any]],
+    settings: dict[str, Any],
+) -> tuple[str, list[str], list[str]]:
+    facet_lines: list[str] = []
+    rule_lines: list[str] = []
 
-    included_facets: List[str] = []
-    included_rules: List[str] = []
+    included_facets: list[str] = []
+    included_rules: list[str] = []
+    core_identity_text = await _get_latest_core_identity_text()
 
     for f in facets:
         fid = _choose_id(f)
@@ -147,6 +154,9 @@ def _materialize_patch_text(
     settings_line = json.dumps(settings, sort_keys=True) if settings else "{}"
 
     parts = [
+        "--- START OF SYSTEM-WIDE DIRECTIVES ---",
+        core_identity_text,
+        "--- END OF SYSTEM-WIDE DIRECTIVES ---\n",
         f"# Identity Profile: {agent}/{profile}",
         f"episode: {episode_id}",
         "",
@@ -164,6 +174,34 @@ def _materialize_patch_text(
     ]
     text = "\n".join(parts)
     return text, included_facets, included_rules
+
+
+async def _get_latest_core_identity_text() -> str:
+    """Fetches the text components of the latest EcodiaCoreIdentity."""
+    # This can be cached in a real system for performance.
+    query = """
+        MATCH (core:EcodiaCoreIdentity)
+        WHERE NOT (core)-[:SUPERSEDED_BY]->()
+        RETURN
+            core.narrative_summary AS narrative,
+            core.core_directives AS directives
+        ORDER BY core.version DESC
+        LIMIT 1
+    """
+    try:
+        result = await cypher_query(query)
+        if not result:
+            return "# Ecodia Core Identity\n- Directive: Operate as a helpful and harmless AI."
+
+        data = result[0]
+        narrative = data.get("narrative", "I am EcodiaOS.")
+        directives = data.get("directives", ["Be helpful and harmless."])
+
+        directive_lines = "\n".join(f"- {d}" for d in directives)
+        return f"# Ecodia Core Identity\n{narrative}\n\n## Core Directives\n{directive_lines}"
+    except Exception:
+        # Fail safe
+        return "# Ecodia Core Identity\n- Directive: Operate as a helpful and harmless AI."
 
 
 class PromptComposer:
@@ -187,7 +225,7 @@ class PromptComposer:
         facets = await _load_facets(prof.facet_ids, prof.agent, prof.name)
         rules = await _load_rules(prof.rule_ids, prof.agent, prof.name)
 
-        text, included_facets, included_rules = _materialize_patch_text(
+        text, included_facets, included_rules = await _materialize_patch_text(
             agent=prof.agent,
             profile=prof.name,
             episode_id=episode_id,

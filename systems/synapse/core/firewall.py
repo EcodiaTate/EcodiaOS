@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from core.utils.neo.cypher_query import cypher_query
-from systems.synapse.core.registry import PolicyArm, arm_registry
+from systems.synapse.core.registry import arm_registry
 from systems.synapse.firewall.smt_guard import check_smt_constraints  # <-- Now fully integrated
+from systems.synapse.schemas import PolicyArmModel as PolicyArm
 
 # Now imports from the refactored Simula/Synapse schemas
 from systems.synapse.schemas import TaskContext
@@ -58,11 +59,11 @@ class NeuroSymbolicFirewall:
 
         return True, "OK (SMT & Dynamic Rules Validated)"
 
-    def get_safe_fallback_arm(self, mode: str | None = None) -> PolicyArm:
+    async def get_safe_fallback_arm(self, mode: str | None = None) -> PolicyArm:
         """
         Retrieve a pre-approved safe fallback arm from the registry.
         """
-        return arm_registry.get_safe_fallback_arm(mode)
+        return await arm_registry.get_safe_fallback_arm(mode)
 
 
 # Singleton export

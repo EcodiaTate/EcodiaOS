@@ -9,7 +9,6 @@ now available to the AgentOrchestrator.
 This file is preserved to provide essential, stateless utility classes and
 functions that support the new tool and other parts of the system, such as:
 - Artifact storage and management (`ArtifactStore`)
-- Configuration data structures (`SimulaConfig`)
 - Standardized JSON logging (`JsonLogFormatter`)
 """
 
@@ -72,45 +71,11 @@ def sha1(s: str) -> str:
     return _h.sha1(s.encode("utf-8")).hexdigest()
 
 
-# =========================
-# Configuration Dataclasses
-# =========================
-
-
-@dataclass
-class SandboxCfg:
-    image: str = "python:3.11-slim"
-    timeout_sec: int = 1200
-    network: str = "bridge"
-
-
-@dataclass
-class OrchestratorCfg:
-    parallelism: int = 2
-    max_wall_minutes: int = 90
-    seed: int | None = None
-    keep_artifacts: bool = True
-    k_candidates: int = 2
-    unity_channel: str = "simula.codegen"
-
-
-@dataclass
-class SimulaConfig:
-    sandbox: SandboxCfg
-    orchestrator: OrchestratorCfg
-
-    @staticmethod
-    def load(path: Path | None = None) -> SimulaConfig:
-        raw = {}
-        if path and path.exists():
-            raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-
-        # Return default config if no file is provided or file is empty
-        return SimulaConfig(
-            sandbox=SandboxCfg(**(raw.get("sandbox", {}) or {})),
-            orchestrator=OrchestratorCfg(**(raw.get("orchestrator", {}) or {})),
-        )
-
+# --- DELETED SECTION ---
+# The SandboxCfg, OrchestratorCfg, and SimulaConfig dataclasses
+# were here. They are now obsolete and have been removed.
+# The new Pydantic-based settings in systems/simula/config/__init__.py
+# are the single source of truth.
 
 # =========================
 # Provenance / Artifacts

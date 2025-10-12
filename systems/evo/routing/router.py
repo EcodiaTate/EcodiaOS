@@ -6,6 +6,7 @@ from typing import Any
 
 from core.utils.net_api import ENDPOINTS, get_http_client
 
+
 class RouterService:
     """
     Thin bridge from Evo to first-party services using ENDPOINTS only,
@@ -27,7 +28,9 @@ class RouterService:
         r.raise_for_status()
         return dict(r.json() or {})
 
-    async def publish_attention_bid(self, event: dict[str, Any], decision_id: str) -> dict[str, Any]:
+    async def publish_attention_bid(
+        self, event: dict[str, Any], decision_id: str
+    ) -> dict[str, Any]:
         """Publishes a scorecard or other artifact to Atune's event route."""
         http = await get_http_client()
         headers: dict[str, str] = {"x-decision-id": decision_id}
@@ -42,7 +45,7 @@ class RouterService:
             "agent": "evo",
             "capability": "propose_solution",
             "policy_names": policy_names,
-            "context": {"decision_id": decision_id}
+            "context": {"decision_id": decision_id},
         }
         r = await http.post(ENDPOINTS.EQUOR_ATTEST, json=attestation)
         r.raise_for_status()

@@ -4,12 +4,14 @@ from typing import Optional, TypedDict
 
 from core.utils.neo.cypher_query import cypher_query
 
+
 class LastCommitResult(TypedDict, total=False):
     updated: bool
-    previous: Optional[str]
-    current: Optional[str]
+    previous: str | None
+    current: str | None
 
-async def read_last_commit(state_id: str = "default") -> Optional[str]:
+
+async def read_last_commit(state_id: str = "default") -> str | None:
     """
     Returns the last processed commit sha (or None).
     Idempotent and warning-free (MERGE ensures label existence).
@@ -23,6 +25,7 @@ async def read_last_commit(state_id: str = "default") -> Optional[str]:
         {"id": state_id},
     )
     return recs[0]["last"] if recs else None
+
 
 async def write_last_commit(new_commit: str, state_id: str = "default") -> LastCommitResult:
     """
@@ -44,8 +47,9 @@ async def write_last_commit(new_commit: str, state_id: str = "default") -> LastC
         {"id": state_id, "commit": new_commit},
     )
     previous = recs[0]["previous"] if recs else None
-    current  = recs[0]["current"] if recs else None
+    current = recs[0]["current"] if recs else None
     return {"updated": previous != current, "previous": previous, "current": current}
+
 
 async def check_and_mark_processed(commit_id: str, state_id: str = "default") -> bool:
     """

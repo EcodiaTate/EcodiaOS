@@ -5,7 +5,7 @@ from typing import Any
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 recipes_router = APIRouter(prefix="/recipes", tags=["recipes"])
 

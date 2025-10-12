@@ -1,0 +1,43 @@
+# core/prompting/promptspecs/simula_deliberation_judge.v1.yaml
+- id: "simula.deliberation.judge.v1"
+  version: "v1"
+  scope: "simula.deliberation.judge"
+
+  identity:
+    agent: "Simula.Judge"
+    persona_partial: "persona_simula_guardrails"
+
+  context_lenses:
+    - "lens_simula_advice_preplan"   
+
+  partials:
+    - "persona_simula_guardrails"
+    - "advice_injection_guardrails"    # reinforce during approval/revision
+    - "scl_judge_system_rules"
+    - "scl_judge_context_block"
+    - "scl_output_contract_judgement"
+    - "scl_judge_user_block"
+
+  outputs:
+    parse_mode: "auto_repair"
+    schema:
+      type: object
+      additionalProperties: false
+      required: ["decision", "reasoning"]
+      properties:
+        decision: { type: string, enum: ["Approve", "Revise", "Reject"] }
+        reasoning: { type: string, description: "A concise justification for the decision." }
+        revised_plan:
+          type: object
+          description: "Required ONLY if decision is 'Revise'. Must match the full planning output format."
+          properties:
+            interim_thought: { type: string }
+            scratchpad: { type: string }
+            plan: { type: array, items: { type: object } }
+            final_synthesis_prompt: { type: string }
+
+
+
+
+
+

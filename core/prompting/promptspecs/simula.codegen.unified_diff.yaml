@@ -3,10 +3,10 @@ version: 1.0.0
 scope: simula.codegen.unified_diff
 identity:
   agent: "Simula"
-  persona_partial: "partials/identity.j2"
+  persona_partial: "identity"
 safety:
   partials:
-    - "partials/safety_min.j2"
+    - "safety_min"
 outputs:
   schema_ref: null
   parse_mode: "tolerant"      # FIXED: Changed from "text" to "tolerant"

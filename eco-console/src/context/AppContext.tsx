@@ -1,7 +1,14 @@
 // src/context/AppContext.tsx
 
-import React, { createContext, useState, useContext, ReactNode } from 'react';
-import { Page } from '../App';
+import {
+  createContext,
+  useState,
+  useContext,
+  type ReactNode,
+} from 'react';
+
+// Import the Page union as a TYPE ONLY to avoid runtime circular deps
+import type { Page } from '../App';
 
 interface AppContextType {
   activePage: Page;
@@ -9,13 +16,12 @@ interface AppContextType {
   activeDecisionId: string | null;
   setActiveDecisionId: (id: string | null) => void;
   navigateToTrace: (id: string) => void;
-  // NEW: Add a function to clear the decision context
   clearDecisionId: () => void;
 }
 
-const AppContext = createContext<AppContextType | undefined>(undefined);
+const AppContext = createContext<AppContextType | null>(null);
 
-export const AppProvider = ({ children }: { children: ReactNode }) => {
+export function AppProvider({ children }: { children: ReactNode }) {
   const [activePage, setActivePage] = useState<Page>('Synapse');
   const [activeDecisionId, setActiveDecisionId] = useState<string | null>(null);
 
@@ -24,20 +30,24 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setActivePage('Atune');
   };
 
-  // NEW: Implementation for the clear function
   const clearDecisionId = () => {
     setActiveDecisionId(null);
   };
 
-  const value = { activePage, setActivePage, activeDecisionId, setActiveDecisionId, navigateToTrace, clearDecisionId };
+  const value: AppContextType = {
+    activePage,
+    setActivePage,
+    activeDecisionId,
+    setActiveDecisionId,
+    navigateToTrace,
+    clearDecisionId,
+  };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
-};
+}
 
-export const useAppContext = () => {
-  const context = useContext(AppContext);
-  if (context === undefined) {
-    throw new Error('useAppContext must be used within an AppProvider');
-  }
-  return context;
-};
+export function useAppContext(): AppContextType {
+  const ctx = useContext(AppContext);
+  if (!ctx) throw new Error('useAppContext must be used within an AppProvider');
+  return ctx;
+}

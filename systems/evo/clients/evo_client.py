@@ -9,6 +9,7 @@ from systems.evo.schemas import ConflictNode
 
 logger = logging.getLogger(__name__)
 
+
 class EvoConflictClient:
     """A client for reporting conflicts to the Evo system's intake."""
 
@@ -30,7 +31,9 @@ class EvoConflictClient:
             # Assuming ENDPOINTS.EVO_CONFLICTS_CREATE points to POST /evo/conflicts/
             response = await client.post(ENDPOINTS.EVO_CONFLICTS_CREATE, json=conflict_payload)
             response.raise_for_status()
-            logger.info("Successfully reported conflict to Evo: %s", conflict_payload.get("conflict_id"))
+            logger.info(
+                "Successfully reported conflict to Evo: %s", conflict_payload.get("conflict_id")
+            )
             return response.json()
         except Exception:
             # This is a critical failure path for the immune system.

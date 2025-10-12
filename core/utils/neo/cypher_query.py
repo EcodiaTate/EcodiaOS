@@ -7,12 +7,12 @@
 #
 from __future__ import annotations
 
-import os
 import json
+import os
 from collections.abc import Mapping, Sequence
 from datetime import date, datetime
 from enum import Enum
-from typing import Any, List, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from neo4j import AsyncDriver  # type: ignore
 
@@ -31,6 +31,7 @@ NEO4J_DATABASE = os.getenv("NEO4J_DATABASE", "neo4j")
 # ============================================================================
 
 _PRIMS = (str, int, float, bool, type(None))
+
 
 def _primify_base(v: Any) -> Any:
     """Normalize common non-primitive leaf types to primitives first."""
@@ -55,6 +56,7 @@ def _primify_base(v: Any) -> Any:
     # numpy → list
     try:
         import numpy as np  # type: ignore
+
         if isinstance(v, np.ndarray):
             return v.tolist()
     except Exception:
@@ -83,7 +85,7 @@ def _as_primitive_or_json(v: Any) -> Any:
     return json.dumps(v, ensure_ascii=False)
 
 
-def _safe_property_map(d: Mapping[str, Any]) -> Dict[str, Any]:
+def _safe_property_map(d: Mapping[str, Any]) -> dict[str, Any]:
     """Make a property map safe for `SET n += $props`."""
     return {str(k): _as_primitive_or_json(v) for k, v in d.items()}
 
@@ -101,10 +103,10 @@ def _coerce_general(v: Any) -> Any:
     return v
 
 
-def neo_safe_params(params: Mapping[str, Any] | None) -> Dict[str, Any]:
+def neo_safe_params(params: Mapping[str, Any] | None) -> dict[str, Any]:
     if not params:
         return {}
-    out: Dict[str, Any] = {}
+    out: dict[str, Any] = {}
     for k, v in params.items():
         key = str(k)
         if isinstance(v, Mapping) and (key == "props" or key.endswith("_props")):
@@ -118,16 +120,17 @@ def neo_safe_params(params: Mapping[str, Any] | None) -> Dict[str, Any]:
 # Query helpers
 # ============================================================================
 
+
 async def cypher_query(
     query: str,
-    params: Optional[Dict[str, Any]] = None,
+    params: dict[str, Any] | None = None,
     *,
-    driver: Optional[AsyncDriver] = None,
-    database: Optional[str] = None,
+    driver: AsyncDriver | None = None,
+    database: str | None = None,
     as_dict: bool = True,
-    timeout_s: Optional[float] = None,
-    bookmarks: Optional[Sequence[str] | str] = None,
-) -> List[Any]:
+    timeout_s: float | None = None,
+    bookmarks: Sequence[str] | str | None = None,
+) -> list[Any]:
     """
     Execute a Cypher query and return all records.
 
@@ -149,22 +152,22 @@ async def cypher_query(
     if not isinstance(query, str) or not query.strip():
         raise ValueError("cypher_query: 'query' must be a non-empty string")
 
-    drv: Optional[AsyncDriver] = driver or get_driver()
+    drv: AsyncDriver | None = driver or get_driver()
     if drv is None:
         raise RuntimeError("cypher_query: Neo4j driver is not initialized")
 
     db = database or NEO4J_DATABASE
     safe_params = neo_safe_params(params)
 
-    session_kwargs: Dict[str, Any] = {"database": db}
+    session_kwargs: dict[str, Any] = {"database": db}
     if bookmarks is not None:
         session_kwargs["bookmarks"] = bookmarks
 
-    run_kwargs: Dict[str, Any] = {}
+    run_kwargs: dict[str, Any] = {}
     if timeout_s is not None:
         run_kwargs["timeout"] = timeout_s
 
-    records: List[Any] = []
+    records: list[Any] = []
     async with drv.session(**session_kwargs) as neo_session:
         result = await neo_session.run(query, safe_params, **run_kwargs)
         if as_dict:
@@ -178,13 +181,13 @@ async def cypher_query(
 
 async def cypher_query_one(
     query: str,
-    params: Optional[Dict[str, Any]] = None,
+    params: dict[str, Any] | None = None,
     *,
-    driver: Optional[AsyncDriver] = None,
-    database: Optional[str] = None,
+    driver: AsyncDriver | None = None,
+    database: str | None = None,
     as_dict: bool = True,
-    timeout_s: Optional[float] = None,
-    bookmarks: Optional[Sequence[str] | str] = None,
+    timeout_s: float | None = None,
+    bookmarks: Sequence[str] | str | None = None,
 ) -> Any | None:
     """Execute and return the first record (or None)."""
     rows = await cypher_query(
@@ -201,12 +204,12 @@ async def cypher_query_one(
 
 async def cypher_query_scalar(
     query: str,
-    params: Optional[Dict[str, Any]] = None,
+    params: dict[str, Any] | None = None,
     *,
-    driver: Optional[AsyncDriver] = None,
-    database: Optional[str] = None,
-    timeout_s: Optional[float] = None,
-    bookmarks: Optional[Sequence[str] | str] = None,
+    driver: AsyncDriver | None = None,
+    database: str | None = None,
+    timeout_s: float | None = None,
+    bookmarks: Sequence[str] | str | None = None,
     default: Any = None,
 ) -> Any:
     """Execute and return the first column of the first row (or `default`)."""

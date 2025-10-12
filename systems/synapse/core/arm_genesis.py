@@ -27,7 +27,7 @@ def _generate_base_graph(task: str) -> PolicyGraph:
                 {
                     "id": "prompt_main",
                     "type": "prompt",
-                    "model": "gpt-4o",
+                    "model": "gpt-3.5-turbo",
                     "params": {"temperature": 0.5},
                     "effects": ["read"],
                 },

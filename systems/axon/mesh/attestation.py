@@ -19,13 +19,14 @@ class AttestationRegistry:
     """
     In-memory map of driver_name → {capability, artifact_hash}.
     """
+
     def __init__(self) -> None:
-        self._bindings: Dict[str, Dict[str, str]] = {}
+        self._bindings: dict[str, dict[str, str]] = {}
 
     def bind(self, *, driver_name: str, capability: str, artifact_hash: str) -> None:
         self._bindings[driver_name] = {"capability": capability, "artifact_hash": artifact_hash}
 
-    def get(self, driver_name: str) -> Optional[Dict[str, str]]:
+    def get(self, driver_name: str) -> dict[str, str] | None:
         return self._bindings.get(driver_name)
 
 
@@ -59,10 +60,10 @@ def verify_attestation(describe_obj: CapabilitySpec | dict, policy: AttestationP
     """
     if isinstance(describe_obj, dict):
         name = describe_obj.get("driver_name", "")
-        cap  = (describe_obj.get("supported_actions") or [None])[0]
+        cap = (describe_obj.get("supported_actions") or [None])[0]
     else:
         name = describe_obj.driver_name
-        cap  = (describe_obj.supported_actions or [None])[0]
+        cap = (describe_obj.supported_actions or [None])[0]
 
     rec = _REG.get(name)
     if not rec:

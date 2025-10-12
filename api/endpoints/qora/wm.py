@@ -9,11 +9,17 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from systems.qora.service.schemas import (
     BbReadResponse,
-    BbWrite as _BbWrite,
-    DossierRequest as _DossierRequest,
     DossierResponse,
-    IndexFileRequest as _IndexFileRequest,
     SubgraphResponse,
+)
+from systems.qora.service.schemas import (
+    BbWrite as _BbWrite,
+)
+from systems.qora.service.schemas import (
+    DossierRequest as _DossierRequest,
+)
+from systems.qora.service.schemas import (
+    IndexFileRequest as _IndexFileRequest,
 )
 
 # Reuse your in-repo WM layer
@@ -27,43 +33,54 @@ router = APIRouter(prefix="/qora/wm", tags=["qora-wm"])
 
 try:
     if isinstance(_DossierRequest, type) and issubclass(_DossierRequest, BaseModel):
+
         class DossierRequest(_DossierRequest):  # type: ignore[misc, valid-type]
             model_config = ConfigDict(extra="ignore")
     else:
+
         class DossierRequest(BaseModel):
             model_config = ConfigDict(extra="ignore")
             target_fqname: str
             intent: str | None = None
 except Exception:
+
     class DossierRequest(BaseModel):
         model_config = ConfigDict(extra="ignore")
         target_fqname: str
         intent: str | None = None
 
+
 try:
     if isinstance(_BbWrite, type) and issubclass(_BbWrite, BaseModel):
+
         class BbWrite(_BbWrite):  # type: ignore[misc, valid-type]
             model_config = ConfigDict(extra="ignore")
     else:
+
         class BbWrite(BaseModel):
             model_config = ConfigDict(extra="ignore")
             key: str
             value: Any
 except Exception:
+
     class BbWrite(BaseModel):
         model_config = ConfigDict(extra="ignore")
         key: str
         value: Any
 
+
 try:
     if isinstance(_IndexFileRequest, type) and issubclass(_IndexFileRequest, BaseModel):
+
         class IndexFileRequest(_IndexFileRequest):  # type: ignore[misc, valid-type]
             model_config = ConfigDict(extra="ignore")
     else:
+
         class IndexFileRequest(BaseModel):
             model_config = ConfigDict(extra="ignore")
             path: str = Field(..., description="Filesystem path of the source file")
 except Exception:
+
     class IndexFileRequest(BaseModel):
         model_config = ConfigDict(extra="ignore")
         path: str = Field(..., description="Filesystem path of the source file")

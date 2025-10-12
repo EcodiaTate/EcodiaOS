@@ -1,8 +1,9 @@
 # core/prompting/spec.py
-# --- PROJECT SENTINEL UPGRADE (Corrected) ---
+# --- FINAL VERSION WITH ORCHESTRATOR WORKFLOW SCHEMAS (FULL & CORRECTED) ---
 from __future__ import annotations
 
-from typing import Any, Literal
+from dataclasses import dataclass
+from typing import Any, List, Literal
 
 from pydantic import (
     BaseModel,
@@ -18,16 +19,36 @@ from pydantic import (
 
 ParseMode = Literal["strict_json", "tolerant", "auto_repair"]
 
+# +++ FIX: Add all new and existing lenses to this Literal list.
+# This is the master list that Pydantic uses to validate the `context_lenses`
+# field in all of your PromptSpec YAML files.
 LensName = Literal[
+    # Original Lenses
     "equor.identity",
     "atune.salience",
     "affect",
     "retrieval.semantic",
     "event.canonical",
+    "tools.catalog",
+    "lens_get_tools",
+    "lens_simula_advice_preplan",
+    "lens_simula_advice_postplan",
+    "ecodia.self_concept",
+    # Added New Facet Lenses
+    "facets.affective",
+    "facets.ethical",
+    "facets.philosophical",
+    "facets.safety",
+    "facets.style",
+    "facets.voice",
+    "facets.mission",
+    "facets.operational",
+    "facets.compliance",
+    "facets.epistemic_humility",
 ]
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Models
+# PromptSpec Models
 # ──────────────────────────────────────────────────────────────────────────────
 
 
@@ -85,6 +106,8 @@ class PromptSpec(BaseModel):
     context_lenses: list[LensName] = Field(default_factory=list)
     partials: list[str] = Field(default_factory=list)
     ablation_knobs: dict[str, list[Any]] = Field(default_factory=dict)
+    template: str | None = Field(default=None)
+    context_vars: dict[str, str] = Field(default_factory=dict)
 
     @field_validator("id", "scope")
     @classmethod
@@ -92,3 +115,17 @@ class PromptSpec(BaseModel):
         if not v or not str(v).strip():
             raise ValueError("must not be empty")
         return v
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Orchestrator Workflow Schemas (Moved here to prevent circular imports)
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+@dataclass
+class OrchestratorResponse:
+    """The structured output from building a prompt, ready for an LLM gateway."""
+
+    messages: list[dict[str, str]]
+    provider_overrides: dict[str, Any]
+    provenance: dict[str, Any]

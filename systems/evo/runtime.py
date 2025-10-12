@@ -5,6 +5,7 @@ from systems.evo.engine import EvoEngine
 
 _engine_singleton: EvoEngine | None = None
 
+
 def get_engine() -> EvoEngine:
     """
     Initializes and returns the singleton EvoEngine instance.

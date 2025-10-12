@@ -17,7 +17,7 @@ except Exception:
     _HAS_GOOGLE = False
 
 # Central orchestrator (PromptSpec-native)
-from core.prompting.orchestrator import PolicyHint, build_prompt
+from core.prompting.orchestrator import build_prompt
 
 
 def _require(cond: bool, msg: str) -> None:
@@ -129,12 +129,11 @@ async def create_spec_prompt_cache(
     """
     _require(_HAS_GOOGLE, "google-genai package not available")
 
-    hint = PolicyHint(
+    o = await build_prompt(
         scope=scope,
-        summary=summary or f"System cache seed for scope {scope}",
         context=context or {},
+        summary=summary or f"System cache seed for scope {scope}",
     )
-    o = await build_prompt(hint)
     system_instruction = _extract_system_instruction(o.messages)
 
     return await create_cache(

@@ -14,6 +14,7 @@ async def _post_json(path: str, body: dict[str, Any]) -> dict[str, Any]:
     r.raise_for_status()
     return r.json()
 
+
 async def run_in_twin(intent: AxonIntent) -> ActionResult:
     """
     Produce a counterfactual prediction for an intent.
@@ -28,10 +29,7 @@ async def run_in_twin(intent: AxonIntent) -> ActionResult:
             data = await _post_json(getattr(ENDPOINTS, "SYNAPSE_SIMULATE"), body)
         else:
             # Fallbacks that keep dev flows unblocked
-            path = (
-                getattr(ENDPOINTS, "SIMULA_TWIN_EVAL", None)
-                or "/simula/twin/eval"
-            )
+            path = getattr(ENDPOINTS, "SIMULA_TWIN_EVAL", None) or "/simula/twin/eval"
             data = await _post_json(path, body)
     except Exception as e:
         # Fail-safe prediction (prevents downstream overconfidence)
@@ -47,7 +45,9 @@ async def run_in_twin(intent: AxonIntent) -> ActionResult:
     dur_ms = (time.perf_counter() - started) * 1000.0
     # Normalize minimal shape expected by callers
     counterfactual = data.get("counterfactual_metrics") or {}
-    counterfactual.setdefault("predicted_utility", float(counterfactual.get("predicted_utility", 0.0)))
+    counterfactual.setdefault(
+        "predicted_utility", float(counterfactual.get("predicted_utility", 0.0))
+    )
     counterfactual["twin_latency_ms"] = dur_ms
 
     return ActionResult(

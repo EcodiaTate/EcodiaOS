@@ -6,6 +6,7 @@ from typing import Any
 
 # highlight-start
 from systems.axon.dependencies import get_lifecycle_manager
+
 # highlight-end
 from systems.axon.mesh.attestation import AttestationPolicy, verify_attestation
 
@@ -23,12 +24,12 @@ class AttestationManager:
         """
         Checks if a driver has a valid attestation binding according to policy.
         """
-# highlight-start
+        # highlight-start
         # In a fuller implementation, this would check KMS signatures bound to artifact hashes.
         # For now, honor a dev override: AXON_ATTEST_BYPASS=1
         if os.getenv("AXON_ATTEST_BYPASS", "0") == "1":
             return True
-        
+
         # This facade now correctly calls the real verification logic.
         try:
             lifecycle = get_lifecycle_manager()
@@ -38,6 +39,8 @@ class AttestationManager:
             return verify_attestation(state.spec, self._policy)
         except Exception:
             return False
+
+
 # highlight-end
 
 

@@ -1,4 +1,4 @@
-# api/endpoints/integrations/github.py
+# api/endpoints/simula/github.py
 from __future__ import annotations
 
 from typing import Any

@@ -1,30 +1,30 @@
 # systems/simula/code_sim/portfolio.py
-# FINAL VERSION FOR PHASE II
+# REFACTORED: Standardized on passing a 'step_dict' dictionary instead of a 'step' object.
 from __future__ import annotations
 
 from typing import Any
 
-# REMOVED evaluation and reward imports, as this is now Synapse's job.
 from systems.simula.code_sim.mutators.ast_refactor import AstMutator
 from systems.simula.code_sim.mutators.prompt_patch import llm_unified_diff
 from systems.simula.code_sim.telemetry import telemetry
 
 
-async def _generate_single_candidate(step: Any, strategy: str) -> str | None:
+async def _generate_single_candidate(step_dict: dict[str, Any], strategy: str) -> str | None:
     """Generates a single code modification candidate (diff) based on the chosen strategy."""
     if strategy == "llm_base":
-        return await llm_unified_diff(step, variant="base")
+        return await llm_unified_diff(step_dict, variant="base")
     if strategy == "llm_creative":
-        return await llm_unified_diff(step, variant="creative")
+        return await llm_unified_diff(step_dict, variant="creative")
     if strategy == "ast_scaffold":
-        return AstMutator(aggressive=False).mutate(step=step, mode="scaffold")
+        # Pass the dictionary directly to the mutator
+        return AstMutator(aggressive=False).mutate(step_dict=step_dict, mode="scaffold")
     # Add more strategies here
     return None
 
 
 async def generate_candidate_portfolio(
     job_meta: dict,
-    step: Any,
+    step_dict: dict[str, Any],
 ) -> list[dict[str, Any]]:
     """
     Generates a portfolio of candidate diffs using various strategies.
@@ -36,14 +36,14 @@ async def generate_candidate_portfolio(
 
     # --- Generate diffs for all strategies ---
     for strategy in strategies:
-        diff = await _generate_single_candidate(step, strategy)
+        diff = await _generate_single_candidate(step_dict, strategy)
         if diff:
             candidate_diffs.append(diff)
             telemetry.log_event(
                 "candidate_generated",
                 {
                     "job_id": job_meta.get("job_id"),
-                    "step": getattr(step, "name", "unknown"),
+                    "step": step_dict.get("name", "unknown"),  # Access name from dict
                     "strategy": strategy,
                     "diff_size": len(diff.splitlines()),
                 },

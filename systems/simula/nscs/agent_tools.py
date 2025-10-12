@@ -1,337 +1,657 @@
 # systems/simula/nscs/agent_tools.py
-# --- FULL FIXED FILE ---
+# --- DEFINITIVE, CONSOLIDATED, AND FULLY REFACTORED IMPLEMENTATION ---
+# This file is the single source of truth for all of Simula's tool implementations.
+
 from __future__ import annotations
 
 import ast
-import codecs
-from pathlib import Path
-from typing import Any
+import io
 import json
+import logging
+import os
 import re
-import uuid
+import textwrap
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-# Wrappers for advanced tools
-from systems.simula.agent import tools_advanced as _adv
-from systems.simula.agent import tools_extra as _extra
+from github import Github
 
-# Sentinel-upgraded modules
-from systems.simula.agent.strategies.apply_refactor_smart import (
-    apply_refactor_smart as _apply_refactor_smart,
-)
+# --- Core EcodiaOS/Simula Imports ---
+from core.prompting.orchestrator import build_prompt
+from core.utils.llm_gateway_client import call_llm_service, extract_json_flex
+from core.utils.net_api import ENDPOINTS, get_http_client
+from systems.nova.schemas import AuctionResult, InnovationBrief, InventionCandidate
 from systems.qora import api_client as qora_client
+from systems.simula.artifacts.package import create_artifact_bundle
+from systems.simula.build.run import run_build_and_tests
+from systems.simula.ci.pipelines import render_ci
+from systems.simula.code_sim.diagnostics.error_parser import parse_pytest_output
 from systems.simula.code_sim.fuzz.hypo_driver import run_hypothesis_smoke
 from systems.simula.code_sim.repair.engine import attempt_repair
 from systems.simula.code_sim.sandbox.sandbox import DockerSandbox
 from systems.simula.code_sim.sandbox.seeds import ensure_toolchain, seed_config
 from systems.simula.code_sim.telemetry import track_tool
-from systems.simula.config import settings
-from core.prompting.orchestrator import PolicyHint, build_prompt
-from core.utils.net_api import get_http_client
-from systems.simula.code_sim.diagnostics.error_parser import parse_pytest_output
-from systems.simula.code_sim.evaluators.spec_miner import derive_acceptance
-from systems.simula.nscs.twin.runner import run_scenarios
+from systems.simula.format.autoformat import autoformat_changed
+from systems.simula.git.rebase import rebase_diff_onto_branch
+from systems.simula.ops.glue import quick_impact_and_cov, quick_policy_gate
+from systems.simula.recipes.generator import append_recipe
+from systems.simula.search.portfolio_runner import rank_portfolio
+from systems.simula.vcs.commit_msg import render_conventional_commit, title_from_evidence
+from systems.simula.vcs.pr_manager import open_pr as _open_pr_impl
 
-# -----------------------------------------------------------------------------
-# Shared Helpers
-# -----------------------------------------------------------------------------
+from .evolution import execute_code_evolution
+
+log = logging.getLogger(__name__)
+
+# ==============================================================================
+# SECTION: Shared Helpers
+# ==============================================================================
 
 
 def _normalize_paths(paths: list[str] | None) -> list[str]:
-    """Provides a default path if none are given."""
-    if not paths:
-        return ["."]
-    return [p for p in paths if p]
-
-# -----------------------------------------------------------------------------
-# Code & File Operations
-# -----------------------------------------------------------------------------
+    """Provides a default path if none are given and filters empty strings."""
+    return [p for p in (paths or ["."]) if p]
 
 
-@track_tool("write_code")
-async def write_file(*, path: str, content: str, append: bool = False) -> dict[str, Any]:
-    """Safely writes content to a file within the repository root."""
-    p = Path(path)
-    if p.is_absolute():
-        return {"status": "error", "reason": "Absolute paths are disallowed."}
-    abs_p = (Path(settings.repo_root) / p).resolve()
-    if settings.repo_root not in str(abs_p):
-        return {"status": "error", "reason": "Path traversal outside of repo root is disallowed."}
-    try:
-        decoded_content = codecs.decode(content, "unicode_escape")
-        abs_p.parent.mkdir(parents=True, exist_ok=True)
-        mode = "a" if append else "w"
-        with abs_p.open(mode, encoding="utf-8", newline="\n") as f:
-            f.write(decoded_content)
-        rel_path = str(abs_p.relative_to(settings.repo_root))
-        return {"status": "success", "result": {"path": rel_path}}
-    except Exception as e:
-        return {"status": "error", "reason": f"File operation failed: {e!r}"}
+def _strip_markdown_fences(text: str) -> str:
+    """Removes typical markdown/code fences from LLM output."""
+    if not isinstance(text, str):
+        return ""
+    match = re.search(r"```(?:[a-zA-Z0-9]*)?\s*(.*?)```", text, re.DOTALL)
+    return match.group(1).strip() if match else text.strip()
 
 
-@track_tool("read_file")
-async def read_file(*, path: str) -> dict[str, Any]:
-    """Safely reads the content of a file within the repository root."""
-    p = Path(path)
-    if p.is_absolute():
-        return {"status": "error", "reason": "Absolute paths are disallowed."}
-    abs_p = (Path(settings.repo_root) / p).resolve()
-    if settings.repo_root not in str(abs_p):
-        return {"status": "error", "reason": "Path traversal outside of repo root is disallowed."}
-    
-    try:
-        if not abs_p.is_file():
-            return {"status": "error", "reason": f"File not found at: {path}"}
-        
-        content = abs_p.read_text(encoding="utf-8")
-        rel_path = str(abs_p.relative_to(settings.repo_root))
-        return {"status": "success", "result": {"path": rel_path, "content": content}}
-    except Exception as e:
-        return {"status": "error", "reason": f"File read operation failed: {e!r}"}
-
-
-@track_tool("list_files")
-async def list_files(*, path: str = ".", recursive: bool = False, max_depth: int = 3) -> dict[str, Any]:
-    """Lists files and directories at a given path within the repository using the sandbox."""
-    cfg = seed_config()
-    
-    # Use the 'find' command for robust, sandboxed file listing.
-    if recursive:
-        cmd = ["find", path, "-maxdepth", str(max_depth)]
-    else:
-        cmd = ["find", path, "-maxdepth", "1"]
-        
-    async with DockerSandbox(cfg).session() as sess:
-        out = await sess._run_tool(cmd, timeout=60)
-
-    if out.get("returncode", 1) != 0:
-        return {"status": "error", "reason": out.get("stderr") or out.get("stdout", "List files command failed.")}
-    
-    found_items = out.get("stdout", "").strip().splitlines()
-    # The output of find includes the path itself; remove it for a cleaner result.
-    if path in found_items:
-        found_items.remove(path)
-
-    return {"status": "success", "result": {"items": sorted(found_items[:2000])}}
-
-
-@track_tool("file_search")
-async def file_search(*, pattern: str, path: str = ".") -> dict[str, Any]:
-    """Searches for a regex pattern within files in the repository (like 'grep')."""
-    cfg = seed_config()
-    search_path = "/workspace" # Always search from the root of the mounted workspace
-    cmd = ["grep", "-r", "-l", "-E", pattern, search_path]
-    
-    async with DockerSandbox(cfg).session() as sess:
-        out = await sess._run_tool(cmd, timeout=120)
-
-    # Grep returns 1 if not found, which is not an error.
-    if out.get("returncode", 1) > 1:
-        return {"status": "error", "reason": out.get("stderr") or out.get("stdout", "Search command failed.")}
-    
-    found_files = out.get("stdout", "").strip().splitlines()
-    repo_relative_paths = [f".{p.replace('/workspace', '')}" for p in found_files]
-    
-    return {"status": "success", "result": {"matches": repo_relative_paths}}
-
-
-@track_tool("delete_file")
-async def delete_file(*, path: str) -> dict[str, Any]:
-    """Deletes a file within the repository."""
-    if ".." in path:
-        return {"status": "error", "reason": "Path traversal ('..') is disallowed."}
-    p = (Path(settings.repo_root) / path).resolve()
-    if settings.repo_root not in str(p):
-        return {"status": "error", "reason": "Path is outside the repository root."}
-    
-    try:
-        if not p.is_file():
-            return {"status": "error", "reason": f"Not a file or does not exist: {path}"}
-        p.unlink()
-        return {"status": "success", "result": {"path": path}}
-    except Exception as e:
-        return {"status": "error", "reason": f"File deletion failed: {e!r}"}
-
-
-@track_tool("rename_file")
-async def rename_file(*, source_path: str, destination_path: str) -> dict[str, Any]:
-    """Renames or moves a file or directory."""
-    if ".." in source_path or ".." in destination_path:
-        return {"status": "error", "reason": "Path traversal ('..') is disallowed."}
-    
-    source_p = (Path(settings.repo_root) / source_path).resolve()
-    dest_p = (Path(settings.repo_root) / destination_path).resolve()
-
-    if settings.repo_root not in str(source_p) or settings.repo_root not in str(dest_p):
-        return {"status": "error", "reason": "Paths must be within the repository root."}
-    
-    try:
-        if not source_p.exists():
-            return {"status": "error", "reason": f"Source path does not exist: {source_path}"}
-        dest_p.parent.mkdir(parents=True, exist_ok=True)
-        source_p.rename(dest_p)
-        return {"status": "success", "result": {"from": source_path, "to": destination_path}}
-    except Exception as e:
-        return {"status": "error", "reason": f"File rename/move failed: {e!r}"}
-
-
-@track_tool("create_directory")
-async def create_directory(*, path: str) -> dict[str, Any]:
-    """Creates a new directory (including any necessary parent directories)."""
-    if ".." in path:
-        return {"status": "error", "reason": "Path traversal ('..') is disallowed."}
-    p = (Path(settings.repo_root) / path).resolve()
-    if settings.repo_root not in str(p):
-        return {"status": "error", "reason": "Path is outside the repository root."}
-        
-    try:
-        p.mkdir(parents=True, exist_ok=True)
-        return {"status": "success", "result": {"path": path}}
-    except Exception as e:
-        return {"status": "error", "reason": f"Directory creation failed: {e!r}"}
-
-
-@track_tool("apply_refactor")
-async def apply_refactor(*, diff: str, verify_paths: list[str] | None = None) -> dict[str, Any]:
-    """Applies a diff and runs tests in the sandbox, returning structured results."""
-    paths_to_verify = _normalize_paths(verify_paths or ["tests"])
-    cfg = seed_config()
-    async with DockerSandbox(cfg).session() as sess:
-        await ensure_toolchain(sess)
-        ok_apply = await sess.apply_unified_diff(diff)
-        if not ok_apply:
-            return {
-                "status": "error",
-                "reason": "Failed to apply patch.",
-                "logs": "git apply failed",
-            }
-        ok_tests, logs = await sess.run_pytest(paths_to_verify)
-        return {
-            "status": "success" if ok_tests else "failed",
-            "result": {"passed": ok_tests, "logs": logs},
-        }
-
-
-@track_tool("apply_refactor_smart")
-async def apply_refactor_smart(
-    *,
-    diff: str,
-    verify_paths: list[str] | None = None,
-) -> dict[str, Any]:
-    """Applies a diff in chunks, testing after each chunk."""
-    return await _apply_refactor_smart(diff, verify_paths=_normalize_paths(verify_paths))
-
-
-# -----------------------------------------------------------------------------
-# Quality & Hygiene Tools
-# -----------------------------------------------------------------------------
-
-def _discover_functions_from_source(src: str) -> list[str]:
-    """Safely parses Python source and extracts top-level function names."""
+def _discover_functions(src: str) -> list[str]:
+    """Parses source code to find top-level function definitions."""
     names: list[str] = []
     try:
         tree = ast.parse(src)
-        for node in tree.body:
-            if isinstance(
-                node,
-                ast.FunctionDef | ast.AsyncFunctionDef,
-            ) and not node.name.startswith("_"):
-                names.append(node.name)
+        for n in tree.body:
+            if isinstance(n, ast.FunctionDef) and not n.name.startswith("_"):
+                names.append(n.name)
     except Exception:
         pass
     return names
 
 
-@track_tool("generate_tests")
-async def generate_tests(*, module: str) -> dict[str, Any]:
-    """Generates a skeleton pytest file for a given Python module to improve coverage."""
-    target_path = Path(settings.repo_root) / module
-    if not target_path.exists():
-        return {"status": "error", "reason": f"Module not found: {module}"}
-    source_code = target_path.read_text(encoding="utf-8")
-    function_names = _discover_functions_from_source(source_code)
-    test_dir = Path(settings.repo_root) / "tests"
-    test_dir.mkdir(exist_ok=True)
-    test_path = test_dir / f"test_{target_path.stem}.py"
-    if test_path.exists():
-        return {"status": "noop", "reason": f"Test file already exists at {test_path}"}
-    module_import_path = module.replace(".py", "").replace("/", ".")
-    content = [
-        f'"""Auto-generated skeleton tests for {module}."""',
-        "import pytest",
-        f"from {module_import_path} import *",
-        "",
-    ]
-    if not function_names:
-        content.extend(
-            [
-                "def test_module_import():",
-                f'    """Verify that {module} can be imported."""',
-                "    assert True",
-            ],
-        )
-    else:
-        for name in function_names:
-            content.extend(
-                [
-                    f"def test_{name}_smoke():",
-                    f'    """A smoke test for the function {name}."""',
-                    "    pytest.skip('Not yet implemented')",
-                    "",
-                ],
-            )
-    full_content = "\n".join(content)
+async def _api_call(
+    method: str,
+    endpoint_name: str,
+    payload: dict[str, Any] | None = None,
+    timeout: float = 60.0,
+) -> dict[str, Any]:
+    """A single, robust helper for making API calls to internal services."""
+    try:
+        http = await get_http_client()
+        url = getattr(ENDPOINTS, endpoint_name)
+        if method.upper() == "POST":
+            response = await http.post(url, json=payload or {}, timeout=timeout)
+        elif method.upper() == "GET":
+            response = await http.get(url, params=payload or {}, timeout=timeout)
+        else:
+            raise ValueError(f"Unsupported HTTP method: {method}")
+        response.raise_for_status()
+        return {"status": "success", "result": response.json() or {}}
+    except AttributeError:
+        return {"status": "error", "reason": f"Config error: Endpoint '{endpoint_name}' not found."}
+    except Exception as e:
+        return {"status": "error", "reason": f"API call to '{endpoint_name}' failed: {e!r}"}
+
+
+async def _post(path: str, payload: dict[str, Any], timeout: float = 30.0) -> dict[str, Any]:
+    http = await get_http_client()
+    r = await http.post(path, json=payload, timeout=timeout)
+    r.raise_for_status()
+    return r.json() or {}
+
+
+async def _get(path: str, params: dict[str, Any], timeout: float = 30.0) -> dict[str, Any]:
+    http = await get_http_client()
+    r = await http.get(path, params=params, timeout=timeout)
+    r.raise_for_status()
+    return r.json() or {}
+
+
+async def _bb_write(key: str, value: Any) -> dict[str, Any]:
+    url = getattr(ENDPOINTS, "QORA_BB_WRITE", "/qora/bb/write")
+    return await _post(url, {"key": key, "value": value})
+
+
+async def _bb_read(key: str) -> Any:
+    url = getattr(ENDPOINTS, "QORA_BB_READ", "/qora/bb/read")
+    out = await _get(url, {"key": key})
+    return out.get("value") if isinstance(out, dict) else out
+
+
+# ==============================================================================
+# SECTION: High-Level / Meta Tools
+# ==============================================================================
+
+
+@track_tool("propose_intelligent_patch", modes=["simula_planful", "planning", "code_generation"])
+async def propose_intelligent_patch(*, goal: str, objective: dict) -> dict[str, Any]:
+    """
+    Triggers the full, self-contained, multi-step code evolution engine.
+
+    This is a powerful, high-level tool that autonomously attempts to solve a complex
+    coding task. Use this for broad goals like 'implement feature X' or 'refactor module Y'
+    that require planning, code generation, and verification.
+
+    Args:
+        goal: The high-level objective for the code evolution.
+        objective: A structured dictionary providing more specific details or constraints.
+    """
+    return await execute_code_evolution(goal=goal, objective=objective)
+
+
+@track_tool(
+    "edit_code_block", modes=["simula_planful", "code_generation", "refactoring", "debugging"]
+)
+async def edit_code_block(
+    *, file_path: str, block_identifier: str, new_code_block: str
+) -> dict[str, Any]:
+    """
+    Surgically replaces a block of code within a file without rewriting the entire file.
+
+    This is a high-precision tool for refactoring, fixing, or replacing a single function,
+    class, or method. It identifies the target block using a unique starting line (the identifier)
+    and replaces it while preserving indentation. It is strongly preferred over `write_file`
+    for any modification that doesn't involve creating a new file.
+
+    Args:
+        file_path: The relative path to the file that needs to be modified.
+        block_identifier: A unique line of code that marks the beginning of the block
+                          to be replaced (e.g., "def my_function(arg1):" or "class MyClass:").
+                          This line MUST be present in the file.
+        new_code_block: The new block of code that will replace the old one.
+    """
+    # Step 1: Read the existing file content using the dedicated tool.
+    read_result = await read_file(path=file_path)
+    if read_result.get("status") != "success":
+        return {
+            "status": "error",
+            "reason": f"Failed to read file for editing: {read_result.get('reason')}",
+        }
+
+    original_content = read_result.get("result", {}).get("content", "")
+    lines = original_content.splitlines()
+
+    # Step 2: Find the block to replace using the identifier.
+    start_line_index = -1
+    block_indentation = ""
+    for i, line in enumerate(lines):
+        if block_identifier in line:
+            start_line_index = i
+            # Capture the indentation of the block's first line.
+            match = re.match(r"^(\s*)", line)
+            if match:
+                block_indentation = match.group(1)
+            break
+
+    if start_line_index == -1:
+        return {
+            "status": "error",
+            "reason": f"Block identifier not found in file: '{block_identifier}'",
+        }
+
+    # Step 3: Find the end of the block based on indentation.
+    end_line_index = start_line_index
+    for i in range(start_line_index + 1, len(lines)):
+        line = lines[i]
+        # A block ends when a line is not empty and has indentation less than or equal to the starting line's.
+        if line.strip() and (len(line) - len(line.lstrip(" "))) <= len(block_indentation):
+            break
+        end_line_index = i
+
+    # Step 4: Prepare the new code block with correct indentation.
+    dedented_new_block = textwrap.dedent(new_code_block).strip()
+    new_lines = [f"{block_indentation}{line}" for line in dedented_new_block.splitlines()]
+
+    # Step 5: Reconstruct the file content.
+    final_lines = (
+        lines[:start_line_index]  # All lines before the block.
+        + new_lines  # The new, correctly indented block.
+        + lines[end_line_index + 1 :]  # All lines after the block.
+    )
+    final_content = "\n".join(final_lines)
+
+    # Step 6: Write the modified content back to the file.
+    write_result = await write_file(path=file_path, content=final_content)
+    if write_result.get("status") != "success":
+        return {
+            "status": "error",
+            "reason": f"Failed to write file after editing: {write_result.get('reason')}",
+        }
+
     return {
         "status": "success",
         "result": {
-            "proposal_type": "new_file",
-            "path": str(test_path.relative_to(settings.repo_root)),
-            "content": full_content,
+            "path": file_path,
+            "notes": f"Successfully replaced block identified by '{block_identifier}'.",
         },
     }
 
-@track_tool("run_tests")
-async def run_tests(*, paths: list[str], timeout_sec: int = 900) -> dict[str, Any]:
-    paths = _normalize_paths(paths)
-    cfg = seed_config()
-    async with DockerSandbox(cfg).session() as sess:
-        await ensure_toolchain(sess)
-        ok, logs = await sess.run_pytest(paths, timeout=timeout_sec)
-        return {"status": "success" if ok else "failed", "result": {"passed": ok, "logs": logs}}
+
+@track_tool("ask_senior_architect", modes=["simula_planful", "reasoning", "planning"])
+async def ask_senior_architect(*, question: str, context: str) -> dict[str, Any]:
+    """
+    Asks a high-level, conceptual question about software design, best practices, or architectural
+    patterns to a simulated senior architect. Use this for advice, not for code generation.
+
+    This tool is for gaining understanding before acting. Use it to clarify doubts about
+    the best approach, understand risks, or learn about existing design patterns in the code.
+
+    Args:
+        question: The specific, high-level question you need an answer to.
+                  (e.g., "What is the best design pattern for a modular plugin system in Python?")
+        context: A string containing the relevant code, diff, or dossier summary to ground the question.
+    """
+    try:
+        prompt = await build_prompt(
+            scope="simula.architect_advisor",
+            context={"question": question, "code_context": context},
+            summary="Provide expert architectural advice based on the user's question and code context.",
+        )
+        response = await call_llm_service(prompt, agent_name="Simula.Architect")
+
+        # Attempt to parse the response as JSON, but fall back to raw text if it fails.
+        advice = extract_json_flex(response.text) or {"answer": response.text}
+
+        return {"status": "success", "result": advice}
+    except Exception as e:
+        log.error(f"Architectural advice tool failed: {e!r}", exc_info=True)
+        return {"status": "error", "reason": f"Failed to get architectural advice: {e!r}"}
 
 
-@track_tool("run_tests_k")
-async def run_tests_k(*, paths: list[str], k_expr: str, timeout_sec: int = 600) -> dict[str, Any]:
-    paths = _normalize_paths(paths)
-    cfg = seed_config()
-    async with DockerSandbox(cfg).session() as sess:
-        await ensure_toolchain(sess)
-        ok, logs = await sess.run_pytest_select(paths, k_expr=k_expr, timeout=timeout_sec)
-        return {"status": "success" if ok else "failed", "result": {"passed": ok, "logs": logs}}
+async def _reflect_and_revise_plan(
+    self, goal: str, executed_step: dict, outcome: dict, remaining_steps: list[dict]
+) -> list[dict]:
+    """
+    After a tool executes, this method makes a quick LLM call to decide if the plan is still valid.
+    """
+    log.info("[SCL] 🤔 Reflecting on last action's outcome...")
+    try:
+        prompt = await build_prompt(
+            scope="simula.plan_reflector",
+            context={
+                "goal": goal,
+                "executed_step": executed_step,
+                "outcome": outcome,
+                "remaining_steps": remaining_steps,
+            },
+            summary="Given the last outcome, decide to continue or revise the plan.",
+        )
+        # Use a fast, cheap model for this decision
+        llm_policy = {"model": "gpt-4o-mini", "temperature": 0.1}
+        response = await call_llm_service(
+            prompt, agent_name="Simula.Reflector", policy_override=llm_policy
+        )
+        decision_obj = extract_json_flex(response.text)
+
+        if decision_obj and decision_obj.get("decision") == "revise":
+            new_plan = decision_obj.get("new_plan", [])
+            if new_plan:
+                log.info("[SCL] ♟️ Plan revised mid-flight based on new information.")
+                return new_plan
+    except Exception as e:
+        log.warning(f"[SCL] Plan reflection step failed: {e!r}. Continuing with original plan.")
+
+    return remaining_steps
 
 
-@track_tool("run_tests_xdist")
-async def run_tests_xdist(
-    *,
-    paths: list[str] | None = None,
-    nprocs: str | int = "auto",
-    timeout_sec: int = 900,
+@track_tool("plan_and_critique_strategy", modes=["simula_planful", "planning", "reasoning"])
+async def plan_and_critique_strategy(
+    *, goal: str, dossier: dict, turn_history: list
 ) -> dict[str, Any]:
-    paths = _normalize_paths(paths or ["tests"])
+    """
+    Performs a two-step strategic deliberation: first, propose a plan, then critique it to find flaws.
+
+    This is a powerful meta-planning tool to prevent naive or flawed initial plans. It forces
+    the agent to "think twice" by generating a strategy, then immediately using a separate
+    "red team" persona to find weaknesses in that strategy, returning both for final consideration.
+    Use this at the beginning of a complex task to ensure a robust approach.
+
+    Args:
+        goal: The high-level objective for the task.
+        dossier: The context dossier for the code being worked on.
+        turn_history: A history of previous turns in the current session to learn from.
+    """
+    try:
+        # Step 1: Generate the initial plan
+        plan_prompt = await build_prompt(
+            scope="simula.strategic_planner",
+            context={"goal": goal, "dossier": dossier, "turn_history": turn_history},
+            summary="Generate a high-level strategic plan to accomplish the goal.",
+        )
+        plan_response = await call_llm_service(plan_prompt, agent_name="Simula.Strategist")
+        initial_plan = extract_json_flex(plan_response.text)
+        if not initial_plan:
+            return {"status": "error", "reason": "Failed to generate an initial strategic plan."}
+
+        # Step 2: Critique the plan
+        critique_prompt = await build_prompt(
+            scope="simula.strategy_critique",
+            context={"goal": goal, "plan_to_critique": initial_plan},
+            summary="Critique the proposed strategic plan for flaws, risks, and missed opportunities.",
+        )
+        critique_response = await call_llm_service(critique_prompt, agent_name="Simula.RedTeam")
+        critique = extract_json_flex(critique_response.text)
+        if not critique:
+            return {"status": "error", "reason": "Failed to generate a critique of the plan."}
+
+        return {
+            "status": "success",
+            "result": {
+                "initial_plan": initial_plan,
+                "critique": critique,
+            },
+        }
+    except Exception as e:
+        return {"status": "error", "reason": f"Strategic deliberation failed: {e!r}"}
+
+
+@track_tool("create_pull_request", modes=["simula_planful", "vcs", "cortex"])
+async def create_pull_request(
+    repo_slug: str, title: str, head_branch: str, base_branch: str, body: str
+) -> dict[str, Any]:
+    """
+    [CORTEX TOOL] Creates a pull request on GitHub.
+    Requires a GITHUB_TOKEN environment variable with repo access.
+    """
+    token = os.getenv("GITHUB_TOKEN")
+    if not token:
+        return {"status": "error", "reason": "GITHUB_TOKEN environment variable not set."}
+
+    try:
+        g = Github(token)
+        repo = g.get_repo(repo_slug)
+        pr = repo.create_pull(
+            title=title,
+            body=body,
+            head=head_branch,
+            base=base_branch,
+        )
+        log.info(f"Successfully created PR #{pr.number}: {pr.html_url}")
+        return {"status": "success", "result": {"pr_number": pr.number, "url": pr.html_url}}
+    except Exception as e:
+        log.error(f"Failed to create pull request: {e!r}", exc_info=True)
+        return {"status": "error", "reason": f"GitHub API call failed: {e!r}"}
+
+
+@track_tool("record_recipe", modes=["simula_planful", "learning"])
+async def record_recipe(
+    *, goal: str, context_fqname: str, steps: list[str], success: bool, impact_hint: str = ""
+) -> dict[str, Any]:
+    """
+    Saves a successful or failed sequence of actions as a 'recipe' for future learning.
+
+    This tool is used for meta-learning. By recording the steps taken to solve a problem,
+    the system can learn effective (or ineffective) patterns for similar tasks in the future.
+
+    Args:
+        goal: The original goal of the task.
+        context_fqname: The fully-qualified name of the code context (e.g., file path).
+        steps: A list of the actions/tool calls that were executed.
+        success: Whether the final outcome was successful.
+        impact_hint: A hint about the impact of the change.
+    """
+    r = append_recipe(
+        goal=goal,
+        context_fqname=context_fqname,
+        steps=steps,
+        success=success,
+        impact_hint=impact_hint,
+    )
+    return {"status": "success", "recipe": r.__dict__}
+
+
+# ==============================================================================
+# SECTION: Qora & Nova Adapters (Reasoning & Learning)
+# ==============================================================================
+
+
+@track_tool("get_context_dossier", modes=["simula_planful", "reasoning", "general"])
+async def get_context_dossier(*, target_fqname: str, intent: str) -> dict[str, Any]:
+    """
+    Fetches a comprehensive 'dossier' of context about a specific code element from Qora.
+
+    This is the primary tool for gathering information before modifying existing code.
+    The dossier includes source code, related tests, call graphs, documentation, and historical context.
+
+    Args:
+        target_fqname: The fully-qualified name of the target symbol (e.g., 'path/to/file.py::my_function').
+        intent: The reason for fetching the dossier (e.g., 'implement', 'refactor', 'debug').
+    """
+    return await _api_call(
+        "POST", "QORA_DOSSIER_BUILD", {"target_fqname": target_fqname, "intent": intent}
+    )
+
+
+@track_tool("qora_semantic_search", modes=["simula_planful", "reasoning"])
+async def qora_semantic_search(*, query_text: str, top_k: int = 5) -> dict[str, Any]:
+    """
+    Performs a semantic search across the entire codebase for relevant code snippets.
+
+    Use this tool to find examples, related logic, or alternative implementations
+    when you are unsure where to start or need more context than a dossier provides.
+
+    Args:
+        query_text: The natural language search query.
+        top_k: The maximum number of search results to return.
+    """
+    return await _api_call(
+        "POST", "QORA_SEMANTIC_SEARCH", {"query_text": query_text, "top_k": top_k}
+    )
+
+
+@track_tool("reindex_code_graph", modes=["simula_planful", "administration"])
+async def qora_reindex_code_graph(*, root: str = ".") -> dict[str, Any]:
+    """
+    Triggers a full re-indexing of the codebase to update the Qora knowledge graph.
+
+    This is an administrative tool that should be used after significant changes to the
+    codebase, such as merging a large feature branch, to ensure Qora's data is fresh.
+
+    Args:
+        root: The root directory of the codebase to index.
+    """
+    return await qora_client.reindex_code_graph(root=root)
+
+
+# ==============================================================================
+# SECTION: Filesystem & Code Operations (Sandboxed)
+# ==============================================================================
+
+
+@track_tool("read_file", modes=["simula_planful", "file_system", "reasoning", "general"])
+async def read_file(*, path: str) -> dict[str, Any]:
+    """
+    Reads and returns the full content of a specified file from inside the sandbox.
+    """
+    cfg = seed_config()
+    script = (
+        "import sys, json; from pathlib import Path; "
+        "p = Path(sys.argv[1]); "
+        "if not p.exists() or not p.is_file(): "
+        "  print(json.dumps({'ok': False, 'error': 'File not found.'})); sys.exit(0); "
+        "data = p.read_text(encoding='utf-8', errors='replace'); "
+        "print(json.dumps({'ok': True, 'content': data}))"
+    )
+    cmd = ["python", "-c", script, path]
+    async with DockerSandbox(cfg).session() as sess:
+        out = await sess._run_tool(cmd, timeout=60)
+
+    if out.get("returncode", 1) != 0:
+        return {"status": "error", "reason": f"File read failed: {out.get('stderr')}"}
+
+    try:
+        payload = json.loads(out.get("stdout") or "{}")
+    except Exception as e:
+        return {
+            "status": "error",
+            "reason": f"Malformed read output: {e} | raw={out.get('stdout')!r}",
+        }
+
+    if not payload.get("ok"):
+        return {"status": "error", "reason": payload.get("error", "unknown error")}
+
+    return {
+        "status": "success",
+        "result": {"path": path, "content": payload.get("content", "")},
+    }
+
+
+@track_tool("write_file", modes=["simula_planful", "file_system", "code_generation", "general"])
+async def write_file(*, path: str, content: str, append: bool = False) -> dict[str, Any]:
+    """
+    Creates, overwrites, or appends to a file in the sandbox.
+    """
+    cfg = seed_config()
+    mode = "a" if append else "w"
+    script = (
+        "import sys; from pathlib import Path; "
+        "path, content, mode = sys.argv[1], sys.argv[2], sys.argv[3]; "
+        "p = Path(path); p.parent.mkdir(parents=True, exist_ok=True); "
+        "with p.open(mode, encoding='utf-8', newline='\\n') as f: f.write(content)"
+    )
+    cmd = ["python", "-c", script, path, content, mode]
+    async with DockerSandbox(cfg).session() as sess:
+        out = await sess._run_tool(cmd, timeout=60)
+
+    if out.get("returncode", 1) != 0:
+        return {"status": "error", "reason": f"File write failed: {out.get('stderr')}"}
+
+    return {"status": "success", "result": {"path": path}}
+
+
+@track_tool("list_files", modes=["simula_planful", "file_system", "reasoning", "general"])
+async def list_files(
+    *, path: str = ".", recursive: bool = False, max_depth: int = 3
+) -> dict[str, Any]:
+    """
+    Lists files and directories to explore the project structure.
+
+    Args:
+        path: The directory to start listing from. Defaults to the project root.
+        recursive: If True, lists files in all subdirectories.
+        max_depth: The maximum depth for recursion.
+    """
+    cfg = seed_config()
+    cmd = ["find", path, "-maxdepth", str(max_depth if recursive else 1)]
+    async with DockerSandbox(cfg).session() as sess:
+        out = await sess._run_tool(cmd, timeout=60)
+    if out.get("returncode", 1) != 0:
+        return {"status": "error", "reason": out.get("stderr") or "List files command failed."}
+    items = [item for item in out.get("stdout", "").strip().splitlines() if item != path]
+    return {"status": "success", "result": {"items": sorted(items[:2000])}}
+
+
+@track_tool("file_search", modes=["simula_planful", "file_system", "reasoning"])
+async def file_search(*, pattern: str, path: str = ".") -> dict[str, Any]:
+    """
+    Searches for a regex pattern within files in a directory. Returns matching file paths.
+
+    Args:
+        pattern: The regular expression to search for.
+        path: The directory or file to search within. Defaults to the project root.
+    """
+    cfg = seed_config()
+    cmd = ["grep", "-r", "-l", "-E", pattern, path]
+    async with DockerSandbox(cfg).session() as sess:
+        out = await sess._run_tool(cmd, timeout=120)
+    if out.get("returncode", 1) > 1:
+        return {"status": "error", "reason": out.get("stderr") or "Search command failed."}
+    matches = out.get("stdout", "").strip().splitlines()
+    return {"status": "success", "result": {"matches": matches}}
+
+
+@track_tool("apply_refactor", modes=["simula_planful", "code_generation"])
+async def apply_refactor(*, diff: str) -> dict[str, Any]:
+    """
+    Applies a git-formatted unified diff to the codebase in the sandbox.
+
+    This is the standard way to apply code changes generated by an LLM or another tool.
+
+    Args:
+        diff: A string containing the unified diff to apply.
+    """
+    if not diff or not diff.strip():
+        return {"status": "error", "reason": "diff cannot be empty"}
+
+    cfg = seed_config()
+    async with DockerSandbox(cfg).session() as sess:
+        applied = await sess.apply_unified_diff(diff)
+        if not applied:
+            return {"status": "error", "reason": "git apply failed"}
+        return {"status": "success"}
+
+
+# ==============================================================================
+# SECTION: Quality, Testing & Hygiene (Sandboxed)
+# ==============================================================================
+
+
+@track_tool("generate_test_scenarios", modes=["simula_planful", "testing", "planning"])
+async def generate_test_scenarios(*, goal: str, context: str) -> dict[str, Any]:
+    """
+    Analyzes a goal and code context to brainstorm potential test scenarios.
+
+    This helps ensure thorough testing by thinking about edge cases, positive/negative
+    paths, and potential vulnerabilities. It returns a list of human-readable scenarios.
+
+    Args:
+        goal: The original high-level goal for the code change.
+        context: The relevant source code or diff to be tested.
+    """
+    try:
+        prompt = await build_prompt(
+            scope="simula.test_scenario_generator",
+            context={"goal": goal, "context": context},
+            summary="Generate a comprehensive list of test scenarios for the given code context.",
+        )
+        response = await call_llm_service(prompt, agent_name="Simula.TestStrategist")
+        scenarios = extract_json_flex(response.text)
+        return {"status": "success", "result": {"scenarios": scenarios or []}}
+    except Exception as e:
+        return {"status": "error", "reason": f"Failed to generate test scenarios: {e!r}"}
+
+
+@track_tool("run_tests", modes=["simula_planful", "testing", "general"])
+async def run_tests(*, paths: list[str] | None = None, timeout_sec: int = 900) -> dict[str, Any]:
+    """
+    Executes the test suite using pytest to verify code correctness.
+
+    This is a critical step to ensure that code changes have not introduced any
+    regressions and that new functionality works as expected. Always run this
+    after writing or modifying code.
+
+    Args:
+        paths: Specific test files or directories to run. If None, runs all tests.
+        timeout_sec: Maximum time in seconds to allow the test run to complete.
+    """
     cfg = seed_config()
     async with DockerSandbox(cfg).session() as sess:
         await ensure_toolchain(sess)
-        ok, logs = await sess.run_pytest_xdist(paths, nprocs=nprocs, timeout=timeout_sec)
+        ok, logs = await sess.run_pytest(_normalize_paths(paths), timeout=timeout_sec)
         return {"status": "success" if ok else "failed", "result": {"passed": ok, "logs": logs}}
 
 
-@track_tool("static_check")
-async def static_check(*, paths: list[str]) -> dict[str, Any]:
-    paths = _normalize_paths(paths)
+@track_tool("static_check", modes=["simula_planful", "code_analysis"])
+async def static_check(*, paths: list[str] | None = None) -> dict[str, Any]:
+    """
+    Runs static analysis (ruff for linting, mypy for type checking) on the code.
+
+    A crucial tool for catching bugs, style errors, and type inconsistencies before
+    running any code. Should be used frequently during development.
+
+    Args:
+        paths: A list of files or directories to check.
+    """
     cfg = seed_config()
     async with DockerSandbox(cfg).session() as sess:
         await ensure_toolchain(sess)
-        ruff_out = await sess.run_ruff(paths)
-        mypy_out = await sess.run_mypy(paths)
+        ruff_out = await sess.run_ruff(_normalize_paths(paths))
+        mypy_out = await sess.run_mypy(_normalize_paths(paths))
         ruff_ok = ruff_out.get("returncode", 1) == 0
         mypy_ok = mypy_out.get("returncode", 1) == 0
         return {
@@ -340,8 +660,20 @@ async def static_check(*, paths: list[str]) -> dict[str, Any]:
         }
 
 
-@track_tool("run_repair_engine")
-async def run_repair_engine(*, paths: list[str], timeout_sec: int = 600) -> dict[str, Any]:
+@track_tool("run_repair_engine", modes=["simula_planful", "code_generation", "debugging"])
+async def run_repair_engine(
+    *, paths: list[str] | None = None, timeout_sec: int = 600
+) -> dict[str, Any]:
+    """
+    Invokes the autonomous repair engine to attempt to fix failing tests.
+
+    When tests fail, this tool can be used to automatically generate and apply a patch
+    that resolves the issue. It uses LLMs and iterative testing to find a solution.
+
+    Args:
+        paths: The test files or source files associated with the failure.
+        timeout_sec: The maximum time to spend on the repair attempt.
+    """
     out = await attempt_repair(_normalize_paths(paths), timeout_sec=timeout_sec)
     return {
         "status": out.status,
@@ -349,362 +681,146 @@ async def run_repair_engine(*, paths: list[str], timeout_sec: int = 600) -> dict
     }
 
 
-@track_tool("run_fuzz_smoke")
-async def run_fuzz_smoke(*, module: str, function: str, timeout_sec: int = 600) -> dict[str, Any]:
-    ok, logs = await run_hypothesis_smoke(module, function, timeout_sec=timeout_sec)
-    return {"status": "success" if ok else "failed", "result": {"passed": ok, "logs": logs}}
-
-
-# --- Meta-Tool Implementations ---
-
-@track_tool("propose_intelligent_patch")
-async def propose_intelligent_patch(*, goal: str, objective: dict) -> dict[str, Any]:
-    """A placeholder to be handled by the orchestrator's _call_tool method."""
-    return {"status": "pending_orchestrator_hook", "goal": goal, "objective": objective}
-
-
-@track_tool("commit_plan_to_memory")
-async def commit_plan_to_memory(*, plan: list[str], thoughts: str) -> dict[str, Any]:
-    """A placeholder to be handled by the orchestrator's _call_tool method."""
-    return {"status": "pending_orchestrator_hook", "plan": plan, "thoughts": thoughts}
-
-@track_tool("create_plan")
-async def create_plan(*, goal: str) -> dict[str, Any]:
+@track_tool("run_tests_and_diagnose_failures", modes=["simula_planful", "testing", "debugging"])
+async def run_tests_and_diagnose_failures(
+    *, paths: list[str] | None = None, k_expr: str = ""
+) -> dict[str, Any]:
     """
-    Takes a high-level goal and generates a structured, multi-step plan
-    for the agent to execute. This is the first step in strategic execution.
+    Runs tests and, if they fail, parses the output to provide a structured diagnosis and suggests a root cause.
+
+    This is more powerful than `run_tests` alone. It not only reports failure but also
+    extracts the specific error messages and tracebacks, and then uses an LLM to hypothesize
+    about the likely root cause of the failure, providing a strong starting point for debugging.
+
+    Args:
+        paths: The test files or directories to run.
+        k_expr: An optional keyword expression to select a subset of tests.
     """
-    try:
-        hint = PolicyHint(scope="simula.plan.create", context={"vars": {"goal": goal}})
-        prompt_data = await build_prompt(hint)
-        http = await get_http_client()
-        payload = {"agent_name": "SimulaPlanner", "messages": prompt_data.messages, "provider_overrides": {"json_mode": True, **prompt_data.provider_overrides}}
-        resp = await http.post("/llm/call", json=payload, timeout=120)
-        resp.raise_for_status()
-        body = resp.json()
-        plan_json = body.get("json", {}) if isinstance(body.get("json"), dict) else json.loads(body.get("text", "{}"))
-        if "plan" not in plan_json:
-            return {"status": "error", "reason": "LLM failed to generate a valid plan structure."}
-        return {"status": "success", "result": {"plan": plan_json["plan"]}}
-    except Exception as e:
-        return {"status": "error", "reason": f"Failed to create plan: {e!r}"}
-
-@track_tool("request_plan_repair")
-async def request_plan_repair(*, original_plan: list[str], failed_step: str, error_context: str) -> dict[str, Any]:
-    """
-    When a step in a plan fails, this tool asks an LLM to generate a revised plan.
-    This enables robust, self-correcting strategic execution.
-    """
-    try:
-        context = {
-            "vars": {
-                "original_plan": original_plan,
-                "failed_step": failed_step,
-                "error_context": error_context,
-            }
-        }
-        hint = PolicyHint(scope="simula.plan.repair", context=context)
-        prompt_data = await build_prompt(hint)
-        http = await get_http_client()
-        payload = {"agent_name": "SimulaRepair", "messages": prompt_data.messages, "provider_overrides": {"json_mode": True, **prompt_data.provider_overrides}}
-        resp = await http.post("/llm/call", json=payload, timeout=120)
-        resp.raise_for_status()
-        body = resp.json()
-        repaired_plan = body.get("json", {}) if isinstance(body.get("json"), dict) else json.loads(body.get("text", "{}"))
-        if "repaired_plan" not in repaired_plan:
-            return {"status": "error", "reason": "LLM failed to generate a repaired plan."}
-        return {"status": "success", "result": {"repaired_plan": repaired_plan["repaired_plan"]}}
-    except Exception as e:
-        return {"status": "error", "reason": f"Failed to repair plan: {e!r}"}
-
-
-@track_tool("propose_new_system_tool")
-async def propose_new_system_tool(*, goal: str, rationale: str) -> dict[str, Any]:
-    """
-    AUTONOMOUS SELF-IMPROVEMENT: Generates the Python code for a new tool,
-    complete with an @eos_tool decorator, and writes it to a file for Qora to ingest.
-    """
-    try:
-        context = {"vars": {"goal": goal, "rationale": rationale}}
-        hint = PolicyHint(scope="simula.toolgen.propose", context=context)
-        prompt_data = await build_prompt(hint)
-        http = await get_http_client()
-        payload = {"agent_name": "SimulaToolgen", "messages": prompt_data.messages, "provider_overrides": prompt_data.provider_overrides}
-        resp = await http.post("/llm/call", json=payload, timeout=180)
-        resp.raise_for_status()
-        body = resp.json()
-        
-        raw_code = body.get("text", "")
-        clean_code = _strip_markdown_fences(raw_code)
-
-        if "def " not in clean_code or "@" not in clean_code:
-            return {"status": "error", "reason": "LLM failed to generate valid tool code."}
-
-        # Extract function name for filename
-        match = re.search(r"def\s+(\w+)\s*\(", clean_code)
-        func_name = match.group(1) if match else f"new_tool_{uuid.uuid4().hex[:6]}"
-        
-        # Write to a designated file for auto-discovery
-        tool_file_path = Path(settings.repo_root) / "systems/simula/agent/tools_generated.py"
-        
-        # Ensure file exists and append the new tool
-        current_content = ""
-        if tool_file_path.exists():
-            current_content = tool_file_path.read_text(encoding="utf-8")
-        
-        new_content = current_content + "\n\n" + clean_code + "\n"
-        
-        await write_file(path=str(tool_file_path.relative_to(settings.repo_root)), content=new_content)
-
-        return {
-            "status": "success",
-            "result": {
-                "tool_name": func_name,
-                "file_path": str(tool_file_path.relative_to(settings.repo_root)),
-                "next_step": "Recommend calling 'reindex_code_graph' to make the tool available."
-            }
-        }
-    except Exception as e:
-        return {"status": "error", "reason": f"Failed to propose new tool: {e!r}"}
-
-# --- GOD-LEVEL VERIFICATION ---
-@track_tool("run_system_simulation")
-async def run_system_simulation(*, diff: str, scenarios: list[str] | None = None) -> dict[str, Any]:
-    """
-    The ultimate verification step. Applies a change to a 'digital twin' of the
-    entire system and runs realistic end-to-end scenarios to check for unintended
-    consequences, performance regressions, or system-level failures.
-    """
-    cfg = seed_config()
-    async with DockerSandbox(cfg).session() as sess:
-        ok_apply = await sess.apply_unified_diff(diff)
-        if not ok_apply:
-            return {"status": "error", "reason": "Failed to apply diff in simulation environment."}
-        
-        sim_scenarios = scenarios or [{"name": "smoke", "type": "http", "requests": 10}]
-        # The run_scenarios function would contain logic to execute complex tests
-        # (e.g., using docker-compose, running load tests, checking database state).
-        sim_results = run_scenarios(sim_scenarios)
-
-    return {"status": "success", "result": sim_results}
-
-def _strip_markdown_fences(text: str) -> str:
-    """Removes Python markdown fences from LLM output."""
-    match = re.search(r"```python\n(.*)```", text, re.DOTALL)
-    if match:
-        return match.group(1).strip()
-    return text.strip()
-
-
-@track_tool("generate_property_test")
-async def generate_property_test(*, file_path: str, function_signature: str) -> dict[str, Any]:
-    """Generates a property-based test for a given function to find edge cases."""
-    try:
-        hint = PolicyHint(
-            scope="simula.testgen.property",
-            context={
-                "vars": {
-                    "file_path": file_path,
-                    "function_signature": function_signature
-                }
-            }
-        )
-        prompt_data = await build_prompt(hint)
-        http = await get_http_client()
-        payload = {
-            "agent_name": "SimulaTestGen",
-            "messages": prompt_data.messages,
-            "provider_overrides": prompt_data.provider_overrides,
-        }
-        resp = await http.post("/llm/call", json=payload, timeout=120)
-        resp.raise_for_status()
-        body = resp.json()
-        
-        raw_code = body.get("text", "")
-        clean_code = _strip_markdown_fences(raw_code)
-
-        if not clean_code:
-            return {"status": "error", "reason": "LLM failed to generate test code."}
-
-        func_name = function_signature.split("(")[0].strip()
-        test_file_path = f"tests/property/test_prop_{func_name}_{uuid.uuid4().hex[:6]}.py"
-        
-        return {
-            "status": "success",
-            "result": {
-                "proposal_type": "new_file",
-                "path": test_file_path,
-                "content": clean_code,
-            },
-        }
-    except Exception as e:
-        return {"status": "error", "reason": f"Failed to generate property test: {e!r}"}
-
-
-@track_tool("get_context_dossier")
-async def get_context_dossier(*, target_fqname: str, intent: str) -> dict[str, Any]:
-    """
-    Builds a rich dossier by calling the central Qora World Model service.
-    """
-    try:
-        qora_response = await qora_client.get_dossier(target_fqname=target_fqname, intent=intent)
-        return {"status": "success", "result": {"dossier": qora_response}}
-    except Exception as e:
-        return {"status": "error", "reason": f"Dossier service call failed: {e!r}"}
-
-
-@track_tool("qora_find_similar_code")
-async def qora_find_similar_code(*, query_text: str, top_k: int = 5) -> dict[str, Any]:
-    """
-    Finds functions or classes that are semantically similar to the query text.
-    """
-    try:
-        search_results = await qora_client.semantic_search(query_text=query_text, top_k=top_k)
-        return {"status": "success", "result": {"hits": search_results}}
-    except Exception as e:
-        return {"status": "error", "reason": f"Semantic code search failed: {e!r}"}
-
-
-@track_tool("qora_get_call_graph")
-async def qora_get_call_graph(*, target_fqn: str) -> dict[str, Any]:
-    """
-    Retrieves the direct callers and callees for a specific function from the Code Graph.
-    """
-    try:
-        graph_data = await qora_client.get_call_graph(target_fqn=target_fqn)
-        return {"status": "success", "result": graph_data}
-    except Exception as e:
-        return {"status": "error", "reason": f"Call graph retrieval failed: {e!r}"}
-
-
-@track_tool("run_tests_and_diagnose_failures")
-async def run_tests_and_diagnose_failures(*, paths: list[str] | None = None, k_expr: str = "") -> dict[str, Any]:
-    """
-    Runs tests and, if they fail, analyzes the output to find the root cause
-    and suggest a specific fix.
-    """
-    paths_to_test = _normalize_paths(paths)
     cfg = seed_config()
     async with DockerSandbox(cfg).session() as sess:
         await ensure_toolchain(sess)
-        ok, logs = await sess.run_pytest_select(paths_to_test, k_expr=k_expr, timeout=900)
+        ok, logs = await sess.run_pytest_select(_normalize_paths(paths), k_expr=k_expr, timeout=600)
+
+    test_result = {"status": "success" if ok else "failed", "result": {"passed": ok, "logs": logs}}
+
+    if ok:
+        return test_result
 
     stdout = logs.get("stdout", "")
-    if ok:
-        return {"status": "success", "result": {"passed": True, "logs": logs}}
-
     try:
         failures = parse_pytest_output(stdout)
-        acceptance_hints = derive_acceptance(stdout)
-        return {
-            "status": "failed",
-            "result": {
-                "passed": False,
-                "logs": logs,
-                "diagnostics": {
-                    "parsed_failures": [f.__dict__ for f in failures],
-                    "repair_suggestions": acceptance_hints.get("acceptance_hints", []),
-                }
-            }
-        }
+        diagnostics = {"parsed_failures": [f.__dict__ for f in failures]}
+
+        if failures:
+            diag_prompt = await build_prompt(
+                scope="simula.failure_diagnoser",
+                context={"test_failures": diagnostics},
+                summary="Analyze test failures and suggest a probable root cause.",
+            )
+            diag_response = await call_llm_service(diag_prompt, agent_name="Simula.Diagnoser")
+            diagnostics["root_cause_hypothesis"] = diag_response.text
+
+        test_result["result"]["diagnostics"] = diagnostics
+        return test_result
     except Exception as e:
         return {"status": "error", "reason": f"Test diagnostics failed: {e!r}", "logs": logs}
 
 
-@track_tool("run_system_simulation")
-async def run_system_simulation(*, diff: str, scenarios: list[str] | None = None) -> dict[str, Any]:
-    """
-    Applies a diff in a 'digital twin' environment and runs integration scenarios.
-    """
-    cfg = seed_config()
-    async with DockerSandbox(cfg).session() as sess:
-        ok_apply = await sess.apply_unified_diff(diff)
-        if not ok_apply:
-            return {"status": "error", "reason": "Failed to apply diff in simulation environment."}
-        
-        sim_scenarios = scenarios or [{"name": "smoke", "type": "http", "requests": 10}]
-        sim_results = run_scenarios(sim_scenarios)
-
-    return {"status": "success", "result": sim_results}
+# ==============================================================================
+# SECTION: VCS, CI/CD & Deployment
+# ==============================================================================
 
 
-# -----------------------------------------------------------------------------
-# VCS, Policy & Artifact Tools (Wrappers around advanced/extra tools)
-# -----------------------------------------------------------------------------
-
-@track_tool("open_pr")
+@track_tool("open_pr", modes=["simula_planful", "vcs"])
 async def open_pr(
-    *,
-    diff: str,
-    title: str,
-    evidence: dict | None = None,
-    base: str = "main",
+    *, diff: str, title: str, evidence: dict | None = None, base: str = "main"
 ) -> dict:
-    return await _extra.tool_open_pr(
-        {"diff": diff, "title": title, "evidence": evidence or {}, "base": base},
-    )
+    """
+    Opens a new Pull Request (PR) in the version control system.
+
+    This is typically one of the final steps in a development task, packaging the
+    final code change for human review and merging.
+
+    Args:
+        diff: The git-formatted unified diff for the PR.
+        title: The title of the Pull Request.
+        evidence: A dictionary containing evidence of the change's validity (e.g., test results).
+        base: The name of the base branch to open the PR against (e.g., 'main' or 'develop').
+    """
+    res = await _open_pr_impl(diff, title=title, evidence=evidence or {}, base=base)
+    return res.__dict__
 
 
-@track_tool("package_artifacts")
-async def package_artifacts(
-    *,
-    proposal_id: str,
-    evidence: dict,
-    extra_paths: list[str] | None = None,
-) -> dict:
-    return await _extra.tool_package_artifacts(
-        {"proposal_id": proposal_id, "evidence": evidence, "extra_paths": (extra_paths or [])},
-    )
-
-
-@track_tool("policy_gate")
-async def policy_gate(*, diff: str) -> dict:
-    return await _extra.tool_policy_gate({"diff": diff})
-
-
-@track_tool("impact_and_cov")
-async def impact_and_cov(*, diff: str) -> dict:
-    return await _extra.tool_impact_cov({"diff": diff})
-
-
-@track_tool("format_patch")
+@track_tool("format_patch", modes=["simula_planful", "formatting"])
 async def format_patch(*, paths: list[str]) -> dict:
-    return await _adv.format_patch({"paths": _normalize_paths(paths)})
+    """
+    Automatically formats code using the project's autoformatter (e.g., Black, ruff format).
+
+    This should be run before committing code to ensure it conforms to the project's style guide.
+
+    Args:
+        paths: A list of files or directories to format.
+    """
+    return await autoformat_changed(_normalize_paths(paths))
 
 
-@track_tool("rebase_patch")
-async def rebase_patch(*, diff: str, base: str = "origin/main") -> dict:
-    return await _adv.rebase_patch({"diff": diff, "base": base})
-
-
-@track_tool("conventional_commit_title")
-async def conventional_commit_title(*, evidence: dict) -> dict:
-    return await _extra.tool_commit_title({"evidence": evidence})
-
-
-@track_tool("conventional_commit_message")
+@track_tool("conventional_commit_message", modes=["simula_planful", "vcs"])
 async def conventional_commit_message(
-    *,
-    type: str,
-    scope: str | None,
-    subject: str,
-    body: str | None,
-) -> dict:
-    return await _extra.tool_conventional_commit(
-        {"type": type, "scope": scope, "subject": subject, "body": body}
-    )
+    *, commit_type: str, scope: str | None, subject: str, body: str | None
+) -> dict[str, Any]:
+    """
+    Constructs a full Conventional Commits message from its component parts.
+
+    This tool helps create well-formatted, detailed commit messages that follow a standard structure.
+
+    Args:
+        commit_type: The commit type (e.g., 'feat', 'fix', 'chore').
+        scope: The part of the codebase affected (e.g., 'api', 'db').
+        subject: The short, imperative-mood description of the change.
+        body: A more detailed explanation of the change.
+    """
+    return {
+        "status": "success",
+        "message": render_conventional_commit(
+            type_=commit_type, scope=scope, subject=subject, body=body
+        ),
+    }
 
 
-@track_tool("render_ci_yaml")
-async def render_ci_yaml(*, provider: str = "github", use_xdist: bool = True) -> dict:
-    return await _extra.tool_render_ci({"provider": provider, "use_xdist": use_xdist})
+# ==============================================================================
+# SECTION: Generic System & Memory Tools
+# ==============================================================================
 
 
-@track_tool("record_recipe")
-async def record_recipe(**kwargs) -> dict:
-    return await _adv.record_recipe(kwargs)
+@track_tool("memory_write", modes=["simula_planful", "memory", "general"])
+async def memory_write(*, key: str, value: Any) -> dict[str, Any]:
+    """
+    Writes a value to the agent's short-term key-value memory store (blackboard).
+
+    Useful for saving state, intermediate results, or important context within a single
+    multi-step task.
+
+    Args:
+        key: The key to store the value under.
+        value: The value to store (can be any JSON-serializable type).
+    """
+    if not key or value is None:
+        return {"status": "error", "reason": "key and value are required"}
+    await _bb_write(key, value)
+    return {"status": "success"}
 
 
-@track_tool("run_ci_locally")
-async def run_ci_locally(*, paths: list[str] | None = None, timeout_sec: int = 2400) -> dict:
-    return await _adv.run_ci_locally({"paths": paths, "timeout_sec": timeout_sec})
+@track_tool("memory_read", modes=["simula_planful", "memory", "general"])
+async def memory_read(*, key: str) -> dict[str, Any]:
+    """
+    Reads a value from the agent's short-term key-value memory store (blackboard).
+
+    Used to retrieve information that was previously saved with memory_write.
+
+    Args:
+        key: The key of the value to retrieve.
+    """
+    if not key:
+        return {"status": "error", "reason": "key is required"}
+    out = await _bb_read(key)
+    return {"status": "success", "value": out}

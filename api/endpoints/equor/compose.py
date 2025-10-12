@@ -20,6 +20,7 @@ from systems.synapse.core.snapshots import stamp as rcu_stamp
 # == Service Class for Core Logic
 # =======================================================================
 
+
 class CompositionService:
     """Encapsulates the business logic for composing a prompt patch."""
 
@@ -44,7 +45,6 @@ class CompositionService:
         # last-ditch: use agent if present, else a static default
         agent = getattr(req, "agent", None)
         return f"{agent}.compose" if agent else "equor.compose"
-
 
     async def handle_composition(self, req: ComposeRequest) -> ComposeResponse:
         """
@@ -92,7 +92,6 @@ class CompositionService:
         )
         return episode_id
 
-
     async def _create_and_link_rcu_snapshot(self, episode_id: str) -> str:
         """Creates a deterministic RCU snapshot and links it to the episode."""
         snapshot = rcu_stamp()
@@ -112,6 +111,7 @@ class CompositionService:
         )
         return rcu_ref
 
+
 # =======================================================================
 # == FastAPI Dependencies & Router
 # =======================================================================
@@ -119,19 +119,24 @@ class CompositionService:
 compose_router = APIRouter()
 logger = logging.getLogger(__name__)
 
+
 # Dependency Providers
 async def get_composer() -> PromptComposer:
     """Provides a PromptComposer instance."""
     return PromptComposer()
 
 
-async def get_composition_service(composer: PromptComposer = Depends(get_composer)) -> CompositionService:
+async def get_composition_service(
+    composer: PromptComposer = Depends(get_composer),
+) -> CompositionService:
     """Provides the main CompositionService, injecting its dependencies."""
     return CompositionService(composer)
+
 
 # =======================================================================
 # == API Endpoint
 # =======================================================================
+
 
 @compose_router.post("/compose", response_model=ComposeResponse)
 async def compose_prompt_patch(
@@ -146,7 +151,7 @@ async def compose_prompt_patch(
         # Example of how you would use the resolver if you were calling another service:
         # target_endpoint = resolve_endpoint("SOME_SERVICE_KEY", "/some/fallback/path")
         # await http_client.post(target_endpoint, ...)
-        
+
         return await service.handle_composition(req)
     except CompositionError as e:
         logger.warning("CompositionError in /equor/compose: %s", e)
@@ -156,4 +161,6 @@ async def compose_prompt_patch(
         raise
     except Exception as e:
         logger.exception("Unhandled error in /equor/compose")
-        raise HTTPException(status_code=500, detail=f"An internal server error occurred: {e}") from e
+        raise HTTPException(
+            status_code=500, detail=f"An internal server error occurred: {e}"
+        ) from e

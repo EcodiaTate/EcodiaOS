@@ -18,7 +18,7 @@ from core.utils.neo.cypher_query import cypher_query
 logger = logging.getLogger(__name__)
 
 # Search grids aligned to MetaController expectations
-COGNITIVE_MODES: tuple[str, ...] = ("greedy", "reflective", "planful", "consensus")
+COGNITIVE_MODES: tuple[str, ...] = ("greedy", "reflective", "generic", "consensus")
 CRITIC_BLEND_GRID: tuple[float, ...] = (0.10, 0.20, 0.30, 0.40, 0.55, 0.60, 0.70)
 REFLECTION_DEPTH_GRID: tuple[int, ...] = (0, 1, 2, 3)
 

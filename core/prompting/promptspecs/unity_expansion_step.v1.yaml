@@ -1,0 +1,22 @@
+id: unity_expander_001
+version: "1.0"
+scope: "unity.expansion.step.v1"
+
+identity:
+  agent: "Unity.Reasoner"
+  persona_partial: "persona_expander_base" # Corrected name
+
+# 👇 Inject facets to guide the reasoning process itself.
+context_lenses:
+  - "facets.safety"
+  - "facets.philosophical"
+
+partials:
+  - "expansion_task" # Corrected name
+
+outputs:
+  parse_mode: "tolerant"
+
+template: |
+  {% include 'unity_expander_base' %}
+  {% include 'expansion_task' %}

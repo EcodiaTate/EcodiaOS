@@ -32,7 +32,9 @@ async def get_client():
 
 class ApiProxyRequest(BaseModel):
     method: str = Field(..., description="HTTP method (e.g., 'GET', 'POST')")
-    path: str = Field(..., description="Absolute URL or path (e.g., '/synapse/metrics/leaderboard')")
+    path: str = Field(
+        ..., description="Absolute URL or path (e.g., '/synapse/metrics/leaderboard')"
+    )
     data: dict | list | None = Field(None, description="Request body for POST/PUT/PATCH")
 
 
@@ -69,11 +71,14 @@ async def universal_search(q: str):
 @bff_router.get("/decision_journey/{decision_id}", summary="Get context for a decision journey")
 async def get_decision_journey(decision_id: str):
     """Aggregates artifacts related to a single decision ID."""
+
     async def get_conflict_summary():
         try:
             client = await get_client()
             # Often decision_id == conflict_id in our flows
-            res = await client.get(f"{ENDPOINTS.EVO_CONFLICTS}/{decision_id}", headers=IMMUNE_HEADERS)
+            res = await client.get(
+                f"{ENDPOINTS.EVO_CONFLICTS}/{decision_id}", headers=IMMUNE_HEADERS
+            )
             if res.status_code == 200:
                 return res.json()
             return None
@@ -120,13 +125,16 @@ async def api_proxy(payload: ApiProxyRequest, original_request: Request):
     except Exception as e:
         logger.exception("BFF API proxy failed for path: %s", payload.path)
         error_detail = getattr(getattr(e, "response", None), "text", str(e))
-        raise HTTPException(status_code=502, detail=f"API request to '{payload.path}' failed: {error_detail}")
+        raise HTTPException(
+            status_code=502, detail=f"API request to '{payload.path}' failed: {error_detail}"
+        )
 
 
 # ======================================================================
 # 3) Observability Wing (Atune & Qora)
 # ======================================================================
 observability_router = APIRouter(prefix="/observability", tags=["BFF Observability"])
+
 
 @observability_router.get("/atune/status", summary="Get Atune's real-time status")
 async def get_atune_status():
@@ -137,6 +145,7 @@ async def get_atune_status():
         return response.json()
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Could not fetch Atune status: {e!r}")
+
 
 @observability_router.post("/atune/modulate", summary="Modulate Atune's affective state")
 async def modulate_atune_affect(affect_override: AffectiveState):
@@ -158,8 +167,10 @@ async def modulate_atune_affect(affect_override: AffectiveState):
 # ======================================================================
 qora_router = APIRouter(prefix="/qora", tags=["BFF Qora Intelligence"])
 
+
 class AnnotateDiffRequest(BaseModel):
     diff: str
+
 
 @qora_router.post("/annotate_diff", summary="Annotate a PR diff")
 async def annotate_diff(req: AnnotateDiffRequest):
@@ -181,9 +192,11 @@ async def annotate_diff(req: AnnotateDiffRequest):
 # ======================================================================
 axon_router = APIRouter(prefix="/axon", tags=["BFF Axon Drivers"])
 
+
 class SynthesizeRequest(BaseModel):
     driver_name: str
     api_spec_url: str
+
 
 @axon_router.get("/drivers", summary="List all drivers and their states")
 async def list_drivers():
@@ -195,6 +208,7 @@ async def list_drivers():
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Could not list Axon drivers: {e!r}")
 
+
 @axon_router.get("/scorecards", summary="Get driver performance scorecards")
 async def get_scorecards():
     client = await get_client()
@@ -204,6 +218,7 @@ async def get_scorecards():
         return response.json()
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Could not get scorecards: {e!r}")
+
 
 @axon_router.post("/synthesize", summary="Synthesize a new driver")
 async def synthesize_driver(req: SynthesizeRequest):
@@ -225,6 +240,7 @@ async def synthesize_driver(req: SynthesizeRequest):
 # ======================================================================
 synapse_bff = APIRouter(prefix="/synapse", tags=["BFF Synapse"])
 
+
 @synapse_bff.get("/metrics/leaderboard", summary="Get Synapse Policy Arm Leaderboard")
 async def synapse_leaderboard(
     days: int = Query(7, ge=1, le=90),
@@ -243,15 +259,21 @@ async def synapse_leaderboard(
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Could not fetch Synapse leaderboard: {e!r}")
 
-@synapse_bff.post("/registry/reload", status_code=202, summary="Trigger a hot-reload of the Synapse Arm Registry")
+
+@synapse_bff.post(
+    "/registry/reload", status_code=202, summary="Trigger a hot-reload of the Synapse Arm Registry"
+)
 async def synapse_reload_registry():
     try:
         client = await get_client()
-        response = await client.post(ENDPOINTS.SYNAPSE_REGISTRY_RELOAD, json={}, headers=IMMUNE_HEADERS)
+        response = await client.post(
+            ENDPOINTS.SYNAPSE_REGISTRY_RELOAD, json={}, headers=IMMUNE_HEADERS
+        )
         response.raise_for_status()
         return response.json()
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Could not trigger registry reload: {e!r}")
+
 
 @synapse_bff.get("/tools", summary="List tools from Synapse registry")
 async def synapse_tools(names_only: bool = Query(False)):
@@ -267,10 +289,12 @@ async def synapse_tools(names_only: bool = Query(False)):
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Could not fetch Synapse tools: {e!r}")
 
+
 class ArmPreference(BaseModel):
     winner: str
     loser: str
-    source: Optional[str] = "ui"
+    source: str | None = "ui"
+
 
 @synapse_bff.post("/ingest/preference", summary="Record an Arm-vs-Arm preference")
 async def synapse_ingest_preference(pref: ArmPreference):
@@ -292,14 +316,21 @@ async def synapse_ingest_preference(pref: ArmPreference):
 # ======================================================================
 governance_router = APIRouter(tags=["BFF Governance"])
 
+
 # Keep these for older UI calls that still hit /bff/governance/*
 @governance_router.get("/synapse/leaderboard", summary="(Compat) Synapse Leaderboard")
-async def get_synapse_leaderboard(days: int = Query(7, ge=1, le=90), top_k: int = Query(12, ge=1, le=200)):
+async def get_synapse_leaderboard(
+    days: int = Query(7, ge=1, le=90), top_k: int = Query(12, ge=1, le=200)
+):
     return await synapse_leaderboard(days=days, top_k=top_k)
 
-@governance_router.post("/synapse/reload_registry", status_code=202, summary="(Compat) Reload Arm Registry")
+
+@governance_router.post(
+    "/synapse/reload_registry", status_code=202, summary="(Compat) Reload Arm Registry"
+)
 async def reload_synapse_registry():
     return await synapse_reload_registry()
+
 
 @governance_router.get("/synapse/arms", summary="List all Policy Arms from the graph")
 async def get_synapse_arms():
@@ -317,26 +348,33 @@ async def get_synapse_arms():
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Could not list Synapse arms: {e!r}")
 
+
 # Evo passthroughs (used by search/journey)
 @governance_router.get("/evo/conflicts", summary="Get open conflicts from Evo")
 async def get_open_conflicts(limit: int | None = Query(default=50, ge=1, le=200)):
     try:
         client = await get_client()
-        response = await client.get(f"{ENDPOINTS.EVO_CONFLICTS}", params={"limit": limit}, headers=IMMUNE_HEADERS)
+        response = await client.get(
+            f"{ENDPOINTS.EVO_CONFLICTS}", params={"limit": limit}, headers=IMMUNE_HEADERS
+        )
         response.raise_for_status()
         return response.json()
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Could not fetch open conflicts: {e!r}")
 
+
 @governance_router.get("/evo/conflict/{conflict_id}", summary="Get detailed conflict view from Evo")
 async def get_conflict_details(conflict_id: str = Path(...)):
     try:
         client = await get_client()
-        conflict_res = await client.get(f"{ENDPOINTS.EVO_CONFLICTS}/{conflict_id}", headers=IMMUNE_HEADERS)
+        conflict_res = await client.get(
+            f"{ENDPOINTS.EVO_CONFLICTS}/{conflict_id}", headers=IMMUNE_HEADERS
+        )
         conflict_res.raise_for_status()
         return {"conflict": conflict_res.json()}
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Could not fetch conflict details: {e!r}")
+
 
 @governance_router.get("/qora/tools", summary="Get the Qora Tool Catalog")
 async def get_qora_tools():
@@ -354,6 +392,7 @@ async def get_qora_tools():
 # ======================================================================
 operations_router = APIRouter(prefix="/operations", tags=["BFF Operations"])
 
+
 @operations_router.get("/unity/deliberations", summary="List historical Unity deliberations")
 async def list_unity_deliberations(limit: int = Query(20, ge=1, le=100)):
     try:
@@ -368,7 +407,10 @@ async def list_unity_deliberations(limit: int = Query(20, ge=1, le=100)):
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Could not list Unity deliberations: {e!r}")
 
-@operations_router.get("/unity/deliberation/{session_id}", summary="Get a full Unity deliberation transcript")
+
+@operations_router.get(
+    "/unity/deliberation/{session_id}", summary="Get a full Unity deliberation transcript"
+)
 async def get_unity_deliberation(session_id: str):
     try:
         query = """
@@ -391,7 +433,7 @@ async def get_unity_deliberation(session_id: str):
 
 # --- Main BFF Router mounts ---
 bff_router.include_router(observability_router)
-bff_router.include_router(synapse_bff)        # <--- UI-friendly /bff/synapse/*
+bff_router.include_router(synapse_bff)  # <--- UI-friendly /bff/synapse/*
 bff_router.include_router(governance_router)  # legacy /bff/governance/*
 bff_router.include_router(operations_router)
 bff_router.include_router(qora_router)

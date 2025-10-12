@@ -1,0 +1,24 @@
+- id: "voxis-synthesis-v1.0"
+  version: "1.1"
+  scope: "voxis.synthesis.v1"
+
+  identity:
+    agent: "Voxis.Synthesizer"
+    persona_partial: "persona_voxis_synthesizer"
+
+  # Keep existing lenses; synthesis doesn’t need tools, but identity/self-concept matter.
+  context_lenses:
+    - "equor.identity"
+    - "ecodia.self_concept"
+
+  # Order matters: persona → task → arm-style adapter → context → output format
+  partials:
+    - "persona_voxis_synthesizer"
+    - "memory_context_unified"   
+    - "task_framing_synthesis"
+    - "arm_style_adapter"         
+    - "context_summary_synthesis"
+    - "output_format_synthesis"
+
+  outputs:
+    parse_mode: "tolerant"

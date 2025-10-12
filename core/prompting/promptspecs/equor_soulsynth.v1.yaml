@@ -1,0 +1,49 @@
+id: equor-soulsynth-v1.0
+scope: equor.soulsynth.v1
+version: "1.0"
+description: >
+  Batch job that reads conversation samples and synthesizes durable,
+  non-ephemeral profile facts about a user.
+
+identity:
+  agent: "Equor.SoulSynth"
+  persona_partial: "persona_equor_soulsynth"
+
+config:
+  template_format: jinja2
+  provider_overrides:
+    model: "gpt-3.5-turbo"
+    temperature: 0.1
+    max_tokens: 800
+    json_mode: true
+
+partials:
+  - "persona_equor_soulsynth"
+  - "task_framing_soulsynth_diff"
+  - "context_soulsynth_existing_profile"
+  - "context_soulsynth_samples"
+  - "output_format_profile_upserts_only"
+
+outputs:
+  parse_mode: "auto_repair"
+  schema:
+    type: "object"
+    additionalProperties: false
+    required:
+      - "profile_upserts"
+    properties:
+      profile_upserts:
+        type: "array"
+        items:
+          type: "object"
+          additionalProperties: false
+          required: ["label", "merge_key", "merge_value", "updates", "confidence"]
+          properties:
+            label: { type: "string", const: "SoulProfile" }
+            merge_key: { type: "string", const: "user_id" }
+            merge_value: { type: "string" }
+            updates: { type: "object" }
+            confidence:
+              type: "number"
+              minimum: 0
+              maximum: 1

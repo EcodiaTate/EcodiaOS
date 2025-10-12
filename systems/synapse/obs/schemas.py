@@ -35,18 +35,27 @@ class QDCoverage(BaseModel):
     niches: list[NicheData]
 
 
+class ROITrendPoint(BaseModel):
+    """A single data point in an ROI time series."""
+
+    t: str  # ISO 8601 date string
+    roi: float
+
+
 class ROITrend(BaseModel):
     """Time-series data for a single policy arm's ROI."""
 
     arm_id: str
-    roi_history: list[tuple[str, float]]  # List of (timestamp, roi)
+    points: list[ROITrendPoint]
 
 
 class ROITrends(BaseModel):
     """ROI trends for the best and worst performing arms."""
 
-    top_performers: list[ROITrend]
-    worst_performers: list[ROITrend]
+    window_days: int
+    top: list[ROITrend]
+    bottom: list[ROITrend]
+    metadata: dict[str, Any]
 
 
 class EpisodeTrace(BaseModel):

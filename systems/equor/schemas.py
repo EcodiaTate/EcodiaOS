@@ -1,11 +1,14 @@
 # systems/equor/schemas.py
 
-from typing import Any, Literal
+from typing import Any, Dict, List, Literal
 
 try:
     from pydantic import BaseModel, Field
 except Exception:  # allow v1 fallback if needed
     from pydantic.v1 import BaseModel, Field  # type: ignore
+
+# This is a cross-system import required for the event data contract
+from systems.atune.processing.canonical import CanonicalEvent
 
 # A unique identifier for a node in the Neo4j graph.
 NodeID = str
@@ -100,8 +103,8 @@ class ComposeRequest(BaseModel):
         default_factory=dict,
         description="Additional context for composition policy selection.",
     )
-    intent: str | None = None          # ← optional
-    task_key: str | None = None        # ← optional
+    intent: str | None = None  # ← optional
+    task_key: str | None = None  # ← optional
     budget_tokens: int = Field(4096, description="The maximum token budget for the composed patch.")
 
 
@@ -143,7 +146,6 @@ class Attestation(BaseModel):
     model_config = {"extra": "forbid"}  # pydantic v2
 
 
-
 class DriftReport(BaseModel):
     """
     A data structure summarizing identity drift and rule adherence over a
@@ -157,8 +159,6 @@ class DriftReport(BaseModel):
     rule_breach_count: int
     uncertainty: float
     details: dict[str, Any] = Field(default_factory=dict)
-
-    # APPEND THIS CLASS TO systems/equor/schemas.py
 
 
 class PatchProposalEvent(BaseModel):
@@ -178,8 +178,6 @@ class PatchProposalEvent(BaseModel):
         description="The full text of the new, 'tightened' PromptPatch.",
     )
     notes: str = Field(..., description="Explanation of why the patch was proposed.")
-
-    # APPEND THESE CLASSES TO systems/equor/schemas.py
 
 
 class Invariant(BaseModel):
@@ -210,8 +208,6 @@ class InvariantCheckResult(BaseModel):
         default_factory=list,
         description="A list of nodes or relationships that violate the invariant.",
     )
-
-    # APPEND THESE CLASSES TO systems/equor/schemas.py
 
 
 class InternalStateMetrics(BaseModel):
@@ -249,3 +245,87 @@ class QualiaState(BaseModel):
         description="The low-dimensional vector representing the subjective state.",
     )
     triggering_episode_id: str
+
+
+### --- SCHEMAS FOR ATUNE-UNITY-EQUOR COGNITIVE LOOP ---
+
+
+class DeliberationConclusion(BaseModel):
+    """The synthesized outcome of a Unity Room deliberation."""
+
+    text: str = Field(
+        ..., description="The final, synthesized conclusion or resolution from the deliberation."
+    )
+    confidence: float = Field(..., ge=0, le=1, description="The confidence in this conclusion.")
+    agreement_level: float = Field(
+        ..., ge=0, le=1, description="A measure of consensus among participating agents."
+    )
+
+
+class UnityDeliberationCompleteEvent(BaseModel):
+    """
+    The canonical event payload published by the Unity system upon completing a deliberation.
+    This is the trigger for Tier 3 (deep) reflection in Equor.
+    """
+
+    deliberation_episode_id: str = Field(
+        ..., description="The unique ID for the Unity deliberation session."
+    )
+    triggering_event_id: str = Field(
+        ..., description="The ID of the event that Atune originally escalated."
+    )
+    triggering_source: str = Field(
+        ..., description="The source of the original event (e.g., 'EcodiaOS.Voxis')."
+    )
+    topic: str = Field(..., description="A human-readable summary of the deliberation's subject.")
+    participating_agents: list[str] = Field(
+        ..., description="A list of the agent names that participated in the debate."
+    )
+    conclusion: DeliberationConclusion = Field(
+        ..., description="The final, resolved outcome of the deliberation."
+    )
+
+
+class AtuneIdentityReflectionRequest(BaseModel):
+    """
+    The event payload published by Atune when an event is deemed highly
+    relevant to the system's identity, but does not require a full
+    Unity deliberation. This triggers Tier 2 (direct) reflection in Equor.
+    """
+
+    decision_id: str = Field(..., description="The Atune decision ID for tracing.")
+    triggering_event: CanonicalEvent = Field(
+        ..., description="The canonicalized event that triggered the reflection."
+    )
+    salience_scores: dict[str, Any] = Field(
+        ..., description="The full salience vector from all Atune heads for this event."
+    )
+
+    # Add this class alongside the other models like Facet, Profile, etc.
+
+
+class EcodiaCoreIdentity(BaseModel):
+    """
+    Represents a single, versioned snapshot of the entire EcodiaOS
+    system's core self-concept. This is the highest level of identity.
+    """
+
+    id: NodeID = Field(..., description="The unique ID for this version of the core identity.")
+    version: int = Field(..., ge=1, description="A monotonically increasing version number.")
+    narrative_summary: str = Field(
+        ..., description="A first-person narrative of the system's understanding of itself."
+    )
+    core_directives: list[str] = Field(
+        ..., description="The fundamental, non-negotiable principles of operation."
+    )
+    current_stance: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Key-value pairs representing the system's current stance on various topics.",
+    )
+    supersedes: NodeID | None = Field(
+        None, description="The ID of the core identity version this one replaces."
+    )
+    synthesis_trace_id: str = Field(
+        ...,
+        description="The episode or decision ID that triggered the synthesis of this new identity version.",
+    )

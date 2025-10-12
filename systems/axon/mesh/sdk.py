@@ -9,12 +9,21 @@ from pydantic import BaseModel, Field
 
 from systems.axon.schemas import ActionResult, AxonEvent, AxonIntent
 
+# -----------------------------------------------------------------------------
+# Capability / Health / Replay models
+# -----------------------------------------------------------------------------
+
 
 class CapabilitySpec(BaseModel):
-    """describe() output"""
+    """describe() output — what this driver can do and what it needs."""
+
     driver_name: str
     driver_version: str
-    supported_actions: list[str] = Field(..., description="Capabilities this driver can push.")
+    # NOTE: For pull/probe/push we keep simple action strings. Examples:
+    #  - "pull:rss"        (yield events via pull)
+    #  - "probe:search"    (on-demand API lookup)
+    #  - "push:send_sms"   (perform an action with side-effects)
+    supported_actions: list[str] = Field(..., description="Capabilities this driver exposes.")
     risk_profile: dict[str, str] = Field(..., description="action → risk tier")
     budget_model: dict[str, float] = Field(..., description="action → est. cost")
     auth_requirements: list[str] = Field(..., description="e.g., api_key, oauth2")
@@ -27,7 +36,8 @@ class HealthStatus(BaseModel):
 
 
 class ReplayCapsule(BaseModel):
-    """bit-exact replay bundle"""
+    """Bit-exact replay bundle for events or intents."""
+
     id: str
     type: Literal["event", "intent"]
     driver_version: str
@@ -36,40 +46,70 @@ class ReplayCapsule(BaseModel):
     outputs: dict[str, Any]
 
 
+# -----------------------------------------------------------------------------
+# Driver SDK
+# -----------------------------------------------------------------------------
+
+
 class DriverInterface(ABC):
     """
-    Canonical Axon driver SDK — now async to match real drivers.
+    Canonical Axon Driver SDK.
+
+    Modes:
+      - poll   : implements pull() to yield AxonEvents for SenseLoop
+      - probe  : implements probe() for on-demand queries (Voxis tools)
+      - hybrid : supports both
+
+    We provide safe defaults so probe-only drivers don't have to implement pull(),
+    and poll-only drivers don't have to implement probe()/push().
     """
 
-    @abstractmethod
-    def describe(self) -> CapabilitySpec:  # sync is fine here
-        ...
+    # Declared by concrete drivers
+    MODE: Literal["poll", "probe", "hybrid"] = "poll"
+    NAME: str = "driver"
+    VERSION: str = "1.0.0"
+
+    # ---- Required basics -----------------------------------------------------
 
     @abstractmethod
-    async def pull(self, params: dict[str, Any]) -> AsyncIterator[AxonEvent]:
-        """
-        Sense loop: yield AxonEvent(s). Implement only if the driver is a pull/sensor.
-        """
-        if False:  # pragma: no cover (interface)
-            yield AxonEvent()  # type: ignore
-
-    @abstractmethod
-    async def push(self, intent: AxonIntent) -> ActionResult:
-        """
-        Execute a capability. Must honor constraints.dry_run when present.
-        """
+    def describe(self) -> CapabilitySpec:
+        """Return static capabilities / auth / budget info."""
         ...
 
     @abstractmethod
     async def self_test(self) -> HealthStatus:
-        """
-        Lightweight dependency/health probe for lifecycle + probecraft.
-        """
+        """Lightweight dependency/health probe (used by lifecycle & probecraft)."""
         ...
 
     @abstractmethod
     async def repro_bundle(self, *, id: str, kind: Literal["event", "intent"]) -> ReplayCapsule:
-        """
-        Build and return a deterministic replay capsule for the given item.
-        """
+        """Build and return a deterministic replay capsule for the given item."""
         ...
+
+    # ---- Optional surfaces (safe defaults) ----------------------------------
+
+    async def pull(self, params: dict[str, Any]) -> AsyncIterator[AxonEvent]:
+        """
+        Sense loop: yield AxonEvent(s).
+        Default: no events (so probe-only drivers don't need to implement this).
+        """
+        if False:  # pragma: no cover
+            yield AxonEvent()  # type: ignore
+
+    async def probe(self, params: dict[str, Any]) -> Any:
+        """
+        On-demand lookup (for Voxis tools).
+        Default: not supported.
+        """
+        raise NotImplementedError(f"{self.NAME} does not support probe()")
+
+    async def push(self, intent: AxonIntent) -> ActionResult:
+        """
+        Perform an action with side-effects.
+        Default: not supported.
+        """
+        return ActionResult(
+            ok=False,
+            detail=f"{self.NAME} does not support push()",
+            data={},
+        )

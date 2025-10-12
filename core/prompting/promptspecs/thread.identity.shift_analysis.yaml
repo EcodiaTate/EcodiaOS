@@ -3,11 +3,11 @@ version: 1.0.0
 scope: thread.identity.shift_analysis
 identity:
   agent: "Thread"
-  persona_partial: "partials/identity.j2"
+  persona_partial: "identity"
 safety:
   partials:
-    - "partials/safety_min.j2"
-    - "partials/json_guard_strict.j2"
+    - "safety_min"
+    - "json_guard_strict"
 outputs:
   schema_ref: "core/prompting/schemas/thread_identity_shift_output.json"
   parse_mode: "auto_repair"

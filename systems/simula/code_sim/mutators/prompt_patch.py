@@ -8,7 +8,8 @@ from typing import Any
 
 from httpx import HTTPStatusError
 
-from core.prompting.orchestrator import PolicyHint, build_prompt
+from core.prompting.orchestrator import build_prompt
+from core.utils.llm_gateway_client import call_llm_service
 from core.utils.net_api import ENDPOINTS, get_http_client
 
 REPO_ROOT = Path(os.environ.get("SIMULA_REPO_ROOT", "/workspace")).resolve()
@@ -28,13 +29,12 @@ async def _read_snip(p: Path, n: int = 120) -> str:
         return ""
 
 
-async def _targets_context(step: Any) -> str:
+async def _targets_context(step_dict: dict[str, Any]) -> str:
     blocks = []
-    targets = getattr(step, "targets", []) or (
-        step.get("targets") if isinstance(step, dict) else []
-    )
+    # Access targets from the dictionary
+    targets = step_dict.get("targets", [])
     for t in targets or []:
-        rel = getattr(t, "file", None) or (t.get("file") if isinstance(t, dict) else None)
+        rel = t.get("file") if isinstance(t, dict) else None
         if not rel:
             continue
         p = (REPO_ROOT / rel).resolve()
@@ -51,24 +51,21 @@ def _strip_fences(text: str | None) -> str:
     return m.group(0).strip() if m else ""
 
 
-def _coerce_primary_target_text(step: Any) -> str:
-    # allow callable .primary_target() returning tuple, or plain str/tuple, or dict
-    pt = getattr(step, "primary_target", None)
-    if callable(pt):
-        try:
-            pt = pt()
-        except Exception:
-            pt = None
-    if isinstance(pt, tuple):
-        return " — ".join(str(x) for x in pt if x)
-    if isinstance(pt, dict):
-        return json.dumps(pt, ensure_ascii=False)
-    if isinstance(pt, str):
-        return pt
+def _coerce_primary_target_text(step_dict: dict[str, Any]) -> str:
+    # Replicate primary_target() logic using dictionary access
+    targets = step_dict.get("targets", [])
+    primary_target = targets[0] if targets and isinstance(targets, list) else {}
+    target_file = primary_target.get("file")
+    export_sig = primary_target.get("export")
+
+    if target_file and export_sig:
+        return f"{target_file} :: {export_sig}"
+    if target_file:
+        return target_file
     return ""
 
 
-async def llm_unified_diff(step: Any, variant: str = "base") -> str | None:
+async def llm_unified_diff(step_dict: dict[str, Any], variant: str = "base") -> str | None:
     """
     Generate a unified diff via the central PromptSpec orchestrator.
     Output should be raw text starting with '--- a/...'.
@@ -82,15 +79,14 @@ async def llm_unified_diff(step: Any, variant: str = "base") -> str | None:
         '+    print("hello, world")\n'
     )
 
-    # Gather context vars safely
-    objective_text = getattr(step, "objective", None) or (
-        step.get("objective") if isinstance(step, dict) else ""
+    objective_dict = step_dict.get("objective", {})
+    objective_text = (
+        objective_dict if isinstance(objective_dict, str) else json.dumps(objective_dict)
     )
-    primary_target_text = _coerce_primary_target_text(step)
-    context_str = await _targets_context(step)
+    primary_target_text = _coerce_primary_target_text(step_dict)
+    context_str = await _targets_context(step_dict)
 
-    # Build prompt via PromptSpec (no raw strings)
-    hint = PolicyHint(
+    prompt_response = await build_prompt(
         scope="simula.codegen.unified_diff",
         summary="Produce a valid unified diff for Simula code evolution",
         context={
@@ -103,38 +99,22 @@ async def llm_unified_diff(step: Any, variant: str = "base") -> str | None:
             },
         },
     )
-    o = await build_prompt(hint)
-
-    # Call LLM Bus using provider overrides from the spec
-    request_payload = {
-        "messages": o.messages,
-        "json_mode": bool(o.provider_overrides.get("json_mode", False)),  # should be False for text
-        "max_tokens": int(o.provider_overrides.get("max_tokens", 700)),
-    }
-    temp = o.provider_overrides.get("temperature", None)
-    if temp is not None:
-        request_payload["temperature"] = float(temp)
 
     try:
-        client = await get_http_client()
-        resp = await client.post(ENDPOINTS.LLM_CALL, json=request_payload, timeout=120.0)
-        resp.raise_for_status()
-        llm_response = resp.json()
-        raw_text = (llm_response.get("text") or "").strip()
+        llm_resp = await call_llm_service(
+            prompt_response=prompt_response,
+            agent_name="Simula",
+            scope="simula.codegen.unified_diff",
+        )
+        raw_text = (getattr(llm_resp, "text", "") or "").strip()
 
         # Debug (optional)
         print("\n[DEBUG LLM_PATCH] --- RAW LLM Response ---")
         print(raw_text[:2000])
         print("---------------------------------------\n")
 
-        # Defensive cleanup: strip accidental fences/comments
         cleaned = _strip_fences(raw_text) or raw_text
         return cleaned if cleaned.startswith("--- a/") else cleaned
-    except HTTPStatusError as e:
-        print(
-            f"[PROMPT_PATCH_ERROR] LLM Bus returned a server error: {e}\n{getattr(e, 'response', None) and e.response.text}",
-        )
-        return None
     except Exception as e:
-        print(f"[PROMPT_PATCH_ERROR] An unexpected error occurred: {e}")
+        print(f"[PROMPT_PATCH_ERROR] Unexpected error: {e}")
         return None

@@ -33,14 +33,18 @@ from systems.nova.telemetry.hooks import (
     headers_for_propose,
 )
 
+
 # REFACTORED: Define Pydantic models for request bodies
 # ----------------------------------------------------
 class CandidateListRequest(BaseModel):
     """Request body for endpoints that accept a list of InventionCandidates."""
+
     candidates: list[InventionCandidate]
+
 
 class SaveCapsuleRequest(BaseModel):
     """Request body for the save_capsule endpoint."""
+
     brief: InnovationBrief
     artifacts: list[Any] = []
     playbook_dag: dict | None = None
@@ -50,15 +54,21 @@ class SaveCapsuleRequest(BaseModel):
     env_pins: dict | None = None
     seeds: dict | None = None
 
+
 class ProofCheckRequest(BaseModel):
     """Request body for the proof_check endpoint."""
+
     capability_spec: dict = {}
     obligations: dict = {}
     evidence: dict | None = None
 
+
 class ProofCheckExtRequest(ProofCheckRequest):
     """Request body for the proof_check_ext endpoint, extending the base proof check."""
+
     brief_success: dict | None = None
+
+
 # ----------------------------------------------------
 
 router = APIRouter()
@@ -168,7 +178,7 @@ async def save_capsule(
 async def proof_check(
     # REFACTORED: Use Pydantic model for request body validation
     request: ProofCheckRequest,
-    response: Response
+    response: Response,
 ) -> ProofResult:
     t0 = time.perf_counter()
     # REFACTORED: Use validated data from the request model
@@ -185,7 +195,7 @@ async def proof_check(
 async def proof_check_ext(
     # REFACTORED: Use Pydantic model for request body validation
     request: ProofCheckExtRequest,
-    response: Response
+    response: Response,
 ) -> ProofResult:
     t0 = time.perf_counter()
     # REFACTORED: Use validated data from the request model

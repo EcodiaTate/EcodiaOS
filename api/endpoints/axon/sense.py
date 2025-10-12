@@ -13,6 +13,7 @@ from systems.axon.io.quarantine import Quarantine
 from systems.axon.journal.mej import MerkleJournal
 from systems.axon.schemas import AxonEvent
 
+
 # REFACTORED: Define a Pydantic model for the incoming request body
 # -----------------------------------------------------------------
 class SenseRequest(BaseModel):
@@ -20,6 +21,7 @@ class SenseRequest(BaseModel):
     Defines the expected structure for data sent to the /sense endpoint.
     Allows for known fields and arbitrary additional data.
     """
+
     source: str = "unknown"
     event_type: str = "generic"
     modality: str = "json"
@@ -28,6 +30,8 @@ class SenseRequest(BaseModel):
     class Config:
         # Allow any other fields to be passed in the payload
         extra = "allow"
+
+
 # -----------------------------------------------------------------
 
 sense_router = APIRouter()

@@ -2,11 +2,14 @@
 # LIVE OBSERVABILITY ENDPOINTS (no stubs)
 from __future__ import annotations
 
+import json
 from collections import defaultdict
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import JSONResponse
 
 from core.utils.neo.cypher_query import cypher_query
 from systems.synapse.obs.queries import (
@@ -139,8 +142,8 @@ async def get_roi_trends(
 
         return ROITrends(
             window_days=days,
-            top=top_series,
-            bottom=bottom_series,
+            top_performers=top_series,
+            worst_performers=bottom_series,
             metadata={
                 "rank_window_days": rank_window_days,
                 "top_ids": top_ids,
@@ -160,3 +163,48 @@ async def get_episode(episode_id: str):
     if not trace:
         raise HTTPException(status_code=404, detail="Episode not found.")
     return EpisodeTrace(**trace)
+
+
+@dashboard_router.get("/outcomes")
+async def get_outcomes_data():
+    """
+    Loads outcomes.json from disk and returns a normalized subset
+    for visualization purposes.
+    """
+    path = Path("./data/synapse/outcomes.json")
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="outcomes.json not found")
+
+    with path.open("r", encoding="utf-8") as f:
+        raw = json.load(f)
+
+    def parse_arm_id(arm_id: str):
+        parts = arm_id.split(".")
+        return {
+            "strategy": parts[1] if len(parts) > 1 else None,
+            "model": parts[3] if len(parts) > 3 else None,
+            "tokenizer": parts[4] if len(parts) > 4 else None,
+        }
+
+    # Normalize fields
+    results = []
+    for row in raw:
+        meta = parse_arm_id(row["arm_id"])
+        results.append(
+            {
+                "timestamp": row["timestamp"],
+                "episode_id": row["episode_id"],
+                "task_key": row["task_key"],
+                "arm_id": row["arm_id"],
+                "strategy": meta["strategy"],
+                "model": meta["model"],
+                "tokenizer": meta["tokenizer"],
+                "scalar_reward": row["scalar_reward"],
+                "reward_vector": row["reward_vector"],
+                "success": row["metrics"].get("success"),
+                "utility_score": row["metrics"].get("utility_score"),
+                "reasoning": row["metrics"].get("reasoning"),
+            }
+        )
+
+    return JSONResponse(content=results)

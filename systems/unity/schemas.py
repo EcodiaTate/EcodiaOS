@@ -1,5 +1,3 @@
-# systems/unity/schemas.py
-
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
@@ -11,7 +9,7 @@ NodeID = str
 class InputRef(BaseModel):
     """A reference to an input artifact for the deliberation."""
 
-    kind: Literal["text", "doc", "code", "graph_ref", "url", "artifact_ref"]
+    kind: Literal["text", "doc", "code", "graph_ref", "url", "artifact_ref", "json"]
     value: str
     meta: dict[str, Any] = Field(default_factory=dict)
 
@@ -22,6 +20,9 @@ class DeliberationSpec(BaseModel):
     input to the /deliberate endpoint.
     """
 
+    triggering_event_id: str | None = Field(
+        None, description="The ID of the event from Atune that triggered this deliberation."
+    )
     topic: str = Field(..., description="A concise, human-readable topic for the deliberation.")
     goal: Literal[
         "assess",
@@ -119,8 +120,6 @@ class MetaCriticismProposalEvent(BaseModel):
     )
     notes: str = Field(..., description="A human-readable explanation of the proposed improvement.")
 
-    # APPEND THESE CLASSES TO systems/unity/schemas.py
-
 
 class RoomConfiguration(BaseModel):
     """Defines the configuration for a single room in a federated deliberation."""
@@ -157,8 +156,6 @@ class FederatedConsensusResponse(BaseModel):
         ...,
         description="A list of the individual verdicts from each room.",
     )
-
-    # APPEND THESE CLASSES TO systems/unity/schemas.py
 
 
 class Cognit(BaseModel):

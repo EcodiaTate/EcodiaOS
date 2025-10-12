@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
+
 from core.utils.neo.cypher_query import cypher_query
 from systems.equor.schemas import Attestation  # <-- Pydantic model
 
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 @attest_router.post("/attest")
 async def receive_attestation(
-    attestation: Attestation
+    attestation: Attestation,
 ) -> dict[str, Any]:
     """
     Receive a governance attestation and persist it.
@@ -76,5 +77,7 @@ async def receive_attestation(
     except HTTPException:
         raise
     except Exception as e:
-        logger.exception("Failed to persist attestation run_id=%s", getattr(attestation, "run_id", "<none>"))
+        logger.exception(
+            "Failed to persist attestation run_id=%s", getattr(attestation, "run_id", "<none>")
+        )
         raise HTTPException(status_code=500, detail=f"Could not persist attestation: {e}")

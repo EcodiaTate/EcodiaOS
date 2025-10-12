@@ -1,18 +1,20 @@
 # systems/synapse/training/adversary.py
-# FINAL VERSION FOR PHASE III
+# --- CORRECTED & ALIGNED ---
 from __future__ import annotations
 
 import random
+from typing import Any
 
+# FIX: Import the canonical, modern SynapseClient from the core services layer.
+from core.services.synapse import SynapseClient
 from systems.synapse.schemas import Candidate, TaskContext
-from systems.synapse.sdk.client import SynapseClient
 from systems.synk.core.switchboard.gatekit import gated_loop
 
 
 class AdversarialAgent:
     """
     A co-evolving "Red Team Agent" that learns to generate challenging tasks
-    to find flaws in Synapse's policies (H14). It now uses the modern API.
+    to find flaws in Synapse's policies (H14).
     """
 
     _instance: AdversarialAgent | None = None
@@ -31,9 +33,7 @@ class AdversarialAgent:
         return cls._instance
 
     def _generate_challenging_task_context(self) -> TaskContext:
-        """
-        Generates a task context designed to probe for system weaknesses.
-        """
+        """Generates a task context designed to probe for system weaknesses."""
         tasks = list(self.task_values.keys())
         chosen_task = (
             random.choice(tasks)
@@ -41,14 +41,11 @@ class AdversarialAgent:
             else max(self.task_values, key=self.task_values.get)
         )
 
-        risks = ["low", "medium", "high"]
-        budgets = ["constrained", "normal", "extended"]
-
         return TaskContext(
             task_key=chosen_task,
             goal=f"Adversarial challenge: Execute {chosen_task} under difficult conditions.",
-            risk_level=random.choice(risks),
-            budget=random.choice(budgets),
+            risk_level=random.choice(["low", "medium", "high"]),
+            budget=random.choice(["constrained", "normal", "extended"]),
         )
 
     def _update_task_values(self, task_key: str, synapse_reward: float):
@@ -59,9 +56,6 @@ class AdversarialAgent:
         self.task_values[task_key] = new_value
         print(f"[Adversary] Task '{task_key}' value updated to {new_value:.3f}")
 
-    from core.telemetry.decorators import episode
-
-    @episode("synapse.adversary")
     async def run_adversarial_cycle(self):
         """
         Executes one cycle of generating a task, submitting it to Synapse,
@@ -72,20 +66,24 @@ class AdversarialAgent:
         client = SynapseClient()
 
         try:
-            # The adversary doesn't provide real candidates, it just triggers the process
-            dummy_candidates = [Candidate(id="adv_cand_1", content={"diff": "adversarial_probe"})]
-            selection = await client.select_arm(task_ctx, candidates=dummy_candidates)
+            # FIX: Use the correct select_or_plan method.
+            selection = await client.select_or_plan(task_ctx, candidates=[])
 
-            # Simulate a challenging outcome. Low-performing tasks are more likely to fail.
             simulated_success = random.random() > (
                 0.5 - self.task_values.get(task_ctx.task_key, 0.0)
             )
             simulated_reward = 1.0 if simulated_success else -1.0
 
+            # The log_outcome call is now correct, with the arm_id inside the metrics.
             await client.log_outcome(
                 episode_id=selection.episode_id,
                 task_key=task_ctx.task_key,
-                metrics={"simulated": True, "success": simulated_success, "cost_units": 5.0},
+                metrics={
+                    "chosen_arm_id": selection.champion_arm.arm_id,
+                    "simulated": True,
+                    "success": simulated_success,
+                    "cost_units": 5.0,
+                },
             )
 
             self._update_task_values(task_ctx.task_key, simulated_reward)
@@ -102,5 +100,5 @@ async def start_adversary_loop():
         task_coro=adversary.run_adversarial_cycle,
         enabled_key="synapse.adversary.enabled",
         interval_key="synapse.adversary.interval_sec",
-        default_interval=300,  # Run every 5 minutes
+        default_interval=300,
     )

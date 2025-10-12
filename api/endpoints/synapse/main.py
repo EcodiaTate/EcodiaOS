@@ -2,10 +2,11 @@
 # FINAL PRODUCTION VERSION (hardened, deduped)
 from __future__ import annotations
 
-import logging
-from typing import Any
-from datetime import UTC, datetime
 import json
+import logging
+from datetime import UTC, datetime
+from typing import Any
+
 from fastapi import APIRouter
 
 # --- Synapse Core Cognitive & Skill Modules ---
@@ -41,12 +42,22 @@ logger = logging.getLogger(__name__)
 async def continue_option(req: ContinueRequest):
     """Continues the execution of a multi-step skill (Option)."""
     logger.info("[API] /tasks/continue_option episode=%s", req.episode_id)
+
     next_arm = option_executor.continue_execution(req.episode_id, req.last_step_outcome)
+
     if not next_arm:
         return ContinueResponse(episode_id=req.episode_id, next_action=None, is_complete=True)
+
+    # Correctly construct the ArmScore object for the 'next_action' field.
+    next_action_score = ArmScore(
+        arm_id=next_arm.id,
+        score=1.0,
+        reason="Hierarchical Skill: Next Step",
+    )
+
     return ContinueResponse(
         episode_id=req.episode_id,
-        next_action=ArmScore(arm_id=next_arm.id, score=1.0, reason="Hierarchical Skill: Next Step"),
+        next_action=next_action_score,
         is_complete=False,
     )
 
@@ -72,12 +83,12 @@ async def repair_skill_step(req: RepairRequest):
     try:
         repair_arm, _ = tactical_manager.select_arm(
             SelectArmRequest(task_ctx=repair_task_ctx, candidates=[]),
-            "planful",
+            "generic",
         )
         arm_id = repair_arm.id
     except Exception as e:
         logger.warning("[API] repair tactics failed, using safe fallback: %s", e)
-        arm_id = arm_registry.get_safe_fallback_arm("planful").id
+        arm_id = await arm_registry.get_safe_fallback_arm("generic").id
 
     return RepairResponse(
         episode_id=req.episode_id,
@@ -118,19 +129,18 @@ async def get_real_hint(namespace: str, key: str, context: dict) -> Any:
         risk_level = context.get("risk_level", "medium")
         if risk_level == "normal":
             risk_level = "medium"
-            
-            
+
         task_ctx = TaskContext(
             task_key=f"hint.{namespace}.{key}",
             goal=f"Find best '{key}' for {namespace}",
             risk_level=risk_level,
             budget=context.get("budget", "normal"),
         )
-        
+
         # 2. Use the core Tactical Manager to select the champion arm.
         # We pass an empty candidate list to let the manager consider all applicable arms.
         select_req = SelectArmRequest(task_ctx=task_ctx, candidates=[])
-        champion_arm, _ = tactical_manager.select_arm(select_req, "planful")
+        champion_arm, _ = await tactical_manager.select_arm(select_req, "generic")
 
         if not champion_arm:
             return None
@@ -147,7 +157,7 @@ async def get_real_hint(namespace: str, key: str, context: dict) -> Any:
             policy_graph_data = full_arm.policy_graph_json
         elif hasattr(full_arm, "policy_graph"):
             policy_graph_data = full_arm.policy_graph
-            
+
         if not policy_graph_data:
             return None
 
@@ -156,8 +166,8 @@ async def get_real_hint(namespace: str, key: str, context: dict) -> Any:
         if isinstance(policy_graph_data, str):
             policy_graph_dict = json.loads(policy_graph_data)
         elif isinstance(policy_graph_data, dict):
-             policy_graph_dict = policy_graph_data
-        
+            policy_graph_dict = policy_graph_data
+
         policy_params = policy_graph_dict.get("params", {})
         return policy_params.get(key)
 
@@ -173,16 +183,17 @@ async def get_hint(req: HintRequest):
     by leveraging the currently optimal policy arm.
     """
     logger.info("[API] /synapse/hint called for namespace=%s, key=%s", req.namespace, req.key)
-    
+
     value = await get_real_hint(req.namespace, req.key, req.context)
-    
+
     return HintResponse(
         value=value,
         meta={
             "source": "synapse-tactics-derived",
-            "timestamp": datetime.now(UTC).isoformat()
-        }
+            "timestamp": datetime.now(UTC).isoformat(),
+        },
     )
+
 
 # =======================================================================
 # == System & Registry Management

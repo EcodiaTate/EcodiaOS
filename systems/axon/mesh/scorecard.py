@@ -41,7 +41,7 @@ class ScorecardManager:
 
     def __init__(self, window_max: int = 500) -> None:
         self._scorecards: dict[str, DriverScorecard] = {}
-        self._history: dict[str, Deque[_RunSample]] = {}
+        self._history: dict[str, deque[_RunSample]] = {}
         self._window_max = window_max
 
     def update_scorecard(
@@ -72,7 +72,13 @@ class ScorecardManager:
         card.last_seen_utc = datetime.now(UTC).isoformat()
 
         self._history[driver_name].append(
-            _RunSample(ok=was_successful, latency_ms=latency_ms, cost_usd=cost_usd, uplift=uplift, ts=ts or datetime.now(UTC).timestamp())
+            _RunSample(
+                ok=was_successful,
+                latency_ms=latency_ms,
+                cost_usd=cost_usd,
+                uplift=uplift,
+                ts=ts or datetime.now(UTC).timestamp(),
+            ),
         )
 
         print(f"ScorecardManager: Updated '{driver_name}'. SR={card.success_rate:.2%}")
@@ -91,7 +97,9 @@ class ScorecardManager:
             return None
         window = hist[-window_n:] if window_n > 0 else hist
         latencies = [s.latency_ms for s in window]
-        p95 = quantiles(latencies, n=100)[94] if len(latencies) >= 20 else max(latencies)  # rough but robust
+        p95 = (
+            quantiles(latencies, n=100)[94] if len(latencies) >= 20 else max(latencies)
+        )  # rough but robust
         success_rate = sum(1 for s in window if s.ok) / len(window)
         avg_uplift = (sum(s.uplift for s in window) / len(window)) if window else 0.0
         return {

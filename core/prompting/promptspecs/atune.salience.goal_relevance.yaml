@@ -1,0 +1,13 @@
+id: "atune.salience.goal_relevance.v1"
+version: "1.0"
+scope: "atune.salience.goal_relevance"
+
+identity:
+  agent: "Atune.Salience.GoalRelevance"
+  persona_partial: "classifier_persona"
+
+partials:
+  - "goal_relevance_task"
+
+outputs:
+  parse_mode: "strict_json"

@@ -1,25 +1,83 @@
-# VCS / editors
+# --- VCS / Editors ---
 .git
-.vscode
-__pycache__/
+.git/**
+.gitignore
+.gitattributes
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# --- Python caches & build output ---
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
 .mypy_cache/
 .pytest_cache/
-*.pyc
-*.pyo
-*.pyd
-.venv
-config/.env
-.env
+.coverage
+htmlcov/
+.build/
+build/
+dist/
+site/
+wheelhouse/
+
+# --- Virtual envs (keep these out of the context) ---
+.venv/
+venv/
+env/
+
+# --- Node / Frontend junk (keep source, ignore deps & builds) ---
+**/node_modules/
+.node_modules/
+**/.next/
+.next/
+**/out/
+out/
+**/dist/
+.dist/
+**/.eslintcache
+**/.parcel-cache
+**/.vite
+**/.cache/          # generic tool caches
+**/coverage/
+
+# --- Big data / artifacts / models (repo-specific, adjust as needed) ---
+models/
+models/**
+/models_data/
+/data/
+/datasets/
+/checkpoints/
+/artifacts/
+/cache/
+/tmp/
+/temp/
+logs/
 *.log
 *.sqlite*
+.huggingface/
+.wandb/
+.cargo/
+
+# --- Local / dev-only files ---
 .ngrok*
-wheelhouse/
-# Node stuff if present
-node_modules/
-dist/
-build/
-Dockerfile
-docker-coompose.yml
-README.md
-EcodiaOS/
+.frontend-voxis/.next/
+.eco-console/.next/
+
+# --- Env files (never ship these) ---
+.env
+config/.env
+
+# --- Collation / scratch ---
+COLLATED_*.txt
 .collate*
+
+# --- Docker build helpers (keep these INCLUDED; do NOT ignore) ---
+# NOTE: You previously ignored these; that forces odd behaviors and can break multi-service builds.
+# Dockerfile
+# docker-compose.yml
+# README.md

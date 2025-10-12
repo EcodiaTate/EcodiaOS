@@ -23,6 +23,7 @@ _BENIGN = (
     "Neo.ClientError.Schema.EquivalentSchemaIndexAlreadyExists",
 )
 
+
 async def _run_ddl(stmt: str) -> None:
     try:
         await cypher_query(stmt)
@@ -33,9 +34,11 @@ async def _run_ddl(stmt: str) -> None:
             return
         raise
 
+
 async def _apply_all(queries: Iterable[str]) -> None:
     for q in queries:
         await _run_ddl(q)
+
 
 # --- One-time migrations / cleanup for legacy names & shapes ---------------------
 MIGRATION_DDL: list[str] = [
@@ -53,34 +56,33 @@ NON_VECTOR_DDL: list[str] = [
     "CREATE CONSTRAINT consrule_name IF NOT EXISTS FOR (r:ConstitutionRule) REQUIRE r.name IS UNIQUE",
     "CREATE CONSTRAINT ingeststate_id IF NOT EXISTS FOR (s:IngestState) REQUIRE s.id IS UNIQUE",
     "CREATE CONSTRAINT ingesthistory_commit IF NOT EXISTS FOR (h:IngestHistory) REQUIRE h.commit_id IS UNIQUE",
-
     # Policy Arms (mirror seeder)
     "CREATE CONSTRAINT policyarm_id IF NOT EXISTS FOR (p:PolicyArm) REQUIRE p.id IS UNIQUE",
     "CREATE CONSTRAINT policyarm_armid IF NOT EXISTS FOR (p:PolicyArm) REQUIRE p.arm_id IS UNIQUE",
-
     # Events
     "CREATE CONSTRAINT event_by_id IF NOT EXISTS FOR (e:Event) REQUIRE e.event_id IS UNIQUE",
     "CREATE INDEX event_by_created_at IF NOT EXISTS FOR (e:Event) ON (e.created_at)",
     "CREATE INDEX event_by_cluster IF NOT EXISTS FOR (e:Event) ON (e.cluster_id)",
-
     # Tools
     "CREATE INDEX tool_by_name IF NOT EXISTS FOR (t:Tool) ON (t.name)",
-
     # Clusters
     "CREATE CONSTRAINT cluster_by_key IF NOT EXISTS FOR (c:Cluster) REQUIRE c.cluster_key IS UNIQUE",
     "CREATE INDEX cluster_by_run IF NOT EXISTS FOR (c:Cluster) ON (c.run_id)",
-
     # WM/Code graph bits surfaced in your logs
     "CREATE CONSTRAINT adr_path IF NOT EXISTS FOR (a:ArchitecturalDecision) REQUIRE a.path IS UNIQUE",
     "CREATE CONSTRAINT codefile_path IF NOT EXISTS FOR (cf:CodeFile) REQUIRE cf.path IS UNIQUE",
 ]
 
+
 # --- Vector indexes --------------------------------------------------------------
 async def _ensure_vector_indexes() -> None:
     """Create vector indexes using the shared helper (driverless)."""
-    await create_vector_index(label="Event",         prop="vector_gemini",        dims=3072, sim="cosine")
-    await create_vector_index(label="Cluster",       prop="cluster_vector_gemini",dims=3072, sim="cosine")
-    await create_vector_index(label="Deliberation",  prop="embedding",            dims=3072, sim="cosine")
+    await create_vector_index(label="Event", prop="vector_gemini", dims=3072, sim="cosine")
+    await create_vector_index(
+        label="Cluster", prop="cluster_vector_gemini", dims=3072, sim="cosine"
+    )
+    await create_vector_index(label="Deliberation", prop="embedding", dims=3072, sim="cosine")
+
 
 # --- Small bootstrap for ingest state (silences UnknownLabel/Property warnings) --
 async def _ensure_ingest_state(state_id: str = "default") -> None:
@@ -93,6 +95,7 @@ async def _ensure_ingest_state(state_id: str = "default") -> None:
         """,
         {"id": state_id},
     )
+
 
 # --- Public entrypoints ----------------------------------------------------------
 async def ensure_schema() -> None:
@@ -108,6 +111,7 @@ async def ensure_schema() -> None:
     # 4) Vector indexes
     await _ensure_vector_indexes()
 
+
 async def main() -> None:
     # Standalone run: init & close the shared async driver around operations
     await init_driver()
@@ -116,6 +120,7 @@ async def main() -> None:
         print("✅ Schema bootstrap complete.")
     finally:
         await close_driver()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

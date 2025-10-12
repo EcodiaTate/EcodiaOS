@@ -6,14 +6,17 @@ EcodiaOS Embeddings (Gemini) — Equor-aligned defaults via Neo4j (DEBUG BUILD)
 - Async-safe (thread offload for SDK), retries, batch embeddings
 - HARD-LOCKED to 3072 dims + loud runtime assertions + debug prints/sanity probe
 """
+
 from __future__ import annotations
-import httpx, os
+
 import asyncio
 import json
 import os
 import time
 from collections.abc import Sequence
 from typing import Any
+
+import httpx
 
 from core.llm.env_bootstrap import *  # ensure GOOGLE_API_KEY etc. loaded
 
@@ -23,6 +26,7 @@ except Exception:
     np = None  # type: ignore
 
 from dotenv import find_dotenv, load_dotenv
+
 
 # ─────────────────────────────────────────────
 # Debug toggles
@@ -34,12 +38,15 @@ def _is_debug() -> int:
     except Exception:
         return 1
 
+
 def _dbg_print(lvl: int, *args, **kwargs) -> None:
     if _is_debug() >= lvl:
         print(*args, **kwargs)
 
+
 def _truncate(s: str, n: int = 1400) -> str:
     return s if len(s) <= n else s[:n] + f"... <+{len(s) - n} chars>"
+
 
 # ─────────────────────────────────────────────
 # Env loading (local dev hard-prefer)
@@ -64,6 +71,7 @@ if not API_KEY:
     raise OSError("No API key set. Define GOOGLE_API_KEY or GEMINI_API_KEY.")
 
 from google import genai
+
 _CLIENT = genai.Client()  # reads GOOGLE_API_KEY
 
 ENV_MODEL = os.getenv("GEMINI_EMBEDDING_MODEL", "").strip()
@@ -71,13 +79,20 @@ DEFAULT_MODEL_FALLBACK = "gemini-embedding-001"
 
 # HARD LOCK to 3072 (Gemini supports this for text)
 MIN_DIMS, MAX_DIMS = 3072, 3072
-VALID_TASK_TYPES = {"RETRIEVAL_DOCUMENT", "RETRIEVAL_QUERY", "SEMANTIC_SIMILARITY", "CLASSIFICATION", "CLUSTERING"}
+VALID_TASK_TYPES = {
+    "RETRIEVAL_DOCUMENT",
+    "RETRIEVAL_QUERY",
+    "SEMANTIC_SIMILARITY",
+    "CLASSIFICATION",
+    "CLUSTERING",
+}
 
 # ─────────────────────────────────────────────
 # Neo4j-backed Equor defaults (cached)
 # ─────────────────────────────────────────────
 try:
     from core.utils.neo.cypher_query import cypher_query  # async
+
     _HAS_DB = True
 except Exception:
     cypher_query = None  # type: ignore
@@ -87,6 +102,7 @@ _DEFAULTS_CACHE: dict[str, Any] = {}
 _DEFAULTS_LOCK = asyncio.Lock()
 _DEFAULTS_TTL_SEC = int(os.getenv("EMBED_DEFAULTS_TTL_SEC", "600"))
 _DEFAULTS_LAST_LOAD = 0.0
+
 
 def _normalize_model(name: str) -> str:
     n = (name or "").strip()
@@ -107,14 +123,19 @@ async def _load_defaults_from_neo() -> dict[str, Any]:
             if rows:
                 rec = rows[0]
                 out: dict[str, Any] = {}
-                if rec.get("model"): out["model"] = str(rec["model"]).strip()
-                if rec.get("task_type"): out["task_type"] = str(rec["task_type"]).strip().upper()
-                if rec.get("dimensions") is not None: out["dimensions"] = int(rec["dimensions"])
-                if out: return out
+                if rec.get("model"):
+                    out["model"] = str(rec["model"]).strip()
+                if rec.get("task_type"):
+                    out["task_type"] = str(rec["task_type"]).strip().upper()
+                if rec.get("dimensions") is not None:
+                    out["dimensions"] = int(rec["dimensions"])
+                if out:
+                    return out
         except Exception as e:
             _dbg_print(2, f"[EMBED DEBUG] _load_defaults_from_neo soft-fail: {e}")
             continue
     return {}
+
 
 def _validate_dims(dimensions: int) -> int:
     try:
@@ -125,19 +146,36 @@ def _validate_dims(dimensions: int) -> int:
         raise ValueError(f"dimensions must be in [{MIN_DIMS}, {MAX_DIMS}], got {d}")
     return d
 
+
 async def _get_defaults(now: float | None = None) -> tuple[str, str, int]:
     global _DEFAULTS_LAST_LOAD
     ts = now or time.time()
     if _DEFAULTS_CACHE and (ts - _DEFAULTS_LAST_LOAD) < _DEFAULTS_TTL_SEC:
-        return (_DEFAULTS_CACHE["model"], _DEFAULTS_CACHE["task_type"], _DEFAULTS_CACHE["dimensions"])
+        return (
+            _DEFAULTS_CACHE["model"],
+            _DEFAULTS_CACHE["task_type"],
+            _DEFAULTS_CACHE["dimensions"],
+        )
     async with _DEFAULTS_LOCK:
         if _DEFAULTS_CACHE and (ts - _DEFAULTS_LAST_LOAD) < _DEFAULTS_TTL_SEC:
-            return (_DEFAULTS_CACHE["model"], _DEFAULTS_CACHE["task_type"], _DEFAULTS_CACHE["dimensions"])
+            return (
+                _DEFAULTS_CACHE["model"],
+                _DEFAULTS_CACHE["task_type"],
+                _DEFAULTS_CACHE["dimensions"],
+            )
         neo = await _load_defaults_from_neo()
-        model = _normalize_model( (neo.get("model") or ENV_MODEL or DEFAULT_MODEL_FALLBACK).strip() )
-        task_type = ((neo.get("task_type") or os.getenv("EMBED_TASK_TYPE", "RETRIEVAL_DOCUMENT")).strip().upper())
+        model = _normalize_model((neo.get("model") or ENV_MODEL or DEFAULT_MODEL_FALLBACK).strip())
+        task_type = (
+            (neo.get("task_type") or os.getenv("EMBED_TASK_TYPE", "RETRIEVAL_DOCUMENT"))
+            .strip()
+            .upper()
+        )
         try:
-            raw_dims = int(neo.get("dimensions") if "dimensions" in neo else os.getenv("EMBED_DIMENSIONS", MAX_DIMS))
+            raw_dims = int(
+                neo.get("dimensions")
+                if "dimensions" in neo
+                else os.getenv("EMBED_DIMENSIONS", MAX_DIMS)
+            )
         except Exception:
             raw_dims = MAX_DIMS
         if task_type not in VALID_TASK_TYPES:
@@ -148,11 +186,16 @@ async def _get_defaults(now: float | None = None) -> tuple[str, str, int]:
         _dbg_print(1, f"[EMBED DEFAULTS] model={model} task={task_type} dims={dimensions}")
         return model, task_type, dimensions
 
+
 # 1) Put this near your other helpers
 # core/llm/embeddings_gemini.py  — replace your REST helpers
 
+
 def _rest_embed_single(model: str, contents: str, task_type: str, dimensions: int):
-    import httpx, os
+    import os
+
+    import httpx
+
     api_key = (os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:embedContent"
     body = {
@@ -163,7 +206,7 @@ def _rest_embed_single(model: str, contents: str, task_type: str, dimensions: in
     }
     headers = {
         "Content-Type": "application/json",
-        "x-goog-api-key": api_key,   # <- put key in header (not query string)
+        "x-goog-api-key": api_key,  # <- put key in header (not query string)
     }
     with httpx.Client(timeout=30.0) as client:
         resp = client.post(url, headers=headers, json=body)
@@ -172,8 +215,14 @@ def _rest_embed_single(model: str, contents: str, task_type: str, dimensions: in
             resp.raise_for_status()
         return resp.json()
 
-def _rest_batch_embed(model: str, texts: list[str], task_type: str, dimensions: int) -> dict[str, Any]:
-    import httpx, os
+
+def _rest_batch_embed(
+    model: str, texts: list[str], task_type: str, dimensions: int
+) -> dict[str, Any]:
+    import os
+
+    import httpx
+
     api_key = (os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:batchEmbedContents"
     body = {
@@ -183,20 +232,22 @@ def _rest_batch_embed(model: str, texts: list[str], task_type: str, dimensions: 
                 "content": {"parts": [{"text": t}]},
                 "taskType": task_type,
                 "outputDimensionality": dimensions,
-            } for t in texts
-        ]
+            }
+            for t in texts
+        ],
     }
     headers = {
         "Content-Type": "application/json",
-        "x-goog-api-key": api_key,   # <- header
+        "x-goog-api-key": api_key,  # <- header
     }
     with httpx.Client(timeout=60.0) as client:
         resp = client.post(url, headers=headers, json=body)
         if resp.status_code != 200:
-            _dbg_print(1, f"[EMBED REST ERROR/BATCH] {resp.status_code} {_truncate(resp.text, 1200)}")
+            _dbg_print(
+                1, f"[EMBED REST ERROR/BATCH] {resp.status_code} {_truncate(resp.text, 1200)}"
+            )
             resp.raise_for_status()
         return resp.json()
-
 
 
 # ─────────────────────────────────────────────
@@ -214,10 +265,12 @@ def _ensure_list(vec: Any, name: str = "embedding") -> list[float]:
             raise TypeError(f"[ERROR] {name} string cannot be parsed: {e}")
     raise TypeError(f"[ERROR] {name} invalid type: {type(vec)}")
 
+
 def _validate_text(text: str) -> str:
     if not isinstance(text, str) or not text.strip():
         raise ValueError("Input text must be a non-empty string.")
     return text.strip()
+
 
 def _extract_single_values(res: Any) -> list[float]:
     """Normalize SDK or REST responses to list[float]."""
@@ -239,16 +292,22 @@ def _extract_single_values(res: Any) -> list[float]:
         if isinstance(embs, list) and embs:
             first = embs[0]
             if isinstance(first, dict):
-                if "values" in first: return [float(x) for x in first["values"]]
-                if "embedding" in first: return [float(x) for x in first["embedding"]]
+                if "values" in first:
+                    return [float(x) for x in first["values"]]
+                if "embedding" in first:
+                    return [float(x) for x in first["embedding"]]
     raise TypeError(f"Unrecognized embedding response shape: {type(res)}")
+
 
 def _embed_sync_call(*, model: str, contents: str, task_type: str, dimensions: int):
     """
     Version-agnostic SDK call with guaranteed REST fallback.
     If EMBED_FORCE_REST is set, go REST immediately (no exceptions).
     """
-    _dbg_print(2, f"[EMBED CALL] model={model} task={task_type} dims={dimensions} text={_truncate(contents, 200)}")
+    _dbg_print(
+        2,
+        f"[EMBED CALL] model={model} task={task_type} dims={dimensions} text={_truncate(contents, 200)}",
+    )
 
     # Force REST: DO NOT raise; just call REST and return the JSON
     if os.getenv("EMBED_FORCE_REST", "").strip().lower() in ("1", "true", "yes"):
@@ -280,24 +339,6 @@ def _embed_sync_call(*, model: str, contents: str, task_type: str, dimensions: i
     # REST fallback
     return _rest_embed_single(model, contents, task_type, dimensions)
 
-def _rest_batch_embed(model: str, texts: list[str], task_type: str, dimensions: int) -> dict[str, Any]:
-    import httpx
-    api_key = os.environ["GOOGLE_API_KEY"].strip()
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:batchEmbedContents?key={api_key}"
-    body = {
-        "requests": [
-            {
-                "content": {"parts": [{"text": t}]},
-                "taskType": task_type,
-                "outputDimensionality": dimensions,
-            }
-            for t in texts
-        ]
-    }
-    with httpx.Client(timeout=60.0) as client:
-        resp = client.post(url, json=body)
-        resp.raise_for_status()
-        return resp.json()
 
 async def _retry(coro_factory, *, retries: int = 3, base_delay: float = 0.5, jitter: float = 0.25):
     attempt = 0
@@ -310,11 +351,14 @@ async def _retry(coro_factory, *, retries: int = 3, base_delay: float = 0.5, jit
             if attempt == retries:
                 break
             delay = base_delay * (2**attempt) + (jitter if (attempt % 2 == 0) else jitter * 0.5)
-            _dbg_print(1, f"[EMBED RETRY] attempt={attempt + 1}/{retries} delay={delay:.2f}s err={e}")
+            _dbg_print(
+                1, f"[EMBED RETRY] attempt={attempt + 1}/{retries} delay={delay:.2f}s err={e}"
+            )
             await asyncio.sleep(delay)
             attempt += 1
     assert last_err is not None
     raise last_err
+
 
 # ─────────────────────────────────────────────
 # Public API
@@ -350,11 +394,14 @@ async def get_embedding(
     emb = _extract_single_values(result)
 
     if len(emb) != chosen_dims or chosen_dims != 3072:
-        raise RuntimeError(f"[EMBED ERROR] Expected 3072 dims, got {len(emb)} (requested {chosen_dims})")
+        raise RuntimeError(
+            f"[EMBED ERROR] Expected 3072 dims, got {len(emb)} (requested {chosen_dims})"
+        )
 
     vec = _ensure_list(emb, name="embedding")
     _dbg_print(2, f"[EMBED OK] len={len(vec)} task={chosen_task} model={chosen_model}")
     return vec
+
 
 async def get_embeddings(
     texts: Sequence[str],
@@ -377,7 +424,7 @@ async def get_embeddings(
     chosen_dims = _validate_dims(req_dims)
 
     use_batch = os.getenv("EMBED_USE_REST_BATCH", "1").lower() not in ("0", "false", "no")
-    force_rest = os.getenv("EMBED_FORCE_REST", "").strip().lower() in ("1","true","yes")
+    force_rest = os.getenv("EMBED_FORCE_REST", "").strip().lower() in ("1", "true", "yes")
     if (use_batch or force_rest) and len(texts) > 1:
         data = _rest_batch_embed(chosen_model, list(texts), chosen_task, chosen_dims)
         embs = data.get("embeddings") or []
@@ -399,6 +446,7 @@ async def get_embeddings(
     async def _one(i: int, t: str):
         txt = _validate_text(t)
         async with sem:
+
             def _sync():
                 return _embed_sync_call(
                     model=chosen_model,
@@ -406,15 +454,19 @@ async def get_embeddings(
                     task_type=chosen_task,
                     dimensions=chosen_dims,
                 )
+
             res = await _retry(lambda: asyncio.to_thread(_sync))
             vec = _ensure_list(_extract_single_values(res), name=f"embedding[{i}]")
             if len(vec) != chosen_dims or chosen_dims != 3072:
-                raise RuntimeError(f"[EMBED ERROR] Expected 3072 dims, got {len(vec)} (requested {chosen_dims}) at idx={i}")
+                raise RuntimeError(
+                    f"[EMBED ERROR] Expected 3072 dims, got {len(vec)} (requested {chosen_dims}) at idx={i}"
+                )
             out[i] = vec
             _dbg_print(2, f"[EMBED OK/BATCH] idx={i} len={len(vec)}")
 
     await asyncio.gather(*[asyncio.create_task(_one(i, s)) for i, s in enumerate(texts)])
     return [v if v is not None else [] for v in out]
+
 
 # ─────────────────────────────────────────────
 # Optional sanity probe (call once at app startup)
@@ -426,6 +478,7 @@ async def _embed_sanity_probe() -> None:
         print(f"[EMBED SANITY] model={model} task={task} dims(default)={dims} len(vec)={len(v)} OK")
     except Exception as e:
         print(f"[EMBED SANITY] FAILED: {e}")
+
 
 if __name__ == "__main__":
     asyncio.run(_embed_sanity_probe())

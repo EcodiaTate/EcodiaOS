@@ -6,7 +6,8 @@ import threading
 from dataclasses import dataclass, field
 from typing import Any
 
-from systems.synapse.core.registry import PolicyArm, arm_registry
+from systems.synapse.core.registry import arm_registry
+from systems.synapse.schemas import PolicyArmModel as PolicyArm
 from systems.synapse.skills.schemas import Option
 
 

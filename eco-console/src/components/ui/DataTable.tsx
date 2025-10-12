@@ -1,13 +1,18 @@
-// src/components/ui/DataTable.tsx
-import React from 'react';
+import type { CSSProperties } from 'react';
 import { theme } from '../../theme';
 
+interface HeaderDef {
+  key: string;
+  label: string;
+  style?: CSSProperties;
+}
+
 interface DataTableProps {
-  headers: { key: string; label: string; style?: React.CSSProperties }[];
+  headers: HeaderDef[];
   rows: Record<string, any>[];
 }
 
-const tableHeaderStyle: React.CSSProperties = {
+const tableHeaderStyle: CSSProperties = {
   borderBottom: `1px solid ${theme.colors.edge}`,
   padding: '12px',
   textAlign: 'left',
@@ -15,7 +20,7 @@ const tableHeaderStyle: React.CSSProperties = {
   color: theme.colors.muted,
 };
 
-const tableCellStyle: React.CSSProperties = {
+const tableCellStyle: CSSProperties = {
   borderBottom: `1px solid ${theme.colors.edge}`,
   padding: '12px',
   textAlign: 'left',
@@ -24,10 +29,10 @@ const tableCellStyle: React.CSSProperties = {
 export const DataTable = ({ headers, rows }: DataTableProps) => {
   return (
     <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
         <thead>
           <tr>
-            {headers.map(h => (
+            {headers.map((h) => (
               <th key={h.key} style={{ ...tableHeaderStyle, ...h.style }}>
                 {h.label}
               </th>
@@ -37,7 +42,7 @@ export const DataTable = ({ headers, rows }: DataTableProps) => {
         <tbody>
           {rows.map((row, index) => (
             <tr key={index}>
-              {headers.map(h => (
+              {headers.map((h) => (
                 <td key={`${index}-${h.key}`} style={{ ...tableCellStyle, ...h.style }}>
                   {row[h.key]}
                 </td>

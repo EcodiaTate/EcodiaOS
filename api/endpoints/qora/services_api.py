@@ -1,14 +1,18 @@
 # api/endpoints/qora/services_api.py
 # MODIFIED FILE
 from __future__ import annotations
+
 from typing import Any
-from fastapi import APIRouter, Query, HTTPException
+
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from systems.qora.core.services import constitution_service, deliberation_service, learning_service
 
 # --- Constitution Router ---
 constitution_router = APIRouter()
+
+
 @constitution_router.get("/get")
 async def get_constitution(agent: str = Query("Simula"), profile: str = Query("prod")):
     # ... (implementation from previous response)
@@ -18,10 +22,15 @@ async def get_constitution(agent: str = Query("Simula"), profile: str = Query("p
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get constitution: {e!r}")
 
+
 # --- Deliberation Router ---
 deliberation_router = APIRouter()
+
+
 class CritiqueRequest(BaseModel):
     diff: str = Field(..., description="The unified diff to be reviewed.")
+
+
 @deliberation_router.post("/critique")
 async def request_critique(req: CritiqueRequest):
     # ... (implementation from previous response)
@@ -31,11 +40,15 @@ async def request_critique(req: CritiqueRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Critique request failed: {e!r}")
 
+
 # --- Learning Router (NEW) ---
 learning_router = APIRouter()
+
+
 class FindFailuresRequest(BaseModel):
     goal: str = Field(..., description="The current goal to find similar past failures for.")
     top_k: int = Field(3, ge=1, le=10)
+
 
 @learning_router.post("/find_failures")
 async def find_failures(req: FindFailuresRequest):

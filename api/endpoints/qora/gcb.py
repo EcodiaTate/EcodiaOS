@@ -1,11 +1,13 @@
 from __future__ import annotations
+
 from typing import Any
 
 from fastapi import APIRouter, Query
-from pydantic import BaseModel, Field # REFACTORED: Import Pydantic components
+from pydantic import BaseModel, Field  # REFACTORED: Import Pydantic components
 
 from systems.qora.gcb.builder import build_gcb, dispatch_gcb_to_simula
 from systems.qora.manifest.builder import build_manifest
+
 
 # REFACTORED: Define Pydantic models for the request body
 # --------------------------------------------------------
@@ -14,12 +16,17 @@ class GcbTarget(BaseModel):
     Represents a single target object. Allows any structure within the object
     to maintain flexibility while ensuring it's a valid dictionary.
     """
+
     class Config:
         extra = "allow"
 
+
 class GcbRequest(BaseModel):
     """Defines the request body for the /build and /dispatch endpoints."""
+
     targets: list[GcbTarget] = Field(default_factory=list)
+
+
 # --------------------------------------------------------
 
 gcb_router = APIRouter(tags=["qora.gcb"])

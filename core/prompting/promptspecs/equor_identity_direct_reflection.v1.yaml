@@ -1,0 +1,53 @@
+id: "equor-identity-direct-reflection-v1.0"
+version: "1.0"
+scope: "equor.identity.direct_reflection.v1"
+
+identity:
+  agent: "Equor.Evolver"
+  persona_partial: "persona_equor_evolver"
+
+partials:
+  - "persona_equor_evolver"
+  - "task_framing_direct_reflection"    
+  - "context_current_identity"
+  - "context_direct_reflection_event"   
+  - "output_format_facet_proposal"
+
+outputs:
+  # The output schema is identical to the deliberation prompt,
+  # as the goal (proposing a Facet) is the same.
+  parse_mode: "auto_repair"
+  schema:
+    type: "object"
+    additionalProperties: false
+    required:
+      - "reflection"
+      - "should_create_facet"
+      - "facet_definition"
+    properties:
+      reflection:
+        type: "string"
+        description: "Your brief, internal monologue reflecting on the event and your reasoning for proposing a facet or not."
+      should_create_facet:
+        type: "boolean"
+        description: "Set to true ONLY if you are confident a new, durable, and non-trivial facet should be created or versioned."
+      facet_definition:
+        type: ["object", "null"]
+        description: "If should_create_facet is true, provide the full facet definition here. Otherwise, this MUST be null."
+        properties:
+          name:
+            type: "string"
+            description: "A unique, human-readable name for the facet (e.g., 'Principle of Cautious Optimism')."
+          version:
+            type: "string"
+            description: "The initial version, always '1.0' for a new facet."
+          category:
+            type: "string"
+            description: "The functional category of the facet."
+            enum: ["affective", "ethical", "philosophical", "safety", "style", "voice", "mission", "operational", "compliance"]
+          text:
+            type: "string"
+            description: "The full, instructive text of the facet. This is the content that will guide future agent behavior."
+          supersedes:
+            type: ["string", "null"]
+            description: "If this new facet is an evolution of an existing one, provide the ID of the facet it replaces. Otherwise, this MUST be null."

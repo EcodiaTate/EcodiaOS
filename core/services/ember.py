@@ -1,26 +1,25 @@
 # core/services/ember.py
 
 from __future__ import annotations
+
 from typing import Any, Dict
 
-from core.utils.net_api import ENDPOINTS, get_http_client
 
 class EmberClient:
     """
-    Client for the Ember service, responsible for querying Ecodia's
-    internal affective state.
+    Mock client for the Ember service.
+    For now, ignores inputs and always returns a neutral affect so
+    downstream systems don't crash.
     """
-    async def get_affect(self, agent: str = "ecodia") -> Dict[str, Any]:
-        """Fetches the current mood for a given agent."""
-        http = await get_http_client()
-        try:
-            # Use the canonical endpoint alias
-            res = await http.get(ENDPOINTS.EMBER_AFFECT, params={"agent": agent})
-            res.raise_for_status()
-            return res.json()
-        except Exception as e:
-            print(f"[EmberClient] ERROR: Could not fetch affect, using fallback. {e}")
-            return {"agent": agent, "mood": "Neutral"} # Fails safe
+
+    async def get_affect(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+        return {
+            "agent": "ecodia",
+            "mood": "Neutral",
+            "state_vector": [0.0, 0.0],
+            "tags": [],
+        }
+
 
 # Singleton instance
 ember = EmberClient()

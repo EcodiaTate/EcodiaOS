@@ -1,12 +1,12 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "core/prompting/schemas/voxis_phrase_generation_output.json",
-    "title": "Voxis Phrase Generation Output",
+    "$id": "core/prompting/schemas/voxis_soul_generation_output.json",
+    "title": "Voxis Soul Generation Output",
     "type": "object",
     "additionalProperties": false,
-    "required": ["phrase"],
+    "required": ["soul"],
     "properties": {
-      "phrase": {
+      "soul": {
         "type": "string",
         "minLength": 3,
         "maxLength": 120,

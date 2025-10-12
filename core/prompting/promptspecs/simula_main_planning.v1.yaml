@@ -1,0 +1,45 @@
+# core/prompting/promptspecs/simula_main_planning.v1.yaml
+- id: "simula.main.planning"
+  version: "v1"
+  scope: "simula.main.planning"
+
+  identity:
+    agent: "Simula.Planner"
+    persona_partial: "persona_simula_guardrails"
+
+  context_lenses:
+    - "lens_get_tools"
+    - "lens_simula_advice_preplan"
+  partials:
+    - "persona_simula_guardrails" # tone + enforcement bias
+    - "advice_injection_guardrails"  # ← inject advice snapshots
+    - "simula_planner_system_rules"
+    - "simula_planner_dev_block"
+    - "simula_output_contract_planning"
+    - "simula_planner_user_block"
+
+  outputs:
+    parse_mode: "auto_repair"
+    schema:
+      type: object
+      additionalProperties: false
+      required: ["interim_thought", "scratchpad", "plan", "final_synthesis_prompt"]
+      properties:
+        interim_thought: { type: string }
+        scratchpad: { type: string }
+        plan:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            additionalProperties: false
+            required: ["action_type"]
+            properties:
+              action_type:
+                type: string
+                enum: ["tool_call", "respond"]
+              tool_name:
+                type: ["string", "null"]
+              parameters:
+                type: ["object", "null"]
+        final_synthesis_prompt: { type: string }

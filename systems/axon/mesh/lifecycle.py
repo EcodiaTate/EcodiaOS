@@ -1,19 +1,21 @@
 # systems/axon/mesh/lifecycle.py
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from typing import Dict, List, Literal, Optional
 
-DriverStatus = Literal["pending_synthesis", "synthesizing", "testing", "shadow", "live", "retired", "synthesis_failed"]
+DriverStatus = Literal[
+    "pending_synthesis", "synthesizing", "testing", "shadow", "live", "retired", "synthesis_failed"
+]
 
 
 @dataclass
 class DriverSpec:
     driver_name: str
-    capability: Optional[str] = None
+    capability: str | None = None
     driver_version: str = "0.0.0"
-    artifact_path: Optional[str] = None
-    class_name: Optional[str] = None
+    artifact_path: str | None = None
+    class_name: str | None = None
 
 
 @dataclass
@@ -21,7 +23,7 @@ class DriverState:
     name: str
     status: DriverStatus
     spec: DriverSpec
-    synthesis_job_id: Optional[str] = None
+    synthesis_job_id: str | None = None
 
     def model_dump(self) -> dict:
         d = asdict(self)
@@ -36,19 +38,19 @@ class DriverLifecycleManager:
     """
 
     def __init__(self, artifact_dir: str = "systems/axon/drivers/generated") -> None:
-        self._states: Dict[str, DriverState] = {}
+        self._states: dict[str, DriverState] = {}
         self._artifact_dir = artifact_dir
 
     # --------- read / list ---------
 
-    def get_driver_state(self, driver_name: str) -> Optional[DriverState]:
+    def get_driver_state(self, driver_name: str) -> DriverState | None:
         return self._states.get(driver_name)
 
     # Backward-compat alias (old callers)
-    def get_state(self, driver_name: str) -> Optional[DriverState]:  # pragma: no cover
+    def get_state(self, driver_name: str) -> DriverState | None:  # pragma: no cover
         return self.get_driver_state(driver_name)
 
-    def get_all_states(self) -> List[DriverState]:
+    def get_all_states(self) -> list[DriverState]:
         return list(self._states.values())
 
     # --------- synthesis ---------
@@ -63,14 +65,28 @@ class DriverLifecycleManager:
             return st
 
         spec = DriverSpec(driver_name=driver_name, artifact_path=None)
-        st = DriverState(name=driver_name, status="pending_synthesis", spec=spec, synthesis_job_id=None)
+        st = DriverState(
+            name=driver_name, status="pending_synthesis", spec=spec, synthesis_job_id=None
+        )
         self._states[driver_name] = st
         return st
 
-    def record_synthesis_job(self, *, driver_name: str, job_id: str, artifact_path: Optional[str] = None, class_name: Optional[str] = None, capability: Optional[str] = None) -> DriverState:
+    def record_synthesis_job(
+        self,
+        *,
+        driver_name: str,
+        job_id: str,
+        artifact_path: str | None = None,
+        class_name: str | None = None,
+        capability: str | None = None,
+    ) -> DriverState:
         st = self._states.get(driver_name)
         if not st:
-            st = DriverState(name=driver_name, status="pending_synthesis", spec=DriverSpec(driver_name=driver_name))
+            st = DriverState(
+                name=driver_name,
+                status="pending_synthesis",
+                spec=DriverSpec(driver_name=driver_name),
+            )
             self._states[driver_name] = st
         st.synthesis_job_id = job_id
         st.status = "synthesizing"
@@ -82,10 +98,20 @@ class DriverLifecycleManager:
             st.spec.capability = capability
         return st
 
-    def attach_artifact(self, *, driver_name: str, artifact_path: str, class_name: Optional[str] = None, driver_version: Optional[str] = None, capability: Optional[str] = None) -> DriverState:
+    def attach_artifact(
+        self,
+        *,
+        driver_name: str,
+        artifact_path: str,
+        class_name: str | None = None,
+        driver_version: str | None = None,
+        capability: str | None = None,
+    ) -> DriverState:
         st = self._states.get(driver_name)
         if not st:
-            st = DriverState(name=driver_name, status="testing", spec=DriverSpec(driver_name=driver_name))
+            st = DriverState(
+                name=driver_name, status="testing", spec=DriverSpec(driver_name=driver_name)
+            )
             self._states[driver_name] = st
         st.spec.artifact_path = artifact_path
         if class_name:
@@ -101,7 +127,9 @@ class DriverLifecycleManager:
     def update_driver_status(self, driver_name: str, new_status: DriverStatus) -> DriverState:
         st = self._states.get(driver_name)
         if not st:
-            st = DriverState(name=driver_name, status=new_status, spec=DriverSpec(driver_name=driver_name))
+            st = DriverState(
+                name=driver_name, status=new_status, spec=DriverSpec(driver_name=driver_name)
+            )
             self._states[driver_name] = st
             return st
 
@@ -128,5 +156,5 @@ class DriverLifecycleManager:
         return st
 
     # convenience
-    def list_drivers(self) -> List[DriverState]:
+    def list_drivers(self) -> list[DriverState]:
         return list(self._states.values())

@@ -1,0 +1,22 @@
+id: unity_planner_001
+version: "1.0"
+scope: "unity.planning.initial.v1"
+
+identity:
+  agent: "Unity.Planner"
+  persona_partial: "persona_planner_base" # Corrected name
+
+# 👇 Inject facets to guide the plan's strategic alignment and constraints.
+context_lenses:
+  - "facets.mission"
+  - "facets.operational"
+
+partials:
+  - "planning_task" # Corrected name
+
+outputs:
+  parse_mode: "strict_json"
+
+template: |
+  {% include 'unity_planner_base' %}
+  {% include 'planning_task' %}

@@ -1,10 +1,10 @@
-# ===== FILE: api/endpoints/simula/policy_validate.py =====
+# api/endpoints/simula/policy_validate.py
 from __future__ import annotations
 
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from systems.simula.config import settings
 from systems.simula.policy.packs import check_diff_against_policies, load_policy_packs
@@ -22,12 +22,6 @@ class PolicyValidateResp(BaseModel):
     model_config = ConfigDict(extra="ignore")
     ok: bool
     findings: dict[str, Any]
-
-
-# Sanity guard: if a name collision ever returns a function instead of a class,
-# this will explode at import time instead of at runtime with "'function' has no attribute 'items'".
-assert isinstance(PolicyValidateReq, type) and issubclass(PolicyValidateReq, BaseModel)
-assert isinstance(PolicyValidateResp, type) and issubclass(PolicyValidateResp, BaseModel)
 
 
 @router.post("/validate", response_model=PolicyValidateResp)

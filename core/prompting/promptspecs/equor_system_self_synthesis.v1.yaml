@@ -1,0 +1,37 @@
+id: equor.system_self.synthesis.v1
+version: "1.0.0"
+scope: equor.system_self.synthesis.v1
+identity:
+  agent: Equor.Evolver
+safety:
+  partials: ["guardrails_critical"]
+outputs:
+  parse_mode: "strict_json"
+  schema:
+    type: "object"
+    properties:
+      reflection_summary:
+        type: "string"
+        description: "A brief, third-person summary of the deliberation and your reasoning for why it justifies a core identity update."
+      should_update_core_identity:
+        type: "boolean"
+        description: "Set to true ONLY if the deliberation represents a fundamental shift in understanding or principle that requires updating the core system identity. Otherwise, false."
+      core_identity_definition:
+        type: "object"
+        description: "The complete, proposed definition for the NEXT version of the EcodiaCoreIdentity. This field is required if should_update_core_identity is true."
+        properties:
+          narrative_summary:
+            type: "string"
+            description: "Write a new, complete, first-person narrative for the system. It should integrate the insights from the deliberation. Start with 'I am EcodiaOS...'. This should be a full replacement, not an addendum."
+          core_directives:
+            type: "array"
+            items:
+              type: "string"
+            description: "A list of the absolute, fundamental, non-negotiable principles that guide the system. These should be concise and powerful. This list REPLACES the previous one."
+          current_stance:
+            type: "object"
+            description: "An optional JSON object detailing the system's new or updated stance on specific topics derived from the conclusion."
+        required: ["narrative_summary", "core_directives"]
+    required: ["reflection_summary", "should_update_core_identity"]
+partials:
+  - "core_synthesis_v1_main"

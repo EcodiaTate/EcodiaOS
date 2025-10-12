@@ -22,16 +22,17 @@ BUDGET_HEADER = "x-budget-ms"
 
 # Routes where we avoid noisy warnings if governance context is missing.
 _SILENT_PATHS: set[str] = {
-     "/evo/escalate",
-     "/equor/compose",
-     "/equor/attest",
- }
+    "/evo/escalate",
+    "/equor/compose",
+    "/equor/attest",
+}
 _RECURSION_SKIP_PATHS: set[str] = {
     "/equor/compose",
     "/equor/attest",
 }
 
 # ---------- background submit ----------
+
 
 async def _submit_attestation_task(attestation: Attestation) -> None:
     """
@@ -44,14 +45,18 @@ async def _submit_attestation_task(attestation: Attestation) -> None:
             IMMUNE_HEADER: "1",
             DECISION_HEADER: attestation.episode_id or f"auto-{uuid.uuid4().hex[:8]}",
         }
-        resp = await post_internal(ENDPOINTS.EQUOR_ATTEST, json=payload, headers=headers, timeout=10.0)
+        resp = await post_internal(
+            ENDPOINTS.EQUOR_ATTEST, json=payload, headers=headers, timeout=10.0
+        )
         resp.raise_for_status()
         logger.info("Attestation submitted for episode: %s", attestation.episode_id)
     except Exception:
         # We keep this non-fatal and avoid recursive conflict logging.
         logger.exception("Failed to submit attestation for episode: %s", attestation.episode_id)
 
+
 # ---------- low-level header helpers ----------
+
 
 def _inject_scope_header(request: Request, name: str, value: str) -> None:
     """
@@ -61,7 +66,9 @@ def _inject_scope_header(request: Request, name: str, value: str) -> None:
     headers.append((name.lower().encode(), value.encode()))
     request.scope["headers"] = headers
 
+
 # ---------- preflight dependency ----------
+
 
 async def constitutional_preamble(request: Request) -> None:
     """
@@ -80,14 +87,16 @@ async def constitutional_preamble(request: Request) -> None:
     path = request.url.path
     agent = (path.strip("/").split("/") or ["system"])[0]
 
-   # Hard-stop recursion: do not call Equor from inside Equor's own routes
+    # Hard-stop recursion: do not call Equor from inside Equor's own routes
     if path in _RECURSION_SKIP_PATHS:
         request.state.governance_started_at = time.perf_counter()
-        request.state.decision_id = request.headers.get(DECISION_HEADER) or f"auto-{uuid.uuid4().hex[:8]}"
+        request.state.decision_id = (
+            request.headers.get(DECISION_HEADER) or f"auto-{uuid.uuid4().hex[:8]}"
+        )
         request.state.agent = agent
         request.state.constitutional_patch = None
         return
-    
+
     # Skip governance for immune internal calls
     if request.headers.get(IMMUNE_HEADER) == "1":
         request.state.governance_started_at = time.perf_counter()
@@ -113,12 +122,14 @@ async def constitutional_preamble(request: Request) -> None:
     try:
         compose_request: dict[str, Any] = {
             "agent": agent,
-            "profile_name": "prod",             # default operational profile
-            "episode_id": decision_id,          # governance episode id
+            "profile_name": "prod",  # default operational profile
+            "episode_id": decision_id,  # governance episode id
             "context": {"request_path": path},  # minimal context
         }
         headers = {IMMUNE_HEADER: "1", DECISION_HEADER: decision_id}
-        r = await post_internal(ENDPOINTS.EQUOR_COMPOSE, json=compose_request, headers=headers, timeout=10.0)
+        r = await post_internal(
+            ENDPOINTS.EQUOR_COMPOSE, json=compose_request, headers=headers, timeout=10.0
+        )
 
         # No profile configured yet → treat as "no patch"
         if r.status_code == 422:
@@ -146,10 +157,16 @@ async def constitutional_preamble(request: Request) -> None:
     except Exception as e:
         # Fail-open if Equor is offline or returns non-JSON, etc.
         if path not in _SILENT_PATHS:
-            logger.warning("Governance preamble failed for agent '%s' (%s). Proceeding without patch.", agent, e)
+            logger.warning(
+                "Governance preamble failed for agent '%s' (%s). Proceeding without patch.",
+                agent,
+                e,
+            )
         request.state.constitutional_patch = None
 
+
 # ---------- postflight middleware ----------
+
 
 class AttestationMiddleware(BaseHTTPMiddleware):
     """
@@ -159,6 +176,7 @@ class AttestationMiddleware(BaseHTTPMiddleware):
       - Computes basic breach signals (SLA/HTTP class/content flags).
       - Submits Attestation asynchronously (best-effort).
     """
+
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # Skip attestation on immune internal calls and Equor endpoints
         if request.headers.get(IMMUNE_HEADER) == "1" or request.url.path in _RECURSION_SKIP_PATHS:
@@ -169,7 +187,9 @@ class AttestationMiddleware(BaseHTTPMiddleware):
 
         patch: ComposeResponse | None = getattr(request.state, "constitutional_patch", None)
         agent: str | None = getattr(request.state, "agent", None)
-        decision_id: str | None = getattr(request.state, "decision_id", None) or request.headers.get(DECISION_HEADER)
+        decision_id: str | None = getattr(
+            request.state, "decision_id", None
+        ) or request.headers.get(DECISION_HEADER)
 
         # Mirror decision id onto the response for traceability
         if decision_id and DECISION_HEADER not in response.headers:

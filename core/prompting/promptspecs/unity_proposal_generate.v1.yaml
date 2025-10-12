@@ -1,0 +1,23 @@
+id: unity_proposer_001
+version: "1.0"
+scope: "unity.proposal.generate.v1"
+
+identity:
+  agent: "Unity.Proposer"
+  persona_partial: "unity_proposer_base"
+
+# 👇 Inject facets to guide the proposal's content, tone, and style.
+context_lenses:
+  - "facets.mission"
+  - "facets.voice"
+  - "facets.style"
+
+partials:
+  - "proposal_task"
+
+outputs:
+  parse_mode: "tolerant"
+
+template: |
+  {% include 'unity_proposer_base' %}
+  {% include 'proposal_task' %}

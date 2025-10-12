@@ -1,70 +1,391 @@
 # systems/synapse/core/registry_bootstrap.py
+# COMPLETE REPLACEMENT - GRAPH-DRIVEN VARIANTS, LEGACY-COMPATIBLE OUTPUT
 from __future__ import annotations
 
+import asyncio
+import concurrent.futures
+import hashlib
+import inspect
 import json
-from typing import Iterable
+import logging
+from collections.abc import Awaitable, Callable
+from pathlib import Path
+from typing import List, Optional, Tuple, Union
 
+# FIXED: Added the missing 'itertools' import.
+import itertools
+
+# This guarantees that the @track_tool decorators have run and populated the
+# global tool registry before any other module attempts to access it.
+import systems.simula.nscs.agent_tools
 from core.utils.neo.cypher_query import cypher_query
-from systems.synapse.core.registry import ArmRegistry
-# Import Simula’s canonical tool names (this is the source of truth)
-from systems.simula.agent.tool_registry import TOOLS as SIMULA_TOOLS  # keys are tool names
+from systems.synapse.core.register_arm import register_arm
+from systems.synapse.policy.policy_dsl import PolicyGraph
 
-def _noop_pg_dict(arm_id: str) -> dict:
-    # SAFE prompt-only graph; zero side-effects; firewall will treat as safe fallback
-    return {
-        "version": 1,
-        "nodes": [
-            {
-                "id": "n_prompt",
-                "type": "prompt",
-                "prompt": f"Policy arm '{arm_id}' — safe prompt node (no effects).",
-                "temperature": 0.1,
-            }
-        ],
-        "edges": [],
-        "constraints": [],
-        "meta": {"kind": "seed", "safe": True},
-    }
+logger = logging.getLogger(__name__)
 
-async def _persist_arms(tool_names: Iterable[str]) -> None:
-    # Persist PolicyArm nodes so ArmRegistry can hydrate them at init
-    await cypher_query(
-        """
-        UNWIND $names AS name
-        MERGE (a:PolicyArm {id: name})
-        ON CREATE SET
-          a.mode = 'planful',
-          a.policy_graph = $pg_json,
-          a.created_at = datetime()
+# Caching setup
+BOOTSTRAP_CACHE = Path("/app/.cache/registry_bootstrap_fingerprint.txt")
+
+
+def _fingerprint_data(obj: object) -> str:
+    """Stable fingerprint for lists/dicts/classes."""
+    try:
+        blob = json.dumps(obj, sort_keys=True, default=str)
+    except Exception:
+        blob = str(obj)
+    return hashlib.sha256(blob.encode()).hexdigest()
+
+
+def _load_last_fingerprint() -> str | None:
+    if not BOOTSTRAP_CACHE.exists():
+        return None
+    return BOOTSTRAP_CACHE.read_text().strip() or None
+
+
+def _store_fingerprint(fp: str):
+    BOOTSTRAP_CACHE.parent.mkdir(parents=True, exist_ok=True)
+    BOOTSTRAP_CACHE.write_text(fp)
+
+
+# Back-compat global grid (used ONLY as fallback when graph lacks data)
+MODELS = ["gpt-4o", "gpt-3.5-turbo", "gemini-1.5-pro-latest"]
+TEMPERATURES = [0.2, 0.5, 0.9, 1.3, 1.8]
+MAX_TOKENS = [1024, 2048, 4096]
+BASE_MODEL_CONFIGS: list[tuple[str, float, int]] = list(
+    itertools.product(MODELS, TEMPERATURES, MAX_TOKENS)
+)
+
+
+# Registry model classes
+class ArmVariant:
+    def __init__(
+        self,
+        strategy: str,
+        model: str,
+        temperature: float,
+        max_tokens: int,
+        tags: list[str] | None = None,
+    ):
+        self.strategy = strategy
+        self.model = model
+        self.temperature = temperature
+        self.max_tokens = max_tokens
+        self.tags = tags or []
+
+
+class ArmStrategyTemplate:
+    def __init__(self, name: str, tags: list[str] | None = None):
+        self.name = name
+        self.tags = tags or []
+
+
+class ArmFamilyConfig:
+    def __init__(
+        self,
+        family_id: str,
+        mode: str,
+        base_tags: list[str],
+        strategy_templates_fn: Optional[Callable[[], Union[List[ArmStrategyTemplate], Awaitable[List[ArmStrategyTemplate]]]]],
+        policy_builder_fn: Optional[Callable[[str, ArmVariant], PolicyGraph]],
+        relevance_filter_fn: Optional[Callable[[ArmVariant], bool]] = None,
+    ):
+        self.family_id = family_id
+        self.mode = mode
+        self.base_tags = base_tags
+        self.strategy_templates_fn = strategy_templates_fn
+        self.policy_builder_fn = policy_builder_fn
+        self.relevance_filter_fn = relevance_filter_fn or (lambda v: True)
+
+
+def make_arm_id(family_id: str, variant: ArmVariant) -> str:
+    model_short = "".join(filter(str.isalnum, variant.model.lower().replace("gpt-", "")))
+    temp_short = f"t{int(variant.temperature * 10):02d}"
+    tok_short = f"tok{variant.max_tokens // 1024}k"
+    return f"{family_id}.{variant.strategy}.{model_short}.{temp_short}.{tok_short}.v2"
+
+
+async def _resolve_strategy_templates(family: ArmFamilyConfig) -> list[ArmStrategyTemplate]:
+    if not family.strategy_templates_fn:
+        return []
+    result = family.strategy_templates_fn()
+    if inspect.isawaitable(result):
+        return await result
+    return result or []
+
+
+def _run_coro_sync(coro):
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+        return ex.submit(asyncio.run, coro).result()
+
+
+async def _load_graph_strategies(family_id: str) -> list[ArmStrategyTemplate]:
+    rows = (
+        await cypher_query(
+            """
+        MATCH (f:ArmFamily {family_id: $fid})-[:HAS_STRATEGY]->(s:StrategyTemplate)
+        RETURN s.name AS name, s.tags AS tags
+        ORDER BY s.name
         """,
-        {
-            "names": list(tool_names),
-            "pg_json": json.dumps(_noop_pg_dict("__seed__")),  # same SAFE PG for all, OK
-        },
+            {"fid": family_id},
+        )
+        or []
+    )
+    return [
+        ArmStrategyTemplate(name=r["name"], tags=r.get("tags", [])) for r in rows if r.get("name")
+    ]
+
+
+async def _load_graph_variant_grid(family_id: str) -> list[tuple[str, float, int]]:
+    rows = (
+        await cypher_query(
+            """
+        MATCH (f:ArmFamily {family_id: $fid})
+        OPTIONAL MATCH (f)-[:USES_MODEL]->(m:Model)
+        OPTIONAL MATCH (f)-[:USES_TEMPERATURE]->(t:Temperature)
+        OPTIONAL MATCH (f)-[:USES_TOKENS]->(k:TokenLimit)
+        WITH collect(DISTINCT m.name) AS models,
+             collect(DISTINCT t.value) AS temps,
+             collect(DISTINCT k.value) AS toks
+        RETURN models, temps, toks
+        """,
+            {"fid": family_id},
+        )
+        or []
     )
 
-def ensure_minimum_arms(registry: ArmRegistry) -> None:
-    """
-    Called by ArmRegistry.ensure_cold_start() if available.
-    Seeds the graph with arms whose IDs exactly equal Simula's tool names.
-    Also seeds in-memory registry with the same IDs so selection can proceed immediately.
-    """
-    tool_names = list(SIMULA_TOOLS.keys())
-    # Persist to graph (ignore errors in best-effort seeders)
-    try:
-        import asyncio
-        asyncio.get_event_loop().run_until_complete(_persist_arms(tool_names))
-    except Exception:
-        pass
+    if not rows:
+        return []
 
-    # Add to in-memory registry (SAFE graphs; selection id == tool name)
-    for name in tool_names:
-        try:
-            registry.add_arm(
-                arm_id=name,
-                policy_graph=_noop_pg_dict(name),
-                mode="planful",
-                meta={"kind": "seed", "source": "registry_bootstrap"},
+    models = [x for x in (rows[0].get("models") or []) if x]
+    temps = [float(x) for x in (rows[0].get("temps") or []) if x is not None]
+    toks = [int(x) for x in (rows[0].get("toks") or []) if x is not None]
+
+    if not models:
+        models = MODELS
+        logger.warning(
+            f"[{family_id}] No models found in graph, falling back to default grid."
+        )
+    if not temps:
+        temps = TEMPERATURES
+        logger.warning(
+            f"[{family_id}] No temperatures found in graph, falling back to default grid."
+        )
+    if not toks:
+        toks = MAX_TOKENS
+        logger.warning(
+            f"[{family_id}] No token limits found in graph, falling back to default grid."
+        )
+
+    return [(str(m), float(t), int(k)) for (m, t, k) in itertools.product(models, temps, toks)]
+
+
+# FIXED: This critical helper function was accidentally deleted in the previous refactor.
+# It has been restored to resolve the NameError.
+async def _variants_from_graph_or_fallback(family: ArmFamilyConfig) -> list[ArmVariant]:
+    strategies = await _load_graph_strategies(family.family_id)
+    grid = await _load_graph_variant_grid(family.family_id)
+    variants: list[ArmVariant] = []
+
+    if strategies:
+        for st in strategies:
+            if st.name == "_singleton_":
+                v = ArmVariant(family.family_id, "gpt-4o-mini", 0.7, 2048, tags=st.tags)
+                variants.append(v)
+            else:
+                if not grid:
+                    continue
+                for model, temp, tokens in grid:
+                    variants.append(
+                        ArmVariant(st.name, model, float(temp), int(tokens), tags=st.tags),
+                    )
+        if variants:
+            return variants
+        logger.warning(
+            f"[Bootstrap] Graph strategies found for '{family.family_id}' but grid was empty. Falling back to code-defined strategies."
+        )
+
+    legacy_templates = await _resolve_strategy_templates(family)
+    if not legacy_templates:
+        logger.error(
+            f"[{family.family_id}] CRITICAL: No strategy templates found from graph or code. Cannot generate arms."
+        )
+        return []
+
+    for st in legacy_templates:
+        if st.name == "_singleton_":
+            v = ArmVariant(family.family_id, "gpt-4o-mini", 0.7, 2048, tags=st.tags)
+            variants.append(v)
+        else:
+            for model, temp, tokens in grid or BASE_MODEL_CONFIGS:
+                variants.append(
+                    ArmVariant(st.name, model, float(temp), int(tokens), tags=st.tags),
+                )
+    return variants
+
+
+async def get_expected_arm_ids_for_family_async(family: ArmFamilyConfig) -> list[str]:
+    variants = await _variants_from_graph_or_fallback(family)
+    legacy_templates = await _resolve_strategy_templates(family)
+    has_singleton = any(
+        isinstance(t, ArmStrategyTemplate) and t.name == "_singleton_" for t in legacy_templates
+    )
+    ids: list[str] = []
+    for v in variants:
+        if v.strategy == family.family_id and has_singleton:
+            ids.append(family.family_id)
+        else:
+            ids.append(make_arm_id(family.family_id, v))
+    return ids
+
+
+def get_expected_arm_ids_for_family(family: ArmFamilyConfig) -> list[str]:
+    return _run_coro_sync(get_expected_arm_ids_for_family_async(family))
+
+
+async def ensure_family_variants(family: ArmFamilyConfig) -> int:
+    # Simula agent family is now handled entirely by its own bootstrap process.
+    if family.family_id == "simula.agent.tools":
+        return 0
+
+    variants = await _variants_from_graph_or_fallback(family)
+    variants = [v for v in variants if family.relevance_filter_fn(v)] if family.relevance_filter_fn else variants
+    legacy_templates = await _resolve_strategy_templates(family)
+    has_singleton = any(
+        isinstance(t, ArmStrategyTemplate) and t.name == "_singleton_" for t in legacy_templates
+    )
+    tasks = []
+    if not family.policy_builder_fn:
+        return 0
+
+    for v in variants:
+        arm_id = (
+            family.family_id
+            if (v.strategy == family.family_id and has_singleton)
+            else make_arm_id(family.family_id, v)
+        )
+        pg = family.policy_builder_fn(arm_id, v)
+        tasks.append(register_arm(arm_id=arm_id, mode=family.mode, policy_graph=pg))
+    
+    if tasks:
+        await asyncio.gather(*tasks)
+    
+    logger.info(f"[Bootstrap] Ensured {len(variants)} variants for arm family='{family.family_id}'")
+    return len(variants)
+
+
+async def prune_stale_arms(expected_ids: list[str]):
+    logger.info("[Bootstrap] Checking for stale arms to prune...")
+    try:
+        result = (
+            await cypher_query(
+                "MATCH (p:PolicyArm) WHERE NOT p.id STARTS WITH 'dyn::' RETURN p.id AS id"
             )
-        except Exception:
-            continue
+            or []
+        )
+        existing_ids = {row["id"] for row in result}
+        stale_ids = list(existing_ids - set(expected_ids))
+        if not stale_ids:
+            logger.info("[Bootstrap] No stale arms found.")
+            return
+        logger.warning(f"[Bootstrap] Found {len(stale_ids)} stale arms to prune. Deleting...")
+        await cypher_query(
+            "MATCH (p:PolicyArm) WHERE p.id IN $ids DETACH DELETE p", {"ids": stale_ids}
+        )
+    except Exception as e:
+        logger.error(f"[Bootstrap] Error during pruning: {e}")
+
+
+async def _ensure_schema():
+    logger.info("[Bootstrap] Ensuring database schema constraints exist...")
+    constraints = [
+        "CREATE CONSTRAINT policy_arm_pk IF NOT EXISTS FOR (p:PolicyArm) REQUIRE p.id IS UNIQUE",
+        "CREATE CONSTRAINT model_pk IF NOT EXISTS FOR (m:Model) REQUIRE m.name IS UNIQUE",
+        "CREATE CONSTRAINT temp_pk IF NOT EXISTS FOR (t:Temperature) REQUIRE t.value IS UNIQUE",
+        "CREATE CONSTRAINT token_pk IF NOT EXISTS FOR (k:TokenLimit) REQUIRE k.value IS UNIQUE",
+        "CREATE CONSTRAINT family_pk IF NOT EXISTS FOR (f:ArmFamily) REQUIRE f.family_id IS UNIQUE",
+        "CREATE CONSTRAINT strategy_pk IF NOT EXISTS FOR (s:StrategyTemplate) REQUIRE s.name IS UNIQUE",
+    ]
+    for q in constraints:
+        try:
+            await cypher_query(q)
+        except Exception as e:
+            logger.warning(f"[Bootstrap] Constraint ensure warning for: {q} -> {e}")
+
+
+async def ensure_minimum_arms():
+    """
+    Main startup sequence to ensure all necessary schema and policy arms exist.
+    """
+    logger.info("[Bootstrap] Beginning startup: ensuring schema and all policy arms...")
+
+    from systems.synapse.policy.families.base import BASE_FAMILY, ensure_base_family_schema
+    from systems.synapse.policy.families.simula_agent import ensure_simula_agent_family_schema
+    from systems.synapse.policy.families.voxis_planner import (
+        VOXIS_PLANNER_FAMILY,
+        ensure_voxis_planner_family_schema,
+    )
+    from systems.synapse.policy.families.voxis_synthesizer import (
+        VOXIS_SYNTHESIZER_FAMILY,
+        ensure_voxis_synthesizer_family_schema,
+    )
+
+    try:
+        from systems.synapse.policy.families.unity_arms import (
+            ALL_UNITY_FAMILIES,
+            ensure_unity_families_schema,
+        )
+    except ImportError:
+        logger.warning("[Bootstrap] Unity arm families not found, skipping.")
+        async def ensure_unity_families_schema():
+            return None
+        ALL_UNITY_FAMILIES = []
+
+    await _ensure_schema()
+    
+    # Run family-specific bootstrappers
+    await asyncio.gather(
+        ensure_base_family_schema(),
+        ensure_voxis_planner_family_schema(),
+        ensure_voxis_synthesizer_family_schema(),
+        ensure_simula_agent_family_schema(),
+        ensure_unity_families_schema()
+    )
+
+    all_families = [
+        BASE_FAMILY,
+        VOXIS_PLANNER_FAMILY,
+        VOXIS_SYNTHESIZER_FAMILY,
+    ] + ALL_UNITY_FAMILIES
+
+    # Compute fingerprint for change detection
+    family_meta = [
+        {"id": f.family_id, "mode": f.mode, "tags": sorted(f.base_tags)} for f in all_families
+    ]
+    family_meta.sort(key=lambda x: x["id"])
+    fingerprint = _fingerprint_data(family_meta)
+    last_fp = _load_last_fingerprint()
+
+    if last_fp == fingerprint:
+        logger.info("[Bootstrap] Static registry unchanged — skipping full bootstrap for faster startup.")
+        return
+
+    logger.info("[Bootstrap] Detected changes in static registry — running full bootstrap.")
+
+    all_expected_ids: list[str] = []
+    for family in all_families:
+        ids = await get_expected_arm_ids_for_family_async(family)
+        all_expected_ids.extend(ids)
+
+    await prune_stale_arms(all_expected_ids)
+
+    total_created = 0
+    for family in all_families:
+        total_created += await ensure_family_variants(family)
+
+    _store_fingerprint(fingerprint)
+    logger.info(f"[Bootstrap] Completed policy arm generation. Total ensured: {total_created}.")

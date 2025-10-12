@@ -1,0 +1,12 @@
+{
+  "spec": "Fix tests/unit/test_greeter.py so it correctly tests the greet() function and the module CLI. Do NOT change systems/simula/examples/greeter.py.",
+  "targets": [
+    { "path": "tests/unit/test_greeter.py", "signature": null }
+  ],
+  "session_id": "a8e7c3b1-f2d4-4e8a-9a6b-2c1d9f0e3b5a",
+  "constraints": [
+    "Use only pytest and Python stdlib.",
+    "For CLI: simulate `python -m systems.simula.examples.greeter` by setting sys.argv and calling runpy.run_module(..., run_name='__main__').",
+    "Expected outputs (including newline): 'Hello, Tate!\\n' with --name Tate, and 'Hello, World!\\n' with no args."
+  ]
+}

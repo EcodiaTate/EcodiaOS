@@ -1,0 +1,23 @@
+id: unity_factuality_critic_001
+version: "1.0"
+scope: "unity.critique.factuality.v1"
+description: "A prompt for the Factuality Critic to check a proposal for factual accuracy."
+
+# --- FIX: The identity block is required for validation ---
+identity:
+  agent: "Unity.FactualityCritic"
+  persona_partial: "unity_critic_base"
+
+# This lens will now be accepted by the validator
+context_lenses:
+  - "facets.epistemic_humility"
+
+partials:
+ - "critique_task_factuality"
+outputs:
+  parse_mode: "tolerant"
+
+# The template block combines the persona and the task instructions
+template: |
+  {% include 'unity_critic_base' %}
+  {% include 'critique_task_factuality' %}

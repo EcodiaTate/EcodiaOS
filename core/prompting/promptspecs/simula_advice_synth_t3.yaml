@@ -1,0 +1,19 @@
+- id: "simula-advice-synth-t3-v1.0"
+  version: "1.0"
+  scope: "simula.advice.synth_t3"
+
+  identity:
+    agent: "Advice.Synthesizer"
+    persona_partial: "persona_simula_advice_synthesizer"
+
+  context_lenses: []
+
+  partials:
+    - "persona_simula_advice_synthesizer"
+    - "task_framing_advice_synth_t3"
+    - "advice_json_contract"
+    - "advice_docs_context"             # expects {{ advice_docs }} (JSON-serializable)
+    - "output_format_advice_json"
+
+  outputs:
+    parse_mode: "strict_json"

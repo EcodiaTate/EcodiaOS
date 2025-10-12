@@ -47,7 +47,13 @@ class SkillsManager:
         for option in self._options:
             # Simple check: cosine similarity to the option's initiation context
             # A real implementation could use a more sophisticated classifier.
-            init_vec = np.array(option.initiation_set[0]["context_vec_mean"])
+
+            # --- FIX: Ensure both vectors are NumPy arrays for the dot product ---
+            init_vec_list = option.initiation_set[0]["context_vec_mean"]
+            if not isinstance(init_vec_list, list):
+                continue
+            init_vec = np.array(init_vec_list)
+            # --- END FIX ---
 
             # Cosine distance = 1 - cosine similarity
             similarity = (context_vec.T @ init_vec) / (

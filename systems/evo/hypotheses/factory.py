@@ -1,15 +1,18 @@
 # systems/evo/hypotheses/factory.py
 from __future__ import annotations
-from uuid import uuid4
+
 from collections.abc import Callable
+from uuid import uuid4
 
 from systems.evo.schemas import ConflictNode, Hypothesis
+
 
 class HypothesisFactory:
     """
     A stateless factory that generates a set of default hypotheses for a
     single, given conflict node. This contains the core generation logic.
     """
+
     def for_conflict(self, c: ConflictNode) -> list[Hypothesis]:
         mods = c.context.get("modules", [])
         return [
@@ -42,6 +45,7 @@ class HypothesisService:
     function to resolve conflict IDs into full ConflictNode objects before
     passing them to the factory.
     """
+
     def __init__(self, conflict_getter: Callable[[str], ConflictNode]) -> None:
         self._getter = conflict_getter
         self._factory = HypothesisFactory()

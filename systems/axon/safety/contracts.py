@@ -1,7 +1,8 @@
 # systems/axon/safety/contracts.py
 from __future__ import annotations
 
-from typing import Any, Callable, Iterable
+from collections.abc import Callable, Iterable
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -11,7 +12,8 @@ from systems.axon.schemas import ActionResult, AxonIntent
 class ContractVerdict(BaseModel):
     ok: bool
     reason: str = ""
-    patches: dict[str, Any] = {}   # optional redactions/patches
+    patches: dict[str, Any] = {}  # optional redactions/patches
+
 
 PreRule = Callable[[AxonIntent], ContractVerdict]
 PostRule = Callable[[AxonIntent, ActionResult], ContractVerdict]
@@ -22,7 +24,10 @@ class ContractsEngine:
     Micro policy gates for pre/post conditions.
     Keep fully deterministic; zero-LLM.
     """
-    def __init__(self, pre: Iterable[PreRule] | None = None, post: Iterable[PostRule] | None = None) -> None:
+
+    def __init__(
+        self, pre: Iterable[PreRule] | None = None, post: Iterable[PostRule] | None = None
+    ) -> None:
         self._pre = list(pre or [])
         self._post = list(post or [])
 
@@ -56,7 +61,7 @@ class ContractsEngine:
 
     # ------------ API ------------
 
-    def with_default_rules(self) -> "ContractsEngine":
+    def with_default_rules(self) -> ContractsEngine:
         self._pre.extend([self._pre_require_rollback_for_high, self._pre_budget_cap])
         self._post.extend([self._post_require_outputs, self._post_status_known])
         return self

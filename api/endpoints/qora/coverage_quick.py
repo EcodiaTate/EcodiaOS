@@ -1,3 +1,4 @@
+# api/endpoints/qora/coverage_quick.py
 from __future__ import annotations
 
 from typing import Any
@@ -5,7 +6,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-coverage_quick_router = APIRouter()
+coverage_quick_router = APIRouter(tags=["qora", "coverage"])
 
 try:
     from systems.simula.code_sim.evaluators.coverage_delta import compute_delta_coverage
@@ -22,4 +23,9 @@ async def delta(req: CovReq) -> dict[str, Any]:
     if compute_delta_coverage is None:
         raise HTTPException(status_code=501, detail="coverage_delta not available")
     cov = compute_delta_coverage(req.diff)
-    return {"ok": True, "summary": cov.summary()}
+    summary: dict[str, Any]
+    try:
+        summary = cov.summary()
+    except Exception:
+        summary = {}
+    return {"ok": True, "summary": summary}

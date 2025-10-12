@@ -1,20 +1,23 @@
 # api/endpoints/ember.py
 # The real Ember service for affective state prediction.
 
+from typing import Any, Dict, List
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from typing import Any, Dict, List
 
 # This is the self-prediction model from your Equor source code
 from systems.equor.core.self.predictor import self_model
 
 router = APIRouter()
 
+
 class AffectRequest(BaseModel):
     # Pass the current conversational context to the model
-    task_context: Dict[str, Any] = Field(default_factory=dict)
+    task_context: dict[str, Any] = Field(default_factory=dict)
     # The current internal state, if known
-    current_state: List[float] | None = None
+    current_state: list[float] | None = None
+
 
 @router.post("/affect/predict")
 async def predict_affect(req: AffectRequest):
@@ -24,13 +27,13 @@ async def predict_affect(req: AffectRequest):
     """
     try:
         # The default coordinates for a neutral state
-        start_coords = req.current_state or [0.1, 0.2] 
+        start_coords = req.current_state or [0.1, 0.2]
 
         predicted_coords = await self_model.predict_next_state(
             current_qualia_coordinates=start_coords,
-            task_context=req.task_context
+            task_context=req.task_context,
         )
-        
+
         # A simple heuristic to map the 2D vector to a mood label
         mood = "Contemplative"
         if predicted_coords[0] > 0.5:

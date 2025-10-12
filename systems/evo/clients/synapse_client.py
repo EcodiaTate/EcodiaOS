@@ -18,7 +18,7 @@ class SynapseClient:
     """
     HTTP-only Synapse facade (pytest/CI safe; no Neo4j/driver touches):
 
-      - select_arm(...)  → POST ENDPOINTS.SYNAPSE_SELECT_ARM
+      - select_arm(...)  → POST ENDPOINTS.SYNAPSE_SELECT_OR_PLAN
       - log_outcome(...) → POST ENDPOINTS.SYNAPSE_INGEST_OUTCOME
       - ingest_preference(...) → POST ENDPOINTS.SYNAPSE_INGEST_PREFERENCE
       - arm_inference_config(...) → best-effort model params (optional)
@@ -35,7 +35,7 @@ class SynapseClient:
             "status": "ok",
             "client": "http",
             "endpoints": {
-                "select": getattr(ENDPOINTS, "SYNAPSE_SELECT_ARM", None),
+                "select": getattr(ENDPOINTS, "SYNAPSE_SELECT_OR_PLAN", None),
                 "ingest": getattr(ENDPOINTS, "SYNAPSE_INGEST_OUTCOME", None),
             },
         }
@@ -46,7 +46,7 @@ class SynapseClient:
         candidates: list[Candidate],
     ) -> SelectArmResponse:
         """
-        POST { task_ctx, candidates[] } to SYNAPSE_SELECT_ARM and
+        POST { task_ctx, candidates[] } to SYNAPSE_SELECT_OR_PLAN and
         return a validated SelectArmResponse.
         """
         http = await get_http_client()
@@ -54,7 +54,7 @@ class SynapseClient:
             "task_ctx": task_ctx.model_dump(mode="json"),
             "candidates": [c.model_dump(mode="json") for c in (candidates or [])],
         }
-        resp = await http.post(ENDPOINTS.SYNAPSE_SELECT_ARM, json=payload)
+        resp = await http.post(ENDPOINTS.SYNAPSE_SELECT_OR_PLAN, json=payload)
         resp.raise_for_status()
         data = resp.json()
         # Let pydantic do the validation/surface errors cleanly

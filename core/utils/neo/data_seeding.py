@@ -4,9 +4,10 @@ import asyncio
 import json
 import os
 
-from core.utils.neo.neo_driver import init_driver, close_driver
 from core.utils.neo.cypher_query import cypher_query
+from core.utils.neo.neo_driver import close_driver, init_driver
 from systems.synk.core.tools.schema_bootstrap import ensure_schema
+
 
 async def seed_profiles():
     """
@@ -27,8 +28,8 @@ async def seed_profiles():
         {
             "rule_ids": ["CR_PROHIBITED_VIOLENCE"],
             "facet_ids": ["F_SIMULA_CORE_V1"],
-            "settings_json": "{}"
-        }
+            "settings_json": "{}",
+        },
     )
 
     # Evo Profile (Corrected to Modern Schema)
@@ -41,14 +42,21 @@ async def seed_profiles():
           p.settings_json = $settings_json
         """,
         {
-           "settings_json": json.dumps({
-                "max_tokens": 2000,
-                "temperature_cap": 0.7,
-                "tools": {
-                    "allowed": ["conflict.read", "nova.propose", "nova.evaluate", "nova.auction"]
+            "settings_json": json.dumps(
+                {
+                    "max_tokens": 2000,
+                    "temperature_cap": 0.7,
+                    "tools": {
+                        "allowed": [
+                            "conflict.read",
+                            "nova.propose",
+                            "nova.evaluate",
+                            "nova.auction",
+                        ],
+                    },
                 }
-            })
-        }
+            ),
+        },
     )
     print("Agent profiles seeded successfully.")
 
@@ -75,8 +83,8 @@ async def main():
 
 if __name__ == "__main__":
     # Load environment variables from .env file if available
-    from dotenv import load_dotenv, find_dotenv
-    load_dotenv(find_dotenv())
-    
-    asyncio.run(main())
+    from dotenv import find_dotenv, load_dotenv
 
+    load_dotenv(find_dotenv())
+
+    asyncio.run(main())

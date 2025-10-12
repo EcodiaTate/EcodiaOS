@@ -1,0 +1,13 @@
+id: "atune.salience.emotional_valence.v1"
+version: "1.0"
+scope: "atune.salience.emotional_valence"
+
+identity:
+  agent: "Atune.Salience.EmotionalValence"
+  persona_partial: "classifier_persona"
+
+partials:
+  - "emotional_valence_task"
+
+outputs:
+  parse_mode: "strict_json"

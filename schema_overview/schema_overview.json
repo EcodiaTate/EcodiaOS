@@ -151,13 +151,13 @@
     },
     {
       "method": "POST",
-      "path": "/generate_phrase",
+      "path": "/generate_soul",
       "router_var": "router",
       "response_model": null,
       "status_code": null,
       "tags": null,
-      "handler": "generate_phrase",
-      "module": "D:\\EcodiaOS\\api\\endpoints\\voxis\\generate_phrase.py"
+      "handler": "generate_soul",
+      "module": "D:\\EcodiaOS\\api\\endpoints\\voxis\\generate_soul.py"
     },
     {
       "method": "GET",
@@ -171,13 +171,13 @@
     },
     {
       "method": "POST",
-      "path": "/match_phrase",
+      "path": "/match_soul",
       "router_var": "router",
       "response_model": null,
       "status_code": null,
       "tags": null,
-      "handler": "match_phrase",
-      "module": "D:\\EcodiaOS\\api\\endpoints\\voxis\\match_phrase.py"
+      "handler": "match_soul",
+      "module": "D:\\EcodiaOS\\api\\endpoints\\voxis\\match_soul.py"
     },
     {
       "method": "POST",
@@ -2089,7 +2089,7 @@
           "is_dataclass": false,
           "fields": [
             {
-              "name": "soul_phrase",
+              "name": "soul_node",
               "type": "str",
               "default": null
             },
@@ -2310,7 +2310,7 @@
       "classes": []
     },
     {
-      "path": "D:\\EcodiaOS\\api\\endpoints\\voxis\\generate_phrase.py",
+      "path": "D:\\EcodiaOS\\api\\endpoints\\voxis\\generate_soul.py",
       "file_hash": "d6a03c0b4172b3f2713c13ae263a9e4bfad2e0e83d5371b62a6a2fa762ec054a",
       "functions": [
         {
@@ -2367,7 +2367,7 @@
             "name": "_overlap_ratio",
             "parameters": [
               {
-                "name": "phrase",
+                "name": "soul",
                 "annotation": "str",
                 "default": null
               },
@@ -2383,9 +2383,9 @@
           "docstring": null
         },
         {
-          "name": "generate_phrase",
+          "name": "generate_soul",
           "signature": {
-            "name": "generate_phrase",
+            "name": "generate_soul",
             "parameters": [
               {
                 "name": "request",
@@ -2396,7 +2396,7 @@
             "return": null
           },
           "decorators": [
-            "router.post('/generate_phrase')"
+            "router.post('/generate_soul')"
           ],
           "docstring": null
         }
@@ -2423,13 +2423,13 @@
       "classes": []
     },
     {
-      "path": "D:\\EcodiaOS\\api\\endpoints\\voxis\\match_phrase.py",
+      "path": "D:\\EcodiaOS\\api\\endpoints\\voxis\\match_soul.py",
       "file_hash": "dddc116fdfe07c8b1e3ac0eb69f82ca7ac0817d469d85ed6c6f2a34cba8016d4",
       "functions": [
         {
-          "name": "match_phrase",
+          "name": "match_soul",
           "signature": {
-            "name": "match_phrase",
+            "name": "match_soul",
             "parameters": [
               {
                 "name": "request",
@@ -2440,7 +2440,7 @@
             "return": null
           },
           "decorators": [
-            "router.post('/match_phrase')"
+            "router.post('/match_soul')"
           ],
           "docstring": null
         }
@@ -2492,7 +2492,7 @@
               "default": null
             },
             {
-              "name": "phrase_event_id",
+              "name": "soul_event_id",
               "type": "str",
               "default": null
             }
@@ -18416,7 +18416,7 @@
                 "default": null
               },
               {
-                "name": "phrase_event_id",
+                "name": "soul_event_id",
                 "annotation": "str",
                 "default": null
               }
@@ -18599,9 +18599,9 @@
           "docstring": null
         },
         {
-          "name": "soulphrase_constellation_search",
+          "name": "soulnode_constellation_search",
           "signature": {
-            "name": "soulphrase_constellation_search",
+            "name": "soulnode_constellation_search",
             "parameters": [
               {
                 "name": "self",
@@ -18698,7 +18698,7 @@
                     "default": null
                   },
                   {
-                    "name": "phrase_event_id",
+                    "name": "soul_event_id",
                     "annotation": "str",
                     "default": null
                   }
@@ -18881,9 +18881,9 @@
               "docstring": null
             },
             {
-              "name": "soulphrase_constellation_search",
+              "name": "soulnode_constellation_search",
               "signature": {
-                "name": "soulphrase_constellation_search",
+                "name": "soulnode_constellation_search",
                 "parameters": [
                   {
                     "name": "self",

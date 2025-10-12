@@ -3,11 +3,11 @@ version: 1.0.0
 scope: synapse.genesis_tool_specification
 identity:
   agent: "Synapse"
-  persona_partial: "partials/identity.j2"
+  persona_partial: "identity"
 safety:
   partials:
-    - "partials/safety_min.j2"
-    - "partials/json_guard_strict.j2"
+    - "safety_min"
+    - "json_guard_strict"
 outputs:
   schema_ref: "core/prompting/schemas/genesis_tool_specification_output.json"
   parse_mode: "strict_json"

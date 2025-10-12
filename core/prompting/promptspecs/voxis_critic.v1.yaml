@@ -1,0 +1,30 @@
+id: "voxis-fact-critic-v1.0"
+version: "1.0"
+scope: "voxis.fact_critic.v1"
+
+identity:
+  agent: "Voxis.FactCritic"
+
+partials:
+  - "fact_checker_critic"
+
+outputs:
+  parse_mode: "auto_repair"
+  schema:
+    type: "object"
+    required: ["is_sufficient", "summary_of_facts"]
+    properties:
+      is_sufficient:
+        type: "boolean"
+        description: >
+          True if either:
+            (1) the tool_execution_results contain enough information to fulfill the planner directive, or
+            (2) no tool was used, but the model response itself satisfies the user's request and planner prompt.
+
+          False if the tool output was missing, irrelevant, or the model reply lacked sufficient factual grounding.
+      summary_of_facts:
+        type: "string"
+        description: >
+          If is_sufficient is true, return the key facts used or inferred (e.g., 'The weather is 19°C and sunny.').
+
+          If is_sufficient is false, explain the factual gap briefly, and suggest a correction (e.g., 'No temperature was given. The tool should specify a precise value.').

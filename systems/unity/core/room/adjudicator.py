@@ -1,126 +1,176 @@
 # systems/unity/core/room/adjudicator.py
+from __future__ import annotations
 
-from typing import Any
+import json
+import logging
+from typing import Any, Dict, List, Literal, Optional
 
-import numpy as np
+from pydantic import BaseModel, Field, ValidationError
 
-from core.utils.neo.cypher_query import cypher_query
-from systems.unity.schemas import VerdictModel
+from core.llm.utils import extract_json_block
+from core.prompting.orchestrator import build_prompt
+from core.utils.llm_gateway_client import call_llm_service
+from systems.unity.schemas import DeliberationSpec, VerdictModel
+
+logger = logging.getLogger(__name__)
+
+
+# --------------------------- Models ---------------------------
+
+
+class AdjudicatorOutput(BaseModel):
+    """
+    JSON contract expected from the Adjudicator LLM.
+    """
+
+    outcome: Literal["APPROVE", "REJECT", "NEEDS_WORK", "NO_ACTION"]
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    reasoning: str = Field(..., description="Concise justification for the outcome.")
+    followups: list[str] = Field(default_factory=list, description="Actionable follow-up tasks.")
+
+
+# ----------------------- Helper Functions ----------------------
+
+
+def _format_transcript_for_prompt(transcript: list[dict[str, Any]]) -> str:
+    """
+    Converts the deliberation transcript (list of dicts) into a readable string.
+    """
+    return "\n".join(
+        f"### {turn.get('role', 'Unknown')} (Turn {turn.get('turn', 0)})\n{turn.get('content', '')}\n"
+        for turn in transcript
+    )
+
+
+def _safe_json_parse(text: str | None) -> dict[str, Any]:
+    """
+    Best-effort parse of a JSON object embedded in free text.
+    Uses extract_json_block() and falls back to {} on failure.
+    """
+    try:
+        block = extract_json_block(text or "{}")
+        return json.loads(block) if block else {}
+    except Exception as e:
+        logger.debug("Falling back to empty dict after extract/parse error: %s", e, exc_info=False)
+        return {}
+
+
+def _coerce_llm_payload_to_dict(llm_response: Any) -> dict[str, Any]:
+    """
+    The gateway may return different shapes. Normalize to a plain dict.
+    """
+    # Case 1: Pydantic-style object
+    if hasattr(llm_response, "model_dump") and callable(getattr(llm_response, "model_dump")):
+        try:
+            data = llm_response.model_dump()
+            if isinstance(data, dict):
+                return data
+        except Exception as e:
+            logger.debug("model_dump() failed on llm_response: %s", e, exc_info=False)
+
+    # Case 2: Already a dict-like attribute named 'json'
+    if hasattr(llm_response, "json") and isinstance(getattr(llm_response, "json"), dict):
+        try:
+            return getattr(llm_response, "json")
+        except Exception:
+            pass
+
+    # Case 3: Object exposing .json() method
+    if hasattr(llm_response, "json") and callable(getattr(llm_response, "json")):
+        try:
+            maybe = llm_response.json()
+            if isinstance(maybe, dict):
+                return maybe
+        except Exception as e:
+            logger.debug(".json() callable on llm_response failed: %s", e, exc_info=False)
+
+    # Case 4: The response might expose text/content
+    text = getattr(llm_response, "text", None)
+    if not text:
+        text = getattr(llm_response, "content", None)
+
+    # If text itself is a dict (from some response wrappers), handle that before parsing
+    if isinstance(text, dict):
+        return text
+
+    return _safe_json_parse(text)
+
+
+# -------------------------- Service ---------------------------
 
 
 class Adjudicator:
     """
-    A rule-aware, fail-closed singleton service that determines the final
-    verdict of a deliberation using Bayesian aggregation.
+    Rule-aware service that determines the final verdict of a deliberation
+    by synthesizing the full transcript with an LLM.
     """
 
-    _instance = None
+    _instance: Adjudicator | None = None
 
-    def __new__(cls):
+    def __new__(cls) -> Adjudicator:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    async def _get_applicable_rules(self, constraints: list[str]) -> list[dict[str, Any]]:
-        """Fetches constitutional rules from Equor's data in Neo4j."""
-        if not constraints:
-            return []
-        query = "MATCH (r:ConstitutionRule) WHERE r.id IN $rule_ids RETURN r"
-        results = await cypher_query(query, params={"rule_ids": constraints})
-        return [res["r"] for res in results] if results else []
-
-    def _bayesian_aggregation(
-        self,
-        participant_beliefs: dict[str, float],
-        calibration_priors: dict[str, float],
-    ) -> tuple[float, float]:
-        """
-        Aggregates participant beliefs using Bayesian model averaging.
-
-        Args:
-            participant_beliefs: A dict of {"role": belief_score}, where belief_score is
-                                 the participant's confidence in approval [0,1].
-            calibration_priors: A dict of {"role": prior}, where prior is the
-                                historical reliability of the participant [0,1].
-
-        Returns:
-            A tuple of (final_confidence, final_uncertainty).
-        """
-        if not participant_beliefs:
-            return 0.0, 1.0
-
-        log_odds = []
-        for role, belief in participant_beliefs.items():
-            # Use a default prior if one isn't provided by Synapse
-            prior = calibration_priors.get(role, 0.7)
-
-            # Convert belief and prior to log-odds (logit function)
-            # Add a small epsilon to avoid division by zero
-            epsilon = 1e-9
-            belief = np.clip(belief, epsilon, 1 - epsilon)
-            prior = np.clip(prior, epsilon, 1 - epsilon)
-
-            # The weight is the log-odds of the prior (how much we trust the source)
-            weight = np.log(prior / (1 - prior))
-
-            # The evidence is the log-odds of the belief
-            evidence = np.log(belief / (1 - belief))
-
-            log_odds.append(weight * evidence)
-
-        # The combined evidence is the sum of weighted log-odds
-        combined_log_odds = np.sum(log_odds)
-
-        # Convert back to probability (logistic function)
-        final_confidence = 1 / (1 + np.exp(-combined_log_odds))
-
-        # Uncertainty can be modeled as the variance of the beliefs
-        uncertainty = (
-            np.var(list(participant_beliefs.values())) if len(participant_beliefs) > 1 else 0.0
-        )
-
-        return float(final_confidence), float(uncertainty)
-
     async def decide(
         self,
-        participant_beliefs: dict[str, float],
-        calibration_priors: dict[str, float],
-        spec_constraints: list[str],
+        spec: DeliberationSpec,
+        transcript: list[dict[str, Any]],
     ) -> VerdictModel:
         """
-        Makes a final decision based on beliefs, priors, and constitutional rules.
+        Make a final decision by prompting an LLM with the full context and transcript.
+        Returns a VerdictModel; on any failure, returns a conservative REJECT verdict.
         """
-        # 1. Constitutional Veto (Lexicographic Safety Gate)
-        applicable_rules = await self._get_applicable_rules(spec_constraints)
-        for rule in applicable_rules:
-            if rule.get("severity") in ["critical", "high"] and rule.get("deontic") == "MUST":
-                return VerdictModel(
-                    outcome="REJECT",
-                    confidence=1.0,
-                    uncertainty=0.0,
-                    dissent=f"Rejected due to veto from high-severity constitutional rule: '{rule.get('name')}'.",
-                    constitution_refs=[rule.get("id")],
-                )
+        transcript_text = _format_transcript_for_prompt(transcript)
 
-        # 2. Bayesian Aggregation
-        confidence, uncertainty = self._bayesian_aggregation(
-            participant_beliefs,
-            calibration_priors,
-        )
+        scope = "unity.judge.decision"
+        summary = "Synthesize deliberation transcript into a final verdict."
+        context = {
+            "deliberation_spec": spec.model_dump(),
+            "transcript_text": transcript_text,
+        }
 
-        # 3. Determine Outcome based on confidence threshold
-        # This threshold could also be supplied by Synapse in the future.
-        approval_threshold = 0.65
-        if confidence > approval_threshold:
-            outcome = "APPROVE"
-        elif confidence < 0.35:
-            outcome = "REJECT"
-        else:
-            outcome = "NEEDS_WORK"
+        try:
+            prompt_response = await build_prompt(
+                scope=scope,
+                summary=summary,
+                context=context,
+            )
+            llm_response = await call_llm_service(
+                prompt_response=prompt_response,
+                agent_name="Unity.Adjudicator",
+                scope=scope,
+            )
 
-        return VerdictModel(
-            outcome=outcome,
-            confidence=round(confidence, 4),
-            uncertainty=round(uncertainty, 4),
-            constitution_refs=[r.get("id") for r in applicable_rules],
-        )
+            # Normalize potentially complex response into a clean dictionary.
+            data = _coerce_llm_payload_to_dict(llm_response)
+
+            # Validate the clean dictionary directly.
+            adjudicator_output = AdjudicatorOutput.model_validate(data)
+
+            uncertainty = 1.0 - adjudicator_output.confidence
+            return VerdictModel(
+                outcome=adjudicator_output.outcome,
+                confidence=adjudicator_output.confidence,
+                uncertainty=uncertainty,
+                dissent=adjudicator_output.reasoning,
+                followups=adjudicator_output.followups,
+            )
+        except ValidationError as ve:
+            logger.error("[Adjudicator] Output validation failed: %s", ve, exc_info=True)
+            return VerdictModel(
+                outcome="REJECT",
+                confidence=1.0,
+                uncertainty=0.0,
+                dissent=f"Adjudication failed: invalid LLM output schema: {ve}",
+                followups=[],
+            )
+        except Exception as e:
+            logger.error("[Adjudicator] Decision failed: %s", e, exc_info=True)
+            return VerdictModel(
+                outcome="REJECT",
+                confidence=1.0,
+                uncertainty=0.0,
+                dissent=f"Adjudication failed due to an internal error: {e}",
+                followups=[],
+            )

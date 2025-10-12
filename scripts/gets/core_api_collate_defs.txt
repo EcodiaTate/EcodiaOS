@@ -448,21 +448,21 @@ async def _audit_complete(session_id: str, result: Dict[str, Any]) -> None:
 async def _audit_failed(session_id: str, err: str) -> None:
 async def start_deliberation(
 
-### D:\EcodiaOS\api\endpoints\voxis\generate_phrase.py
+### D:\EcodiaOS\api\endpoints\voxis\generate_soul.py
 router = APIRouter()
 def _word_tokens(s: str) -> List[str]:
 def _six_word_score(text: str) -> float:
 def _punctuation_ok(text: str) -> float:
-def _overlap_ratio(phrase: str, inputs: List[str]) -> float:
-async def generate_phrase(request: Request):
+def _overlap_ratio(soul: str, inputs: List[str]) -> float:
+async def generate_soul(request: Request):
 
 ### D:\EcodiaOS\api\endpoints\voxis\interface_mood.py
 router = APIRouter()
 async def get_latest_interface_mood() -> Dict[str, Any]:
 
-### D:\EcodiaOS\api\endpoints\voxis\match_phrase.py
+### D:\EcodiaOS\api\endpoints\voxis\match_soul.py
 router = APIRouter()
-async def match_phrase(request: Request):
+async def match_soul(request: Request):
 
 ### D:\EcodiaOS\api\endpoints\voxis\talk.py
 router = APIRouter()

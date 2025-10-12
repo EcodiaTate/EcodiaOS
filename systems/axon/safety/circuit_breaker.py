@@ -2,9 +2,9 @@
 from __future__ import annotations
 
 import time
+from collections import deque
 from dataclasses import dataclass
 from typing import Deque, Dict, Tuple
-from collections import deque
 
 
 @dataclass
@@ -19,9 +19,15 @@ class CircuitBreaker:
     Opens when success ratio falls below threshold OR burst failures exceed cap.
     """
 
-    def __init__(self, window_sec: int = 60, min_success: float = 0.80, burst_fail_cap: int = 5, cooldown_sec: int = 30) -> None:
-        self._hist: Dict[str, Deque[_Sample]] = {}
-        self._open_until: Dict[str, float] = {}
+    def __init__(
+        self,
+        window_sec: int = 60,
+        min_success: float = 0.80,
+        burst_fail_cap: int = 5,
+        cooldown_sec: int = 30,
+    ) -> None:
+        self._hist: dict[str, deque[_Sample]] = {}
+        self._open_until: dict[str, float] = {}
         self._window = float(window_sec)
         self._min_success = float(min_success)
         self._burst_cap = int(burst_fail_cap)

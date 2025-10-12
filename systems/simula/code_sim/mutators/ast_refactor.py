@@ -43,6 +43,7 @@ import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 # Repo root (stringly path for safety inside containers/CI)
 REPO_ROOT = Path(os.environ.get("SIMULA_REPO_ROOT", Path.cwd())).resolve()
@@ -322,7 +323,7 @@ class AstMutator:
 
     # ---- Public entrypoint ----
 
-    def mutate(self, step, mode: str = "scaffold") -> str | None:
+    def mutate(self, step_dict: dict[str, Any], mode: str = "scaffold") -> str | None:
         """
         Return a unified diff for the primary target file, or None if no-op.
         Modes:
@@ -331,7 +332,11 @@ class AstMutator:
           - typing: add Any/Optional/return annotations conservatively
           - error_paths: insert minimal guard raises & error logs
         """
-        target_file, export_sig = step.primary_target()
+        targets = step_dict.get("targets", [])
+        primary_target = targets[0] if targets and isinstance(targets, list) else {}
+        target_file = primary_target.get("file")
+        export_sig = primary_target.get("export")
+
         if not target_file:
             return None
         path = (REPO_ROOT / target_file).resolve()
@@ -348,10 +353,11 @@ class AstMutator:
         changed = False
 
         if mode == "scaffold":
+            step_name = step_dict.get("name", "simula")
             changed |= self._do_scaffold(
                 tree,
                 export_sig,
-                step_name=getattr(step, "name", "simula"),
+                step_name=step_name,
             )
             _ensure_logger(tree)  # always ensure logger on scaffold
         elif mode == "imports":

@@ -11,13 +11,13 @@ from systems.synapse.schemas import TaskContext
 
 logger = logging.getLogger(__name__)
 
-CognitiveMode = Literal["greedy", "reflective", "planful", "consensus"]
+CognitiveMode = Literal["greedy", "reflective", "generic", "consensus"]
 
 # Deterministic defaults (used only if graph/env absent)
 DEFAULT_STRATEGY_MAP: dict[str, dict[str, Any]] = {
     "low": {"cognitive_mode": "greedy", "critic_blend": 0.10, "reflection_depth": 0},
     "medium": {"cognitive_mode": "reflective", "critic_blend": 0.30, "reflection_depth": 1},
-    "high": {"cognitive_mode": "planful", "critic_blend": 0.60, "reflection_depth": 2},
+    "high": {"cognitive_mode": "generic", "critic_blend": 0.60, "reflection_depth": 2},
 }
 DEFAULT_BUDGET_MAP: dict[str, dict[str, int]] = {
     "low": {"tokens": 4096, "cost_units": 1},

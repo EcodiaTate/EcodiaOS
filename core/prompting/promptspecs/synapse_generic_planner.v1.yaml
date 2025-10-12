@@ -1,0 +1,18 @@
+# PromptSpec for the fallback Synapse planner.
+# Used for tasks with low confidence or no specialized agent.
+id: "synapse-generic-planner-v1.0"
+version: "1.0"
+scope: "synapse.generic.planning"
+
+identity:
+  agent: "Synapse.GenericPlanner"
+  persona_partial: "synapse_persona_generic_planner"
+
+context_lenses: []
+
+partials:
+  - "task_framing_synapse_generic_planner"
+  - "output_format_synapse_generic_planner"
+
+outputs:
+  parse_mode: "tolerant"

@@ -14,25 +14,11 @@ services:
     networks: [ecodian_net]
     ports: ["6379:6379"]
 
-  # --- Database Seeder (optional; runs against your host DB) ---
-  seeder:
-    image: ecodiaos:dev
-    container_name: ecodia_os_seeder
-    working_dir: /app
-    command: ["python", "scripts/seed_db.py"]
-    networks: [ecodian_net]
-    env_file: [ ./config/.env ]
-    environment:
-      PYTHONPATH: /app
-      SEED_MINIMAL: "0"         # keep minimal seeding (constraints etc.)
-    volumes:
-      - ./:/app
-    # if you're on Linux, uncomment next line:
-    # extra_hosts: [ "host.docker.internal:host-gateway" ]
-
   # --- EcodiaOS API ---
   api:
     container_name: ecodia_os_api
+    init: true
+    stop_grace_period: 3s
     image: ecodiaos:dev
     build:
       context: .
@@ -43,43 +29,67 @@ services:
         DOCKER_GID: ${DOCKER_GID:-0}
     working_dir: /app
     networks: [ecodian_net]
-    command: ["python", "-X", "dev", "-W", "default", "-m", "uvicorn",
-              "${APP_MODULE:-app:app}", "--host", "0.0.0.0", "--port", "${APP_PORT:-8000}",
-              "--log-level", "debug", "--access-log"]
+    command:
+      - uvicorn
+      - app:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --reload-dir
+      - /app
+      - --reload-exclude
+      - .cache,.venv
+      - --log-level
+      - info
+      - --access-log
     env_file: [ ./config/.env ]
     environment:
-      PYTHONFAULTHANDLER: "1"
-      PYTHONASYNCIODEBUG: "1"
+      PYTHONFAULTHANDLER: "0"
+      PYTHONASYNCIODEBUG: "0"
       UVICORN_WORKERS: "1"
-      LOG_LEVEL: "DEBUG"
+      LOG_LEVEL: "INFO"
       PYTHONPATH: /app
       ECODIAOS_BASE_URL: http://api:8000
       REDIS_HOST: redis
       SIMULA_SANDBOX_MODE: docker
+      SIMULA_HOST_APP_DIR: ${SIMULA_HOST_APP_DIR:?set SIMULA_HOST_APP_DIR in your shell}
+      DEV_FOCUS_MODE: "simula_planful"
       SIMULA_REPO_ROOT: /app
       GIT_DISCOVERY_ACROSS_FILESYSTEM: "1"
       GIT_DIR: /app/.git
       GIT_WORK_TREE: /app
       HF_HOME: /models/hf
       QORA_API_KEY: dev-local-key
+      DOCKER_HOST: unix:///var/run/docker.sock   # <-- ensure docker CLI talks to the mounted socket
     volumes:
       - ./:/app
       - ./config:/app/config:ro
       - models_data:/models:rw
+      - ./.cache:/app/.cache
       - /var/run/docker.sock:/var/run/docker.sock
     ports: ["8000:8000"]
     restart: unless-stopped
     depends_on:
-      seeder:
-        condition: service_completed_successfully
       redis:
         condition: service_started
-    # if you're on Linux, uncomment next line:
-    # extra_hosts: [ "host.docker.internal:host-gateway" ]
+    # Run as your host UID/GID and inject the docker socket group at runtime
+    user: "${UID:-1000}:${GID:-1000}"           # <-- keep bind-mount file perms clean
+    group_add:
+      - "${DOCKER_GID}"                          # <-- must match: stat -c %g /var/run/docker.sock
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 120s
+
 
   # --- Synapse Autonomous Daemon ---
   synapse_daemon:
     image: ecodiaos:dev
+    init: true
+    stop_grace_period: 3s
     container_name: ecodia_os_synapse_daemon
     build:
       context: .
@@ -97,6 +107,7 @@ services:
       ECODIAOS_BASE_URL: http://api:8000
       REDIS_HOST: redis
       GIT_DISCOVERY_ACROSS_FILESYSTEM: "1"
+      SIMULA_HOST_APP_DIR: ${SIMULA_HOST_APP_DIR:?set SIMULA_HOST_APP_DIR in your shell}
       GIT_DIR: /app/.git
       GIT_WORK_TREE: /app
     volumes:
@@ -105,5 +116,55 @@ services:
     restart: unless-stopped
     depends_on:
       api:
-        condition: service_started
- 
+        condition: service_healthy # <-- CHANGED
+
+# Add these two new services to your docker-compose.yml
+
+  # --- MDO Cognitive Daemons ---
+  mdo_reinforcement_daemon:
+    image: ecodiaos:dev
+    init: true
+    stop_grace_period: 3s
+    container_name: mdo_reinforcement_daemon
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /app
+    command: ["python", "-m", "systems.simula.memory.reinforcement_daemon"]
+    networks: [ecodian_net]
+    env_file: [ ./config/.env ]
+    environment:
+      PYTHONPATH: /app
+      REDIS_HOST: redis
+    volumes:
+      - ./:/app
+    restart: unless-stopped
+    depends_on:
+      - api
+      - redis
+
+  mdo_cortex_daemon:
+    image: ecodiaos:dev
+    init: true
+    stop_grace_period: 3s
+    container_name: mdo_cortex_daemon
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /app
+    command: ["python", "-m", "systems.simula.metamorphosis.cognitive_anomaly_detector"]
+    networks: [ecodian_net]
+    env_file: [ ./config/.env ]
+    environment:
+      PYTHONPATH: /app
+      REDIS_HOST: redis
+      # IMPORTANT: Set these in your .env file
+      # GIT_REPO_URL: "https://github.com/YourOrg/EcodiaOS.git"
+      # GITHUB_TOKEN: "your_github_personal_access_token"
+    volumes:
+      - ./:/app
+      - /var/run/docker.sock:/var/run/docker.sock # Needed to run sub-processes
+    restart: unless-stopped
+    depends_on:
+      - api
+      - redis

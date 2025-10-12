@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+
 import numpy as np
 
 from core.utils.neo.cypher_query import cypher_query
@@ -45,7 +46,9 @@ class ObviousnessGate:
             asyncio.get_running_loop()
         except RuntimeError:
             return asyncio.run(self.score_async(conflicts))
-        raise RuntimeError("ObviousnessGate.score() called from async context. Use `await score_async(...)`.")
+        raise RuntimeError(
+            "ObviousnessGate.score() called from async context. Use `await score_async(...)`."
+        )
 
     # ---------------- internals ----------------
 
@@ -55,7 +58,9 @@ class ObviousnessGate:
         return {
             "avg_spec_present": float(np.mean([s["spec_present"] for s in single] or [0.0])),
             "avg_spec_gaps": float(np.mean([s["spec_gaps"] for s in single] or [0.0])),
-            "avg_reproducer_stable": float(np.mean([s["reproducer_stable"] for s in single] or [0.0])),
+            "avg_reproducer_stable": float(
+                np.mean([s["reproducer_stable"] for s in single] or [0.0])
+            ),
             "avg_locality": float(np.mean([s["locality"] for s in single] or [0.0])),
             "max_severity": float(np.max([s["severity"] for s in single] or [0.0])),
             "conflict_count": float(len(conflicts)),
@@ -145,6 +150,6 @@ class ObviousnessGate:
                 - 0.2 * fv.get("max_severity", 0.0),
                 0.0,
                 1.0,
-            )
+            ),
         )
         return score, conf

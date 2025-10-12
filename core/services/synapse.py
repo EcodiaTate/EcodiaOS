@@ -1,128 +1,267 @@
 # core/services/synapse.py
-# The definitive, production-ready, and canonical client for the Synapse service.
-# This version combines the type-safety of Pydantic schemas with robust, defensive helpers.
+# --- DEFINITIVE, CORRECTED & COMPLETE CLIENT ---
 
 from __future__ import annotations
-from typing import Any, Dict, List
 
-# Core EcodiaOS utilities for networking
+import asyncio
+import json
+import logging
+import os
+from typing import Any, Dict, List, Optional
+
+import httpx
+
 from core.utils.net_api import ENDPOINTS, get_http_client
-
-# Canonical schemas from the Synapse system source code
+from systems.synapse.policy.policy_dsl import PolicyGraph
 from systems.synapse.schemas import (
-    SelectArmRequest,
-    SelectArmResponse,
-    LogOutcomeRequest,
-    LogOutcomeResponse,
-    TaskContext,
+    BudgetResponse,
     Candidate,
     ContinueRequest,
     ContinueResponse,
+    LogOutcomeRequest,
+    LogOutcomeResponse,
+    PatchProposal,
     RepairRequest,
     RepairResponse,
-    BudgetResponse
+    SelectArmRequest,
+    SelectArmResponse,
+    SimulateResponse,
+    SMTCheckRequest,
+    SMTCheckResponse,
+    TaskContext,
 )
 
+logger = logging.getLogger(__name__)
+
+
 def _jsonable(x: Any) -> Any:
-    """
-    Robustly converts arbitrary objects (including Pydantic models) into
-    JSON-safe primitives for transport.
-    """
+    """Recursively converts an object to be JSON-serializable for HTTP transport."""
     if x is None or isinstance(x, (bool, int, float, str)):
         return x
     if isinstance(x, (list, tuple, set)):
         return [_jsonable(v) for v in list(x)]
     if isinstance(x, dict):
         return {str(k): _jsonable(v) for k, v in x.items()}
-    # Pydantic v2 .model_dump() or v1 .dict()
     md = getattr(x, "model_dump", getattr(x, "dict", None))
     if callable(md):
-        return _jsonable(md())
+        try:
+            return _jsonable(md())
+        except Exception:
+            pass
     return str(x)
 
+
 class SynapseClient:
-    """
-    Typed adapter for the Synapse HTTP API. This client is the canonical way for
-    other systems to interact with Synapse, ensuring consistent and valid payloads.
-    """
+    """Typed adapter for the Synapse HTTP API. This is the canonical client."""
 
-    async def _request(self, method: str, path: str, json_payload: Any | None = None) -> Dict[str, Any]:
-        """A consolidated, robust HTTP request helper."""
-        http = await get_http_client()
-        # Use the robust _jsonable helper for all outgoing data
-        safe_payload = _jsonable(json_payload)
-        try:
-            res = await http.request(method, path, json=safe_payload, timeout=30.0)
-            res.raise_for_status()
-            return res.json()
-        except Exception as e:
-            detail = "No response body."
-            try:
-                detail = res.text
-            except Exception:
-                pass
-            print(f"[SynapseClient] CRITICAL ERROR calling {method} {path}: {e} :: {detail}")
-            raise
-
-    async def select_arm(self, task_ctx: TaskContext, candidates: List[Candidate]) -> SelectArmResponse:
+    async def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        json_payload: Any | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         """
-        Asks Synapse to select the best policy arm for a given task.
+        Consolidated, robust HTTP request helper.
+
+        - Uses the shared AsyncClient from get_http_client() (base URL, session reuse)
+        - Applies a single total-timeout (env SYNAPSE_HTTP_TIMEOUT, default 120s)
+        - Retries on:
+            * 503 with warmup hint in body (bootstrap not ready)
+            * Read/Connect timeouts
+        - Logs rich diagnostics including server body when available
+        """
+        http = await get_http_client()
+        safe_payload = _jsonable(json_payload)
+
+        # Environment-configurable behavior
+        total_timeout = float(os.getenv("SYNAPSE_HTTP_TIMEOUT", "120.0"))
+        retries = int(os.getenv("SYNAPSE_HTTP_RETRIES", "3"))
+        backoff_base = float(os.getenv("SYNAPSE_HTTP_BACKOFF_BASE", "0.25"))
+
+        timeout_cfg = httpx.Timeout(total_timeout)
+
+        last_exc: Exception | None = None
+        for attempt in range(retries):
+            res: httpx.Response | None = None
+            try:
+                res = await http.request(
+                    method,
+                    path,  # NOTE: get_http_client() should include base_url
+                    json=safe_payload,
+                    headers=headers,
+                    timeout=timeout_cfg,
+                )
+
+                # Retry on ANY 503, regardless of body (hot reloads / rebootstrap can flip this briefly)
+                if res.status_code == 503 and attempt < retries - 1:
+                    await asyncio.sleep(backoff_base * (attempt + 1))
+                    continue
+
+                res.raise_for_status()
+                if not res.content:
+                    raise httpx.ReadTimeout("No response body.")
+                return res.json()
+
+                res.raise_for_status()
+
+                if not res.content:
+                    raise httpx.ReadTimeout("No response body.")
+
+                return res.json()
+
+            except (httpx.ReadTimeout, httpx.ConnectTimeout) as e:
+                last_exc = e
+                if attempt < retries - 1:
+                    await asyncio.sleep(backoff_base * (attempt + 1))
+                    continue
+                # fall through to log + raise
+
+            except httpx.HTTPStatusError as e:
+                # HTTP status outside 2xx after raise_for_status(); include body if any
+                body_text = ""
+                try:
+                    if e.response is not None:
+                        body_text = e.response.text
+                except Exception:
+                    pass
+                logger.error(
+                    "[SynapseClient] HTTP %s %s -> %s :: %s",
+                    method,
+                    path,
+                    getattr(e.response, "status_code", "?"),
+                    body_text,
+                    exc_info=True,
+                )
+                raise
+
+            except Exception as e:
+                last_exc = e
+                # Unexpected errors: log richly and do not retry unless attempts left and it's clearly transient
+                # (Keep behavior simple: we only auto-retry the explicit cases above.)
+                logger.error(
+                    "[SynapseClient] CRITICAL ERROR %s %s: %s",
+                    method,
+                    path,
+                    e,
+                    exc_info=True,
+                )
+                raise
+
+        # If we exhausted retries on timeout cases, log once more with detail
+        logger.error(
+            "[SynapseClient] Exhausted retries for %s %s :: %s",
+            method,
+            path,
+            last_exc or "unknown error",
+            exc_info=True,
+        )
+        raise last_exc or httpx.ReadTimeout("Request failed with no additional context.")
+
+    # ===== Decision Surfaces =====
+
+    async def select_or_plan(
+        self,
+        task_ctx: TaskContext,
+        candidates: list[Candidate],
+        *,
+        headers: dict[str, str] | None = None,
+    ) -> SelectArmResponse:
+        """
+        Preferred entrypoint for all decisions:
+        returns either a persisted PolicyArm selection or a dynamic plan (dyn:: arm).
         """
         payload = SelectArmRequest(task_ctx=task_ctx, candidates=candidates)
-        data = await self._request("POST", ENDPOINTS.SYNAPSE_SELECT_ARM, json_payload=payload)
+        path = getattr(ENDPOINTS, "SYNAPSE_SELECT_OR_PLAN", "/synapse/select_or_plan")
+        data = await self._request("POST", path, json_payload=payload, headers=headers)
         return SelectArmResponse.model_validate(data)
+
+    # ===== Semantic Validation / Modeling =====
+
+    async def simulate(self, policy_graph: PolicyGraph, task_ctx: TaskContext) -> SimulateResponse:
+        """Calls the World Model to predict the outcome of a policy graph."""
+        payload = {"policy_graph": policy_graph.model_dump(), "task_ctx": task_ctx.model_dump()}
+        path = getattr(ENDPOINTS, "SYNAPSE_SIMULATE", "/synapse/models/simulate")
+        data = await self._request("POST", path, json_payload=payload)
+        return SimulateResponse.model_validate(data)
+
+    async def smt_check(self, policy_graph: PolicyGraph) -> SMTCheckResponse:
+        """Calls the SMT Guard to check a policy graph for formal constraint violations."""
+        payload = SMTCheckRequest(policy_graph=policy_graph)
+        path = getattr(ENDPOINTS, "SYNAPSE_SMT_CHECK", "/synapse/firewall/smt_check")
+        data = await self._request("POST", path, json_payload=payload)
+        return SMTCheckResponse.model_validate(data)
+
+    # ===== Learning & Control =====
 
     async def log_outcome(
         self,
         *,
         episode_id: str,
         task_key: str,
-        metrics: Dict[str, Any],
-        outcome: Dict[str, Any] | None = None,
-        simulator_prediction: dict[str, Any] | None = None
+        metrics: dict[str, Any],
+        simulator_prediction: dict[str, Any] | None = None,
     ) -> LogOutcomeResponse:
         """
-        Logs the final outcome of an episode to Synapse for learning.
+        Logs the final outcome of an episode to close the learning loop.
+        Notes:
+          - Ensure 'chosen_arm_id' is present to help downstream analytics.
         """
-        if "chosen_arm_id" not in metrics:
-            print(f"[SynapseClient] WARNING: 'chosen_arm_id' missing in metrics for episode {episode_id}. Learning may be impaired.")
+        if "chosen_arm_id" not in metrics and "arm_id" not in metrics:
+            logger.warning(
+                "[SynapseClient] 'chosen_arm_id' missing in metrics for episode %s.", episode_id
+            )
 
         payload = LogOutcomeRequest(
             episode_id=episode_id,
             task_key=task_key,
             metrics=metrics,
-            simulator_prediction=simulator_prediction or {},
+            simulator_prediction=simulator_prediction,
         )
-        
-        # The /ingest/outcome endpoint is flexible; we send the Pydantic model
-        # which will be serialized into the expected dictionary.
-        data = await self._request("POST", ENDPOINTS.SYNAPSE_INGEST_OUTCOME, json_payload=payload)
+        path = getattr(ENDPOINTS, "SYNAPSE_INGEST_OUTCOME", "/synapse/ingest/outcome")
+        data = await self._request("POST", path, json_payload=payload)
         return LogOutcomeResponse.model_validate(data)
 
-    async def continue_option(self, episode_id: str, last_step_outcome: dict[str, Any]) -> ContinueResponse:
-        """Continues the execution of a multi-step skill (Option)."""
+    async def continue_option(
+        self,
+        episode_id: str,
+        last_step_outcome: dict[str, Any],
+    ) -> ContinueResponse:
+        """Continues execution of a multi-step hierarchical skill."""
         req = ContinueRequest(episode_id=episode_id, last_step_outcome=last_step_outcome)
-        data = await self._request("POST", ENDPOINTS.SYNAPSE_CONTINUE_OPTION, json_payload=req)
+        path = getattr(ENDPOINTS, "SYNAPSE_CONTINUE_OPTION", "/synapse/tasks/continue_option")
+        data = await self._request("POST", path, json_payload=req)
         return ContinueResponse.model_validate(data)
 
-    async def repair_skill_step(self, episode_id: str, failed_step_index: int, error_observation: dict[str, Any]) -> RepairResponse:
-        """Generates a repair action for a failed step in a skill."""
-        req = RepairRequest(episode_id=episode_id, failed_step_index=failed_step_index, error_observation=error_observation)
-        data = await self._request("POST", ENDPOINTS.SYNAPSE_REPAIR_SKILL, json_payload=req)
+    async def repair_skill_step(
+        self,
+        episode_id: str,
+        failed_step_index: int,
+        error_observation: dict[str, Any],
+    ) -> RepairResponse:
+        """Requests a one-shot repair action for a failed skill step."""
+        req = RepairRequest(
+            episode_id=episode_id,
+            failed_step_index=failed_step_index,
+            error_observation=error_observation,
+        )
+        path = getattr(ENDPOINTS, "SYNAPSE_REPAIR_SKILL", "/synapse/tasks/repair_skill_step")
+        data = await self._request("POST", path, json_payload=req)
         return RepairResponse.model_validate(data)
 
-    async def get_budget(self, task_key: str) -> BudgetResponse:
-        """Returns a resource budget for a task."""
-        path = ENDPOINTS.path("SYNAPSE_GET_BUDGET", task_key=task_key)
-        data = await self._request("GET", path)
-        return BudgetResponse.model_validate(data)
+    # ===== Governance & Registry =====
+
+    async def submit_upgrade_proposal(self, proposal: PatchProposal) -> dict[str, Any]:
+        """Submits a self-upgrade proposal to the Governor for formal verification."""
+        path = getattr(ENDPOINTS, "SYNAPSE_GOVERNOR_SUBMIT", "/synapse/governor/submit_proposal")
+        return await self._request("POST", path, json_payload=proposal)
 
     async def registry_reload(self) -> dict[str, Any]:
-        """
-        Triggers a hot-reload of the Arm Registry from the database.
-        """
-        return await self._request("POST", ENDPOINTS.SYNAPSE_REGISTRY_RELOAD, json_payload={})
+        """Triggers a hot-reload of the in-memory Arm Registry from the database."""
+        path = getattr(ENDPOINTS, "SYNAPSE_REGISTRY_RELOAD", "/synapse/registry/reload")
+        return await self._request("POST", path, json_payload={})
 
-# A global singleton instance for easy importing across the system
-# e.g., `from core.services.synapse import synapse`
+
+# Global singleton for easy access
 synapse = SynapseClient()

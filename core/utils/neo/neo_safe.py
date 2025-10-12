@@ -14,18 +14,22 @@ _DEPRECATION_MSG = (
 
 # core/utils/neo/props.py
 from __future__ import annotations
+
 import json
 from typing import Any
 
 _PRIMS = (str, int, float, bool, type(None))
 
+
 def _is_prim(x: Any) -> bool:
     return isinstance(x, _PRIMS)
+
 
 def _safe_leaf(x: Any) -> Any:
     # numpy → list
     try:
         import numpy as np  # type: ignore
+
         if isinstance(x, np.ndarray):
             x = x.tolist()
     except Exception:
@@ -45,12 +49,14 @@ def _safe_leaf(x: Any) -> Any:
         return json.dumps(x, ensure_ascii=False)
     return json.dumps(x, ensure_ascii=False)
 
+
 def neo_safe_map(d: dict[str, Any]) -> dict[str, Any]:
     """
     Make a *property map* safe: preserve top-level keys, but
     convert any non-primitive *values* (incl nested dicts/lists of dicts) to JSON strings.
     """
     return {k: _safe_leaf(v) for k, v in d.items()}
+
 
 def neo_safe_params(params: dict[str, Any]) -> dict[str, Any]:
     """
@@ -101,17 +107,21 @@ def coalesce_driver(driver_like: Any) -> Any | None:
     # Fallback: treat as no driver
     return None
 
+
 # core/utils/neo/props.py
 from __future__ import annotations
+
 import json
 from typing import Any
 
 _PRIMS = (str, int, float, bool, type(None))
 
+
 def neo_safe(value: Any) -> Any:
     # numpy arrays?
     try:
         import numpy as np  # type: ignore
+
         if isinstance(value, np.ndarray):
             value = value.tolist()
     except Exception:

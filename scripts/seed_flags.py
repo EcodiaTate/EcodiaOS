@@ -13,7 +13,7 @@ from uuid import uuid4
 # NOTE: You may need to adjust these paths if you run this script
 # from a different directory than your project root.
 from core.utils.neo.cypher_query import cypher_query
-from core.utils.neo.neo_driver import init_driver, close_driver
+from core.utils.neo.neo_driver import close_driver, init_driver
 
 # --- Configuration & Data ---
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -56,16 +56,21 @@ SEED_FLAGS = [
 
 # --- Helper functions (copied from switchboard/flags.py for self-containment) ---
 
+
 def _to_json(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False)
+
 
 def _now_ms() -> int:
     return int(datetime.now(UTC).timestamp() * 1000)
 
+
 def _actor_identity() -> str:
     return os.getenv("IDENTITY_ID", "ecodia.system.seeder")
 
+
 # --- Main Seeding Logic ---
+
 
 async def upsert_flag(flag_data: dict[str, Any]):
     """
@@ -123,7 +128,7 @@ async def upsert_flag(flag_data: dict[str, Any]):
         MERGE (f)-[:FOR_COMPONENT]->(c)
         """
         await cypher_query(cypher_component, {"k": key, "c": component})
-    
+
     logging.info(f"  ✅ Successfully upserted '{key}'.")
 
 
@@ -133,7 +138,7 @@ async def main():
     try:
         await init_driver()
         logging.info("Neo4j driver initialized.")
-        
+
         for flag_data in SEED_FLAGS:
             await upsert_flag(flag_data)
 
@@ -148,7 +153,8 @@ async def main():
 if __name__ == "__main__":
     # Ensure .env file is loaded if your driver depends on it
     from dotenv import load_dotenv
+
     # Adjust path to your .env file as needed
     load_dotenv(dotenv_path="./config/.env")
-    
+
     asyncio.run(main())

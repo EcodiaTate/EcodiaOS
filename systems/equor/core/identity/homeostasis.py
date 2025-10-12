@@ -13,9 +13,9 @@ import numpy as np
 from core.llm.bus import event_bus
 from core.utils.neo.cypher_query import cypher_query
 from systems.equor.core.identity.composer import PromptComposer
+from systems.equor.core.identity.homeostasis_helper import HomeostasisHelper
 from systems.equor.schemas import Attestation, ComposeRequest, DriftReport, PatchProposalEvent
 from systems.synapse.core.snapshots import stamp as rcu_stamp
-from systems.equor.core.identity.homeostasis_helper import HomeostasisHelper
 
 logger = logging.getLogger(__name__)
 

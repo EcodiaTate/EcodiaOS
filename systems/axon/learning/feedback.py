@@ -5,17 +5,19 @@ import os
 from typing import Any
 
 from pydantic import BaseModel
+
 from core.utils.net_api import ENDPOINTS, get_http_client
 from systems.axon.schemas import ActionResult, AxonIntent
 
-
 # ----------------- Models -----------------
+
 
 class UpliftReport(BaseModel):
     """
     A detailed report comparing a predicted result with an actual result.
     This serves as a rich learning signal for Synapse.
     """
+
     intent: AxonIntent
     status_change: str | None  # e.g., "ok -> fail"
     output_diff: dict[str, Any]
@@ -26,7 +28,10 @@ class UpliftReport(BaseModel):
 
 # ----------------- Helpers -----------------
 
-def _calculate_diff(d1: dict[str, Any] | None, d2: dict[str, Any] | None, path: str = "") -> dict[str, Any]:
+
+def _calculate_diff(
+    d1: dict[str, Any] | None, d2: dict[str, Any] | None, path: str = ""
+) -> dict[str, Any]:
     """Recursively diffs two dictionaries."""
     d1 = d1 or {}
     d2 = d2 or {}
@@ -64,6 +69,7 @@ def _ingest_endpoint() -> str:
 
 # ----------------- Public API -----------------
 
+
 async def ingest_action_outcome(
     intent: AxonIntent,
     predicted_result: ActionResult,
@@ -98,7 +104,9 @@ async def ingest_action_outcome(
             print(f"[Feedback] ingest_action_outcome failed: {e}")
 
 
-async def log_outcome_to_synapse(payload: dict[str, Any], *, decision_id: str | None = None) -> None:
+async def log_outcome_to_synapse(
+    payload: dict[str, Any], *, decision_id: str | None = None
+) -> None:
     """
     General-purpose logger to SYNAPSE_INGEST_OUTCOME for arbitrary
     learning payloads (A/B summaries, rollout decisions, etc.).

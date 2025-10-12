@@ -7,7 +7,7 @@ from typing import Any
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from core.utils.neo.cypher_query import cypher_query  # ✅ driverless Neo
 
@@ -38,11 +38,13 @@ class FlagOut(BaseModel):
 
 def _to_json(value: Any) -> str:
     import json
+
     return json.dumps(value, ensure_ascii=False)
 
 
 def _from_json(s: Any) -> Any:
     import json
+
     if isinstance(s, (dict, list, int, float, bool)) or s is None:
         return s
     try:

@@ -4,13 +4,122 @@ from __future__ import annotations
 import json
 import uuid
 from collections import defaultdict
+from typing import Optional
 
 import numpy as np
 
-from core.prompting.orchestrator import PolicyHint, build_prompt
-from core.utils.net_api import ENDPOINTS, get_http_client
+from core.prompting.orchestrator import build_prompt
+from core.utils.llm_gateway_client import call_llm_service_direct
 from systems.atune.memory.schemas import Schema
 from systems.atune.memory.store import MemoryStore
+
+
+def _try_load_json(obj) -> dict | None:
+    if isinstance(obj, dict):
+        return obj
+    if isinstance(obj, list) and obj and isinstance(obj[0], dict):
+        return obj[0]
+    return None
+
+
+def extract_json_flex(text: str) -> dict | None:
+    """
+    Best-effort JSON extraction used across the stack:
+      1) direct parse
+      2) ```json ...``` fenced block
+      3) first balanced {...} or [...]
+      4) first '{' .. last '}' (or '[' .. ']')
+    Returns dict or first dict element from a list.
+    """
+    if not text:
+        return None
+
+    t = text.strip()
+
+    # 1) direct
+    try:
+        j = json.loads(t)
+        j = _try_load_json(j)
+        if j is not None:
+            return j
+    except Exception:
+        pass
+
+    # 2) fenced
+    import re
+
+    fence = re.compile(r"```(?:\s*json\s*)?\n(?P<payload>(?:\{.*?\}|\[.*?\]))\n```", re.I | re.S)
+    m = fence.search(t)
+    if m:
+        try:
+            j = json.loads(m.group("payload"))
+            j = _try_load_json(j)
+            if j is not None:
+                return j
+        except Exception:
+            pass
+
+    # helpers for 3/4
+    def _find_balanced(s, open_ch, close_ch):
+        depth = 0
+        in_str = False
+        esc = False
+        start = s.find(open_ch)
+        if start < 0:
+            return None
+        for i in range(start, len(s)):
+            c = s[i]
+            if in_str:
+                if esc:
+                    esc = False
+                elif c == "\\":
+                    esc = True
+                elif c == '"':
+                    in_str = False
+                continue
+            if c == '"':
+                in_str = True
+            elif c == open_ch:
+                depth += 1
+            elif c == close_ch:
+                depth -= 1
+                if depth == 0:
+                    return s[start : i + 1]
+        return None
+
+    # 3) balanced
+    for o, c in (("{", "}"), ("[", "]")):
+        bal = _find_balanced(t, o, c)
+        if bal:
+            try:
+                j = json.loads(bal)
+                j = _try_load_json(j)
+                if j is not None:
+                    return j
+            except Exception:
+                pass
+
+    # 4) coarse slice
+    try:
+        i, j2 = t.find("{"), t.rfind("}")
+        if 0 <= i < j2:
+            j = json.loads(t[i : j2 + 1])
+            j = _try_load_json(j)
+            if j is not None:
+                return j
+    except Exception:
+        pass
+    try:
+        i, j2 = t.find("["), t.rfind("]")
+        if 0 <= i < j2:
+            j = json.loads(t[i : j2 + 1])
+            j = _try_load_json(j)
+            if j is not None:
+                return j
+    except Exception:
+        pass
+
+    return None
 
 
 class SchemaInducer:
@@ -25,56 +134,47 @@ class SchemaInducer:
         Uses the spec-based prompting system to produce {"schema_name": "<short_label>"}.
         Falls back to a random name on any failure.
         """
-        # 1) Render messages via PromptSpec (no stray prompt strings)
-        hint = PolicyHint(
+        # 1) Render messages with the new orchestrator API
+        prompt = await build_prompt(
             scope="atune.schema.naming",
-            task_key="schema_naming",  # enables Synapse budget flow
+            context={"vars": {"summaries": node_summaries[:10]}},
             summary=f"Name a cluster of {min(len(node_summaries), 10)} related events",
-            context={
-                # Template variables for the spec/template
-                "vars": {"summaries": node_summaries[:10]},
-            },
         )
-        o = await build_prompt(hint)
 
-        # 2) Call LLM Bus with provider overrides + provenance headers
-        client = await get_http_client()
-        body = {
-            "messages": o.messages,
-            "json_mode": bool(o.provider_overrides.get("json_mode", True)),
-            "max_tokens": int(o.provider_overrides.get("max_tokens", 64)),
-        }
-        temp = o.provider_overrides.get("temperature", None)
-        if temp is not None:
-            body["temperature"] = float(temp)
+        # 2) Call the LLM via the centralized client (policy-bypass utility)
+        resp = await call_llm_service_direct(
+            prompt_response=prompt,
+            agent_name="Atune.SchemaNamer",
+            scope="atune.schema.naming",
+        )
 
-        headers = {
-            "x-budget-ms": str(o.provenance.get("budget_ms", 1000)),
-            "x-spec-id": o.provenance.get("spec_id", ""),
-            "x-spec-version": o.provenance.get("spec_version", ""),
-        }
-
+        # 3) Parse JSON robustly
+        payload = None
         try:
-            resp = await client.post(ENDPOINTS.LLM_CALL, json=body, headers=headers)
-            resp.raise_for_status()
-            data = resp.json() or {}
-            payload = data.get("json")
-            if not payload and data.get("text"):
+            # Prefer structured field if your gateway returns it
+            payload = getattr(resp, "json", None)
+            if callable(payload):
+                # Some gateways expose .json() method instead of attr
                 try:
-                    payload = json.loads(data["text"])
+                    maybe = resp.json()
+                    if isinstance(maybe, dict):
+                        payload = maybe
                 except Exception:
-                    payload = {}
+                    payload = None
+        except Exception:
+            payload = None
 
-            if isinstance(payload, dict):
-                name = payload.get("schema_name")
-                if isinstance(name, str) and name.strip():
-                    return name.strip()
+        if not isinstance(payload, dict):
+            text = getattr(resp, "text", "") or getattr(resp, "content", "")
+            payload = extract_json_flex(text) or {}
 
-            # Fallback
-            return f"unnamed_schema_{uuid.uuid4()}"
-        except Exception as e:
-            print(f"SchemaInducer: LLM call for naming failed: {e}")
-            return f"unnamed_schema_{uuid.uuid4()}"
+        if isinstance(payload, dict):
+            name = payload.get("schema_name")
+            if isinstance(name, str) and name.strip():
+                return name.strip()
+
+        # Fallback
+        return f"unnamed_schema_{uuid.uuid4()}"
 
     async def run_induction_cycle(self, node_store: MemoryStore) -> list[Schema]:
         """

@@ -10,12 +10,7 @@ from uuid import uuid4
 from core.utils.net_api import ENDPOINTS, get_http_client
 
 # --- Canonical Schemas from Equor Source ---
-from systems.equor.schemas import (
-    ComposeRequest,
-    ComposeResponse,
-    Attestation,
-    InvariantCheckResult
-)
+from systems.equor.schemas import Attestation, ComposeRequest, ComposeResponse, InvariantCheckResult
 
 
 class EquorClient:
@@ -24,7 +19,9 @@ class EquorClient:
     for interacting with Equor's identity, governance, and auditing functions.
     """
 
-    async def _request(self, method: str, path: str, json: dict | None = None, headers: dict | None = None) -> Any:
+    async def _request(
+        self, method: str, path: str, json: dict | None = None, headers: dict | None = None
+    ) -> Any:
         """A consolidated, robust HTTP request helper."""
         http = await get_http_client()
         try:
@@ -48,38 +45,43 @@ class EquorClient:
         agent: str,
         profile_name: str = "prod",
         episode_id: str | None = None,
-        context: Dict[str, Any] | None = None
+        context: dict[str, Any] | None = None,
     ) -> ComposeResponse:
         """
         Requests a composed prompt patch from Equor based on the agent's active profile.
         """
         # Ensure an episode_id exists for auditability, as required by the endpoint.
         ep_id = episode_id or f"ep_{uuid4().hex}"
-        
+
         # Build the request using the canonical Pydantic schema.
         payload = ComposeRequest(
             agent=agent,
             profile_name=profile_name,
             episode_id=ep_id,
-            context=context or {}
+            context=context or {},
         )
-        
-        data = await self._request("POST", ENDPOINTS.EQUOR_COMPOSE, json=payload.model_dump(mode="json"))
+
+        data = await self._request(
+            "POST", ENDPOINTS.EQUOR_COMPOSE, json=payload.model_dump(mode="json")
+        )
         return ComposeResponse.model_validate(data)
 
     async def attest(self, attestation: Attestation) -> dict[str, Any]:
         """
-        [cite_start]Submits a governance attestation to be persisted in the graph. [cite: 2093]
+        Submits a governance attestation to be persisted in the graph.
         """
-        # [cite_start]The /attest endpoint expects the Attestation model directly. [cite: 2093]
-        return await self._request("POST", ENDPOINTS.EQUOR_ATTEST, json=attestation.model_dump(mode="json"))
-        
+        # The /attest endpoint expects the Attestation model directly.
+        return await self._request(
+            "POST", ENDPOINTS.EQUOR_ATTEST, json=attestation.model_dump(mode="json")
+        )
+
     async def run_invariant_audit(self) -> list[InvariantCheckResult]:
         """
-        [cite_start]Triggers a full audit of all cross-system invariants. [cite: 2134]
+        Triggers a full audit of all cross-system invariants.
         """
         data = await self._request("POST", ENDPOINTS.EQUOR_INVARIANTS_AUDIT)
         return [InvariantCheckResult.model_validate(item) for item in data]
+
 
 # Create a singleton instance for easy, consistent importing across the application
 # e.g., `from core.services.equor import equor`

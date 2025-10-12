@@ -1,0 +1,22 @@
+id: unity_safety_critic_001
+version: "1.0"
+scope: "unity.critique.safety.v1"
+
+identity:
+  agent: "Unity.SafetyCritic"
+  persona_partial: "unity_critic_base" 
+
+context_lenses:
+  - "facets.safety"
+  - "facets.ethical"
+
+partials:
+  - "critique_task_safety"
+
+outputs:
+  # The output is freeform text, not structured JSON.
+  parse_mode: "tolerant"
+
+template: |
+  {% include 'unity_critic_base' %}
+  {% include 'critique_task_safety' %}

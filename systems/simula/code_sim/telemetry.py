@@ -1,6 +1,6 @@
 # systems/simula/code_sim/telemetry.py
 """
-Drop‑in, zero‑dependency (stdlib‑only) telemetry for Simula.
+Drop-in, zero-dependency (stdlib-only) telemetry for Simula.
 """
 
 from __future__ import annotations
@@ -15,13 +15,22 @@ import time
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any
+from functools import wraps
+from typing import Any, Dict, List
 
 # ---------------- Core state ----------------
 _current_job: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "simula_job",
     default=None,
 )
+
+# MODIFIED: The registry now stores metadata (like modes) for each tool.
+_TOOL_REGISTRY: dict[str, dict[str, Any]] = {}
+
+
+def get_tracked_tools() -> dict[str, dict[str, Any]]:
+    """Returns the full tool registry, including metadata like modes."""
+    return _TOOL_REGISTRY
 
 
 def _now_iso() -> str:
@@ -139,7 +148,6 @@ class Telemetry:
             {"type": "reward", "value": value, "reason": reason, "meta": meta or {}},
         )
 
-    # --- NEW METHOD TO FIX THE ATTRIBUTE ERROR ---
     def log_event(self, event_type: str, payload: dict[str, Any] | None = None) -> None:
         """Logs a generic, structured event."""
         job_id = _current_job.get() or "unknown"
@@ -223,15 +231,25 @@ class with_job_context:
 # --------------- Decorator for tools ---------------
 
 
-def track_tool(name: str | None = None) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
-    """Wrap a sync or async tool to emit start/end events and duration."""
+# MODIFIED: The decorator now accepts a 'modes' argument and has a clearer structure.
+def track_tool(
+    tool_name: str,
+    modes: list[str] | None = None,
+) -> Callable:
+    """
+    A decorator to register a tool for Simula's use and wrap it with telemetry.
 
-    def _decorator(fn: Callable[..., Any]) -> Callable[..., Any]:
-        tool_name = name or getattr(fn, "__name__", "tool")
+    Args:
+        tool_name: The name the agent will use to call the tool.
+        modes: A list of operational modes (e.g., 'code_analysis', 'file_system')
+               this tool is relevant for. Defaults to ['general'].
+    """
 
+    def decorator(fn: Callable[..., Any]) -> Callable[..., Any]:
         if inspect.iscoroutinefunction(fn):
 
-            async def _aw(*args, **kwargs):
+            @wraps(fn)
+            async def async_wrapper(*args, **kwargs):
                 t0 = time.perf_counter()
                 telemetry.tool_event(
                     "start",
@@ -246,12 +264,16 @@ def track_tool(name: str | None = None) -> Callable[[Callable[..., Any]], Callab
                     telemetry.tool_event("end", tool_name, ok=False, err=repr(e), started_ms=t0)
                     raise
 
-            _aw.__name__ = fn.__name__
-            _aw.__doc__ = fn.__doc__
-            return _aw
+            # Register the executable wrapper with its metadata
+            _TOOL_REGISTRY[tool_name] = {
+                "func": async_wrapper,
+                "modes": modes or ["general"],
+            }
+            return async_wrapper
         else:
 
-            def _sw(*args, **kwargs):
+            @wraps(fn)
+            def sync_wrapper(*args, **kwargs):
                 t0 = time.perf_counter()
                 telemetry.tool_event(
                     "start",
@@ -266,8 +288,11 @@ def track_tool(name: str | None = None) -> Callable[[Callable[..., Any]], Callab
                     telemetry.tool_event("end", tool_name, ok=False, err=repr(e), started_ms=t0)
                     raise
 
-            _sw.__name__ = fn.__name__
-            _sw.__doc__ = fn.__doc__
-            return _sw
+            # Register the executable wrapper with its metadata
+            _TOOL_REGISTRY[tool_name] = {
+                "func": sync_wrapper,
+                "modes": modes or ["general"],
+            }
+            return sync_wrapper
 
-    return _decorator
+    return decorator

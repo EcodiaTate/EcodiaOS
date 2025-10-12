@@ -1,4 +1,3 @@
-# systems/equor/core/qualia/manifold.py
 from __future__ import annotations
 
 import logging
@@ -151,10 +150,6 @@ class TrainedAutoencoder:
         y = self.W @ z  # projections (k,)
         eta = self._eta()
 
-        # Sanger's rule: for each component i
-        #   w_i ← w_i + η * y_i * (z − sum_{j≤i} y_j w_j)
-        #   normalize w_i
-        # Compute cumulative projections incrementally for efficiency
         proj_prefix = np.zeros(self.input_dim, dtype=np.float64)
         for i in range(self.latent_dim):
             wi = self.W[i]
@@ -165,7 +160,6 @@ class TrainedAutoencoder:
                 proj_prefix = proj_prefix + yi * wi
             correction = z - proj_prefix
             wi = wi + eta * yi * correction
-            # Normalize to unit length
             norm = np.linalg.norm(wi)
             if norm > 1e-12:
                 wi /= norm
@@ -200,10 +194,7 @@ class QualiaManifold:
         """
         Transform InternalStateMetrics -> QualiaState via current encoder,
         then update the model online with the new observation.
-        We encode with current parameters (pre-update) to represent the state
-        under the model that existed at the time of observation.
         """
-        # Domain normalization for initial stability; learning handles further scaling
         v = np.array(
             [
                 float(metrics.cognitive_load) / 1000.0,
@@ -214,10 +205,7 @@ class QualiaManifold:
             dtype=np.float64,
         )
 
-        # Encode BEFORE learning update (snapshot semantics)
         coords = self.autoencoder.encode(v)
-
-        # Online learning update
         self.autoencoder.update(v)
 
         return QualiaState(
@@ -247,9 +235,11 @@ class StateLogger:
         await graph_writes.save_qualia_state(qualia_state)
         await graph_writes.attach_metrics_to_episode(metrics)
 
+        # FIX: Publish the qualia_state object directly without the extra wrapper key.
+        # The subscriber expects a dictionary that maps directly to the QualiaState model.
         await event_bus.publish(
             "equor.qualia.state.created",
-            {"qualia_state": qualia_state.model_dump()},
+            qualia_state.model_dump(),
         )
         logger.info("[StateLogger] Emitted qualia state '%s'.", qualia_state.id)
 

@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import json
-from uuid import uuid4
+import re
 import uuid
+from collections.abc import Iterable, Sequence
 from typing import Any
+from uuid import uuid4
 
 from core.llm.embeddings_gemini import get_embedding
 from core.utils.neo.cypher_query import cypher_query
@@ -49,7 +51,11 @@ def _get_or_make_event_id(properties: dict[str, Any]) -> str:
 # Likely located in: systems/synk/core/tools/neo.py
 
 from typing import Any
+
 from core.utils.neo.cypher_query import cypher_query
+
+# In systems/synk/core/tools/neo.py
+
 
 async def add_relationship(
     src_match: dict[str, Any],
@@ -57,41 +63,40 @@ async def add_relationship(
     rel_type: str,
     *,
     rel_props: dict[str, Any] | None = None,
-    # These parameters from the original are preserved for compatibility
-    intermediary: dict[str, Any] | None = None,
-    dual_edges: bool = False,
 ):
     """
     Creates a relationship between two nodes using an efficient, non-cartesian product query.
     """
     src_label = src_match.get("label", "")
     dst_label = dst_match.get("label", "")
-    
-    # Ensure there's a property to match on
+
     if not src_label or not dst_label or not src_match.get("match") or not dst_match.get("match"):
-        raise ValueError("add_relationship requires a label and a match property for both source and destination.")
+        raise ValueError(
+            "add_relationship requires a label and a match property for both source and destination."
+        )
 
     src_key = list(src_match["match"].keys())[0]
     dst_key = list(dst_match["match"].keys())[0]
+    src_val = src_match["match"][src_key]
+    dst_val = dst_match["match"][dst_key]
 
-    # --- THIS IS THE FIX ---
-    # This query structure is highly performant. It finds the first node,
-    # then finds the second, avoiding a database-wide scan.
+    # --- THIS IS THE CORRECTED QUERY ---
+    # It uses parameter substitution for VALUES ONLY, which is the correct and safe way.
     query = f"""
-    MATCH (a:{src_label} {{ {src_key}: $src_props.{src_key} }})
-    MATCH (b:{dst_label} {{ {dst_key}: $dst_props.{dst_key} }})
+    MATCH (a:{src_label} {{ {src_key}: $src_val }})
+    MATCH (b:{dst_label} {{ {dst_key}: $dst_val }})
     MERGE (a)-[r:{rel_type}]->(b)
     ON CREATE SET r = $rel_props
     ON MATCH SET r += $rel_props
     """
-    
+
     params = {
-        "src_props": src_match["match"],
-        "dst_props": dst_match["match"],
+        "src_val": src_val,
+        "dst_val": dst_val,
         "rel_props": rel_props or {},
     }
-    
     await cypher_query(query, params)
+
 
 # =========================
 # 벡처/시맨틱 검색 Vector/Semantic Search
@@ -100,8 +105,7 @@ async def add_relationship(
 INDEX_MAP = {
     "Event": "gemini-3072-index",
     "Cluster": "cluster_cluster_vector_gemini_3072_cosine",
-    "SoulPhrase": "soulphrase-3072-index",
-
+    "SoulNode": "soulnode-3072-index",
 }
 
 
@@ -255,22 +259,48 @@ async def semantic_graph_search(
 # 노드 Nodes
 # =========================
 
+_LABEL_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
 
 async def add_node(
-    labels: list[str],
+    labels: Sequence[str] | str,
     properties: dict[str, Any] | None = None,
     embed_text: str | None = None,
 ) -> dict[str, Any]:
     """
     Public-facing function to create or merge a node.
-    DRIVERLESS: does not require a `driver` argument.
+    Accepts labels as a list or a single string.
     """
-    label_str = ":" + ":".join(labels)
+    # --- NEW: coerce labels ---
+    if isinstance(labels, str):
+        labels_list = [labels]
+    else:
+        labels_list = list(labels)
+
+    # Optional: sanitize/validate labels to avoid spaces, invalid chars
+    clean_labels: list[str] = []
+    for lab in labels_list:
+        lab = lab.strip().replace(" ", "")  # 'Prompt Patch' -> 'PromptPatch'
+        if not lab:
+            continue
+        if not _LABEL_RE.match(lab):
+            # If you want to be strict, raise instead:
+            # raise ValueError(f"Invalid Neo4j label: {lab!r}")
+            # Or soften by stripping non-alnum/underscore:
+            lab = re.sub(r"[^A-Za-z0-9_]", "", lab)
+            if not lab or not _LABEL_RE.match(lab):
+                raise ValueError(f"Invalid Neo4j label after cleanup: {lab!r}")
+        clean_labels.append(lab)
+
+    if not clean_labels:
+        raise ValueError("At least one valid label is required.")
+
+    label_str = ":" + ":".join(clean_labels)
+
     props = dict(properties) if properties else {}
-    event_id = _get_or_make_event_id(props)
+    event_id = _get_or_make_event_id(props)  # assuming this sets props["event_id"] internally
     props.setdefault("uuid", event_id)
 
-    # Determine merge keys for idempotency
     if "fqn" in props and "hash" in props:
         merge_keys = ["fqn", "hash"]
     elif "name" in props and "system" in props:
@@ -300,18 +330,21 @@ async def add_node(
         }
     raise ValueError("Node creation failed to return a result.")
 
-from core.utils.net_api import ENDPOINTS, post_internal
+
 from hashlib import sha256
 
+from core.utils.net_api import ENDPOINTS, post_internal
 
 # systems/common/conflicts/store.py  (drop-in replacement for create_conflict_node)
 IDEMPOTENCY_TTL_SEC = 300  # 5 min; tune
+
 
 def _stable_cid(system: str, origin_node_id: str, description: str, modules: list[str]) -> str:
     # Normalize description to avoid whitespace/case churn
     d = " ".join((description or "").split()).lower()
     key = f"{system}|{origin_node_id}|{d}|{','.join(sorted(modules))}"
     return sha256(key.encode("utf-8")).hexdigest()[:32]
+
 
 async def _ttl_gate(cid: str) -> bool:
     """
@@ -330,6 +363,7 @@ async def _ttl_gate(cid: str) -> bool:
     except Exception:
         # If graph is down, allow once to avoid blocking
         return True
+
 
 async def create_conflict_node(
     system: str,
@@ -370,6 +404,7 @@ async def create_conflict_node(
     }
 
     from systems.synk.core.tools.neo import add_node
+
     conflict_node = await add_node(labels=["Conflict"], properties=conflict_props)
 
     # >>> short TTL idempotency before notifying Evo <<<
@@ -391,10 +426,14 @@ async def create_conflict_node(
             "x-decision-id": f"auto-{uuid.uuid4().hex[:8]}",
             "x-budget-ms": str(data.get("budget_ms", 4000)),
         }
-        resp = await post_internal(ENDPOINTS.EVO_ESCALATE, json=evo_payload, headers=headers, timeout=10.0)
+        resp = await post_internal(
+            ENDPOINTS.EVO_ESCALATE, json=evo_payload, headers=headers, timeout=10.0
+        )
         resp.raise_for_status()
         print(f"[Synk] ✅ Evo patrol successfully notified of conflict {conflict_cid}.")
     except Exception as e:
-        print(f"[Synk] ⚠️ WARNING: Failed to notify Evo patrol for conflict {conflict_cid}. Error: {e}")
+        print(
+            f"[Synk] ⚠️ WARNING: Failed to notify Evo patrol for conflict {conflict_cid}. Error: {e}"
+        )
 
     return conflict_node

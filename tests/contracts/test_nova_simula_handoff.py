@@ -1,17 +1,20 @@
 # tests/contracts/test_nova_simula_handoff.py
-import pytest
-import httpx
-import respx
 from uuid import uuid4
 
-from systems.nova.schemas import InnovationBrief, InventionCandidate, AuctionResult
+import httpx
+import pytest
+import respx
+
+from systems.nova.schemas import AuctionResult, InnovationBrief, InventionCandidate
 from systems.nova.types.patch import SimulaPatchBrief
 
 API_BASE_URL = "http://localhost:8000"
 
+
 @pytest.mark.asyncio
 async def test_nova_winner_handoff_to_simula(
-    api_client: httpx.AsyncClient, respx_router: respx.MockRouter
+    api_client: httpx.AsyncClient,
+    respx_router: respx.MockRouter,
 ):
     """
     Contract Test: Verifies that Nova's winner pipeline correctly
@@ -29,19 +32,19 @@ async def test_nova_winner_handoff_to_simula(
         problem="Refactor legacy authentication module.",
         context={"files": ["systems/legacy/auth.py"]},
         constraints={"max_complexity": 10},
-        success={"tests_pass": ["tests/test_auth.py"]}
+        success={"tests_pass": ["tests/test_auth.py"]},
     )
     winner_candidate = InventionCandidate(
         candidate_id=winner_candidate_id,
         playbook="dreamcoder.library",
         brief_id=brief_id,
-        steps=[{"tool": "apply_diff", "args": {"diff": "..."}}]
+        steps=[{"tool": "apply_diff", "args": {"diff": "..."}}],
     )
     auction_result = AuctionResult(winners=[winner_candidate_id], market_receipt={})
 
     # 2. Mock the Simula /jobs/codegen endpoint to intercept the handoff.
     simula_codegen_route = respx_router.post(f"/simula/jobs/codegen").mock(
-        return_value=httpx.Response(200, json={"ticket_id": "sim_ticket_123"})
+        return_value=httpx.Response(200, json={"ticket_id": "sim_ticket_123"}),
     )
 
     # === Act ===
@@ -60,11 +63,13 @@ async def test_nova_winner_handoff_to_simula(
 
     # === Assert ===
     # 1. Verify that Simula's endpoint was actually called.
-    assert simula_codegen_route.called, "Nova did not submit a job to Simula's /jobs/codegen endpoint."
+    assert simula_codegen_route.called, (
+        "Nova did not submit a job to Simula's /jobs/codegen endpoint."
+    )
 
     # 2. Inspect the request sent to Simula to verify the contract.
     simula_request = simula_codegen_route.calls[0].request
-    simula_body = simula_request.content.decode('utf-8')
+    simula_body = simula_request.content.decode("utf-8")
 
     # Assert the X-Decision-Id header was correctly propagated for end-to-end tracing.
     assert simula_request.headers["x-decision-id"] == decision_id

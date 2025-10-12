@@ -15,8 +15,10 @@ log = logging.getLogger("simula.api.codegen_guarded")
 
 # ---------- Models ----------
 
+
 class GuardedTarget(BaseModel):
     additionalProp1: dict[str, Any] = Field(default_factory=dict)
+
 
 class GuardedCodegenReq(BaseModel):
     spec: str
@@ -24,18 +26,21 @@ class GuardedCodegenReq(BaseModel):
     budget_ms: int = 0
     targets: list[GuardedTarget] = Field(default_factory=list)
 
+
 class GuardedCodegenResp(BaseModel):
     policy_result: dict[str, Any] | None = None
     forwarded_to_codegen: bool = False
     codegen_response: dict[str, Any] | None = None
 
+
 # ---------- Route ----------
+
 
 @router.post("/jobs/codegen_guarded", response_model=GuardedCodegenResp)
 async def jobs_codegen_guarded(
-    payload: GuardedCodegenReq,                                   # ✅ Pydantic model (not a function)
+    payload: GuardedCodegenReq,  # ✅ Pydantic model (not a function)
     x_decision_id: str | None = Header(default=None, alias="x-decision-id"),  # ✅ Header(...)
-    http_client: AsyncClient = Depends(get_http_client),           # ✅ Depends(get_http_client)
+    http_client: AsyncClient = Depends(get_http_client),  # ✅ Depends(get_http_client)
 ) -> GuardedCodegenResp:
     """
     Example flow:
@@ -63,9 +68,13 @@ async def jobs_codegen_guarded(
             "targets": [t.model_dump() for t in payload.targets],
             "budget_ms": payload.budget_ms,
         }
-        res = await http_client.post(ENDPOINTS.SIMULA_JOBS_CODEGEN, json=forward_body, headers={
-            "x-decision-id": x_decision_id or "",
-        })
+        res = await http_client.post(
+            ENDPOINTS.SIMULA_JOBS_CODEGEN,
+            json=forward_body,
+            headers={
+                "x-decision-id": x_decision_id or "",
+            },
+        )
         res.raise_for_status()
         return GuardedCodegenResp(
             policy_result=policy_result,

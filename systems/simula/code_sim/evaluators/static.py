@@ -29,7 +29,7 @@ def run(objective, sandbox_session) -> dict:
     b_ok, b_out = _run(sandbox_session, ["bandit", "-q", "-r", "."], timeout=1800)
     # Treat any High severity finding as a failure even if rc=0 (some bandit configs do that)
     if "SEVERITY: High" in b_out:
-        b_ok = False 
+        b_ok = False
     return {
         "ruff_ok": r_ok,
         "mypy_ok": m_ok,

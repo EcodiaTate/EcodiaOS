@@ -16,9 +16,9 @@ from pydantic import BaseModel, Field
 from core.utils.net_api import ENDPOINTS, post
 from systems.qora.core.code_graph.ingestor import patrol_and_ingest
 from systems.synk.core.tools.ingest_state import (
+    check_and_mark_processed,
     read_last_commit,
     write_last_commit,
-    check_and_mark_processed,
 )
 
 logger = logging.getLogger(__name__)
@@ -34,12 +34,18 @@ class ReindexReq(BaseModel):
     root: str = Field(default=".", description="Repo root to index")
     force: bool = Field(default=False, description="Force a full rebuild")
     dry_run: bool = Field(default=False, description="Plan only; do not write")
-    base_rev: Optional[str] = Field(
-        default=None, description="Optional git base revision for incremental indexing"
+    base_rev: str | None = Field(
+        default=None,
+        description="Optional git base revision for incremental indexing",
     )
     bypass_dedupe: bool = Field(
-        default=False, description="Ignore commit-key dedupe once (debug escape hatch)"
+        default=False,
+        description="Ignore commit-key dedupe once (debug escape hatch)",
     )
+    # NOTE: commit/push behavior is controlled via env by default.
+    # If you prefer request-driven control, uncomment below and wire through:
+    # commit: bool = Field(default=False, description="If true, git add/commit after ingest when dirty")
+    # push: bool = Field(default=False, description="If true, push after commit")
 
 
 # ------------------------------ git helpers ------------------------------
@@ -64,6 +70,7 @@ def _git_dirty_summary(root: Path) -> dict[str, Any]:
     Hash includes file path + mtime + size + a small content sample to
     avoid false “already processed” when the set of dirty files is the same.
     """
+
     def _lines(cmd: list[str]) -> list[str]:
         rc, out, err = _git(cmd, root)
         if rc != 0:
@@ -79,7 +86,7 @@ def _git_dirty_summary(root: Path) -> dict[str, Any]:
 
     h = hashlib.sha256()
     for rel in files:
-        p = (root / rel)
+        p = root / rel
         h.update(rel.encode("utf-8"))
         try:
             st = p.stat()
@@ -92,10 +99,10 @@ def _git_dirty_summary(root: Path) -> dict[str, Any]:
             # file might be deleted or transient; still include a marker
             h.update(b"NA")
 
-    return {"dirty": bool(files), "files": files, "hash": h.hexdigest() if files else "0"*64}
+    return {"dirty": bool(files), "files": files, "hash": h.hexdigest() if files else "0" * 64}
 
 
-def _git_context(root: Path, base_rev_hint: Optional[str]) -> dict[str, Any]:
+def _git_context(root: Path, base_rev_hint: str | None) -> dict[str, Any]:
     _ensure_git_env(root)
     rc, out, err = _git(["rev-parse", "--is-inside-work-tree"], root)
     if rc != 0 or out.lower() != "true":
@@ -110,13 +117,60 @@ def _git_context(root: Path, base_rev_hint: Optional[str]) -> dict[str, Any]:
         if rc_b == 0 and base_chk:
             return {"is_repo": True, "head": head, "base": base_chk, "reason": None}
         else:
-            logger.warning("[WM Admin] base_rev hint '%s' is not valid; will use ingest-state or HEAD", base_rev_hint)
+            logger.warning(
+                "[WM Admin] base_rev hint '%s' is not valid; will use ingest-state or HEAD",
+                base_rev_hint,
+            )
 
     return {"is_repo": True, "head": head, "base": head, "reason": None}
 
 
+def _git_current_branch(root: Path) -> str | None:
+    rc, out, _ = _git(["rev-parse", "--abbrev-ref", "HEAD"], root)
+    return out if rc == 0 and out else None
+
+
+def _git_set_identity(root: Path) -> None:
+    _ensure_git_env(root)
+    name = os.getenv("GIT_COMMIT_NAME", "Ecodia Reindexer")
+    email = os.getenv("GIT_COMMIT_EMAIL", "reindexer@ecodia.os")
+    _git(["config", "user.name", name], root)
+    _git(["config", "user.email", email], root)
+
+
+def _git_status_dirty(root: Path) -> bool:
+    rc, out, _ = _git(["status", "--porcelain"], root)
+    return rc == 0 and bool(out.strip())
+
+
+def _git_autocommit(root: Path, message: str) -> str | None:
+    _ensure_git_env(root)
+    _git_set_identity(root)
+    _git(["add", "-A"], root)
+    # if nothing staged, skip
+    rc_diff, _, _ = _git(["diff", "--cached", "--quiet"], root)
+    if rc_diff == 0:
+        return None
+    rc_c, _, err = _git(["commit", "-m", message], root)
+    if rc_c != 0:
+        logger.warning("[WM Admin] git commit failed: %s", err)
+        return None
+    rc_h, head, _ = _git(["rev-parse", "--short", "HEAD"], root)
+    return head if rc_h == 0 else None
+
+
+def _git_autopush(root: Path, remote: str, branch: str) -> bool:
+    _ensure_git_env(root)
+    rc, _, err = _git(["push", remote, branch], root)
+    if rc != 0:
+        logger.warning("[WM Admin] git push failed: %s", err)
+        return False
+    return True
+
+
 # ------------------------------ orchestration ------------------------------
 _singleflight_lock: asyncio.Lock | None = None
+
 
 async def _run_reindex(req: ReindexReq) -> dict[str, Any]:
     repo_root = Path(req.root).resolve()
@@ -147,23 +201,42 @@ async def _run_reindex(req: ReindexReq) -> dict[str, Any]:
     if (not req.force) and head and (not dirty["dirty"]) and prev_commit and head == prev_commit:
         logger.info("[WM Admin] reindex NOOP: already at HEAD=%s (clean tree)", head)
         return {
-            "ok": True, "mode": "noop", "base": prev_commit, "head": head,
-            "dirty": False, "reason": "already at head", "result": None
+            "ok": True,
+            "mode": "noop",
+            "base": prev_commit,
+            "head": head,
+            "dirty": False,
+            "reason": "already at head",
+            "result": None,
         }
 
     # Cross-worker dedupe (skip if bypass requested)
     if (not req.force) and (not req.bypass_dedupe) and commit_key:
         already_done = await check_and_mark_processed(commit_key, STATE_ID)
         if already_done:
-            logger.info("[WM Admin] reindex NOOP: key %s already processed by another worker", commit_key)
+            logger.info(
+                "[WM Admin] reindex NOOP: key %s already processed by another worker", commit_key
+            )
             return {
-                "ok": True, "mode": "noop", "base": prev_commit, "head": head,
-                "dirty": dirty["dirty"], "reason": "commit key already processed", "result": None
+                "ok": True,
+                "mode": "noop",
+                "base": prev_commit,
+                "head": head,
+                "dirty": dirty["dirty"],
+                "reason": "commit key already processed",
+                "result": None,
             }
 
     logger.info(
         "[WM Admin] reindex start: root=%s, dry_run=%s, decided=%s, prev=%s, head=%s, dirty=%s (%d files) key=%s",
-        repo_root, req.dry_run, why, prev_commit, head, dirty["dirty"], len(dirty["files"]), commit_key
+        repo_root,
+        req.dry_run,
+        why,
+        prev_commit,
+        head,
+        dirty["dirty"],
+        len(dirty["files"]),
+        commit_key,
     )
 
     result = await patrol_and_ingest(
@@ -174,21 +247,64 @@ async def _run_reindex(req: ReindexReq) -> dict[str, Any]:
         state_id=STATE_ID,
     )
 
-    # Persist last_commit only for CLEAN heads (don’t stamp on dirty pseudo-runs)
-    if head and not req.dry_run and not dirty["dirty"]:
-        upd = await write_last_commit(head, STATE_ID)
-        logger.info(
-            "[WM Admin] reindex done: ok (commit %s, updated=%s from=%s to=%s)",
-            head, upd.get("updated"), upd.get("previous"), upd.get("current")
-        )
-    else:
-        logger.info("[WM Admin] reindex done: ok (dry_run=%s, dirty=%s)", req.dry_run, dirty["dirty"])
+    # --- Optional auto-commit/push after ingest ---
+    do_commit = os.getenv("QORA_REINDEX_AUTOCOMMIT", "0").lower() in ("1", "true", "yes")
+    do_push = os.getenv("QORA_REINDEX_AUTOPUSH", "0").lower() in ("1", "true", "yes")
+
+    new_head: str | None = None
+    current_branch = None
+
+    if ctx["is_repo"] and not req.dry_run:
+        # re-check dirtiness after ingest
+        tree_dirty = _git_status_dirty(repo_root)
+        if do_commit and tree_dirty:
+            current_branch = _git_current_branch(repo_root)  # may be None in detached HEAD
+            commit_msg = (
+                f"qora: reindex ({'incremental' if changed_only else 'full'}) @ {head or 'unknown'}"
+            )
+            new_head = _git_autocommit(repo_root, commit_msg)
+            if new_head:
+                logger.info(
+                    "[WM Admin] auto-committed reindex changes at %s on %s",
+                    new_head,
+                    current_branch or "(detached)",
+                )
+                if do_push:
+                    push_branch = os.getenv("QORA_REINDEX_BRANCH") or (current_branch or "HEAD")
+                    remote = os.getenv("QORA_REINDEX_REMOTE", "origin")
+                    if _git_autopush(repo_root, remote, push_branch):
+                        logger.info(
+                            "[WM Admin] auto-pushed %s to %s/%s", new_head, remote, push_branch
+                        )
+            else:
+                logger.info("[WM Admin] nothing to commit after ingest or commit failed.")
+
+    # Persist last_commit:
+    # - if we auto-committed, record the new HEAD
+    # - else keep the original behavior (only if started clean)
+    if not req.dry_run:
+        head_to_record = new_head or head
+        if head_to_record and (new_head is not None or (not dirty["dirty"])):
+            upd = await write_last_commit(head_to_record, STATE_ID)
+            logger.info(
+                "[WM Admin] reindex done: ok (commit recorded=%s, updated=%s from=%s to=%s)",
+                head_to_record,
+                upd.get("updated"),
+                upd.get("previous"),
+                upd.get("current"),
+            )
+        else:
+            logger.info(
+                "[WM Admin] reindex done: ok (dry_run=%s, dirty_at_start=%s)",
+                req.dry_run,
+                dirty["dirty"],
+            )
 
     return {
         "ok": True,
         "mode": "changed_only" if changed_only else "full",
         "base": prev_commit,
-        "head": head,
+        "head": new_head or head,
         "dirty": dirty["dirty"],
         "result": result,
     }
@@ -204,13 +320,17 @@ async def _guarded_reindex(req: ReindexReq) -> dict[str, Any]:
 
 # ------------------------------ routes ------------------------------
 @wm_admin_router.post("/reindex", status_code=status.HTTP_202_ACCEPTED)
-async def wm_reindex(body: Optional[ReindexReq] = Body(default=None)) -> JSONResponse:
+async def wm_reindex(body: ReindexReq | None = Body(default=None)) -> JSONResponse:
     req = body or ReindexReq()
 
     async def _bg():
-        res = await _guarded_reindex(req)
-        if not res.get("ok"):
-            logger.error("[WM Admin] Reindex failed in background: %s", res.get("error"))
+        try:
+            res = await _guarded_reindex(req)
+            if not res.get("ok"):
+                logger.error("[WM Admin] Reindex failed in background: %s", res.get("error"))
+        except Exception:
+            # This prevents "Task exception was never retrieved" and gives you the stack.
+            logger.exception("[WM Admin] Reindex crashed in background task")
 
     try:
         loop = asyncio.get_running_loop()
@@ -257,6 +377,8 @@ async def wm_dirty(root: str = ".") -> dict[str, Any]:
     repo_root = Path(root).resolve()
     ctx = _git_context(repo_root, None)
     head = ctx.get("head")
-    dirty = _git_dirty_summary(repo_root) if head else {"dirty": False, "files": [], "hash": "0" * 64}
+    dirty = (
+        _git_dirty_summary(repo_root) if head else {"dirty": False, "files": [], "hash": "0" * 64}
+    )
     key = head if not dirty["dirty"] else f"{head}+dirty:{dirty['hash']}" if head else None
     return {"head": head, "dirty": dirty, "commit_key": key, "ctx": ctx}

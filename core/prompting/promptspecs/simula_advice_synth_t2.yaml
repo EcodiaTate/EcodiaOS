@@ -1,0 +1,21 @@
+- id: "simula-advice-synth-t2-v1.0"
+  version: "1.0"
+  scope: "simula.advice.synth_t2"
+
+  identity:
+    agent: "Advice.Synthesizer"
+    persona_partial: "persona_simula_advice_synthesizer"
+
+  # Keep whatever lenses you already use; identity/self-concept included for continuity.
+  context_lenses: []
+
+  # Order matters: persona → task → contract → context → output format
+  partials:
+    - "persona_simula_advice_synthesizer"
+    - "task_framing_advice_synth_t2"
+    - "advice_json_contract"
+    - "advice_cluster_context"          # expects {{ incidents }} (JSON-serializable)
+    - "output_format_advice_json"
+
+  outputs:
+    parse_mode: "strict_json"              # extractor is tolerant; contract still demands strict JSON

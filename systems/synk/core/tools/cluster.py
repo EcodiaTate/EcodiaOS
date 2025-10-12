@@ -8,9 +8,8 @@
 import asyncio
 
 from core.llm.embeddings_gemini import get_embedding
-from core.utils.neo.neo_driver import get_driver
-
 from core.utils.neo.cypher_query import cypher_query
+from core.utils.neo.neo_driver import get_driver
 
 
 async def fetch_all_event_content(driver):

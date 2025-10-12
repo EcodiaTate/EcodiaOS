@@ -111,8 +111,9 @@ class RewardArbiter:
         if not metrics:
             return [0.0, 0.0, 0.0, 0.0]
 
-        success = self._norm01(metrics.get("success", 1.0 if metrics.get("ok") else 0.0))
-        # Cost and latency are inverted (lower is better) and normalized.
+        success = self._norm01(
+            metrics.get("success") or metrics.get("utility") or (1.0 if metrics.get("ok") else 0.0),
+        )
         cost = -self._norm01(metrics.get("cost_normalized", 0.0))
         latency = -self._norm01(metrics.get("latency_normalized", 0.0))
         safety_hit = -self._norm01(metrics.get("safety_hit", 0.0))
@@ -134,49 +135,48 @@ class RewardArbiter:
         )
         return max(-1.0, min(1.0, math.tanh(scalar)))  # Smoothly clamp to [-1, 1]
 
-
-async def log_outcome(
-    self,
-    episode_id: str,
-    task_key: str,
-    metrics: dict[str, Any],
-    simulator_prediction: dict[str, Any] | None = None,  # <-- NEW
-    reward_vec_override: list[float] | None = None,
-) -> tuple[float, list[float]]:
-    reward_vec = (
-        reward_vec_override
-        if reward_vec_override is not None
-        else self.compute_reward_vector(metrics)
-    )
-    final_scalar_reward = self.scalarize_reward(reward_vec)
-
-    try:
-        await cypher_query(
-            """
-                MATCH (e:Episode {id: $id})
-                SET e.reward = toFloat($scalar_reward),
-                    e.reward_vec = $reward_vec,
-                    e.metrics = $metrics,
-                    e.task_key = $task_key,
-                    e.simulator_prediction = $sim_pred,
-                    e.updated_at = datetime()
-                """,
-            {
-                "id": episode_id,
-                "scalar_reward": final_scalar_reward,
-                "reward_vec": reward_vec,
-                "metrics": _to_json_str(metrics or {}),
-                "task_key": task_key,
-                "sim_pred": _to_json_str(simulator_prediction or {}),
-            },
+    async def log_outcome(
+        self,
+        episode_id: str,
+        task_key: str,
+        metrics: dict[str, Any],
+        simulator_prediction: dict[str, Any] | None = None,  # <-- NEW
+        reward_vec_override: list[float] | None = None,
+    ) -> tuple[float, list[float]]:
+        reward_vec = (
+            reward_vec_override
+            if reward_vec_override is not None
+            else self.compute_reward_vector(metrics)
         )
-        print(
-            f"[RewardArbiter] Logged outcome for episode {episode_id}. Scalar: {final_scalar_reward:.4f}, Vector: {reward_vec}",
-        )
-    except Exception as e:
-        print(f"[RewardArbiter] CRITICAL: Failed to log outcome for episode {episode_id}: {e}")
+        final_scalar_reward = self.scalarize_reward(reward_vec)
 
-    return final_scalar_reward, reward_vec
+        try:
+            await cypher_query(
+                """
+                    MATCH (e:Episode {id: $id})
+                    SET e.reward = toFloat($scalar_reward),
+                        e.reward_vec = $reward_vec,
+                        e.metrics = $metrics,
+                        e.task_key = $task_key,
+                        e.simulator_prediction = $sim_pred,
+                        e.updated_at = datetime()
+                    """,
+                {
+                    "id": episode_id,
+                    "scalar_reward": final_scalar_reward,
+                    "reward_vec": reward_vec,
+                    "metrics": _to_json_str(metrics or {}),
+                    "task_key": task_key,
+                    "sim_pred": _to_json_str(simulator_prediction or {}),
+                },
+            )
+            print(
+                f"[RewardArbiter] Logged outcome for episode {episode_id}. Scalar: {final_scalar_reward:.4f}, Vector: {reward_vec}",
+            )
+        except Exception as e:
+            print(f"[RewardArbiter] CRITICAL: Failed to log outcome for episode {episode_id}: {e}")
+
+        return final_scalar_reward, reward_vec
 
 
 # Singleton export.

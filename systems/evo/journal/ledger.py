@@ -2,13 +2,16 @@
 from __future__ import annotations
 
 import json
+
 from core.utils.neo.cypher_query import cypher_query
 from systems.evo.schemas import EscalationResult, Proposal, ReplayCapsule, WhyTrace
+
 
 def _neo_safe_exc(e: Exception) -> bool:
     """Checks if an exception is a non-fatal Neo4j connection issue."""
     msg = str(e).lower()
     return ("driver is not initialized" in msg) or ("init_driver" in msg)
+
 
 class EvoLedger:
     """

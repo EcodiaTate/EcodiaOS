@@ -1,9 +1,9 @@
 # systems/axon/safety/conformal.py
 from __future__ import annotations
 
+from collections import deque
 from dataclasses import dataclass
 from typing import Deque
-from collections import deque
 
 
 @dataclass
@@ -20,7 +20,7 @@ class ConformalPredictor:
     """
 
     def __init__(self, max_residuals: int = 512, q: float = 0.9) -> None:
-        self._res: Deque[float] = deque(maxlen=max_residuals)
+        self._res: deque[float] = deque(maxlen=max_residuals)
         self._q = max(0.5, min(q, 0.99))
 
     def observe(self, predicted: float, actual: float) -> None:

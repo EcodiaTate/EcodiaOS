@@ -10,6 +10,7 @@ from core.utils.neo.cypher_query import cypher_query
 
 meta_router = APIRouter()
 
+
 # highlight-start
 def _alias_from_path(path: str) -> str:
     """
@@ -22,6 +23,7 @@ def _alias_from_path(path: str) -> str:
     clean_path = path.split("{")[0]
     return clean_path.strip("/").upper().replace("/", "_").replace("-", "_")
 
+
 def _generate_endpoint_map(request: Request) -> dict[str, Any]:
     """
     Inspects the running FastAPI app to build the alias-to-path map.
@@ -31,11 +33,14 @@ def _generate_endpoint_map(request: Request) -> dict[str, Any]:
     for route in request.app.routes:
         # We only care about APIRoutes, not sub-apps or websockets
         if hasattr(route, "path") and route.path not in ["/openapi.json", "/docs", "/redoc"]:
-             alias = _alias_from_path(route.path)
-             if alias and alias not in aliases:
+            alias = _alias_from_path(route.path)
+            if alias and alias not in aliases:
                 aliases[alias] = route.path
     return {"aliases": aliases}
+
+
 # highlight-end
+
 
 @meta_router.get("/neo")
 async def health_neo():
@@ -45,6 +50,7 @@ async def health_neo():
         return {"status": "ok" if ok else "degraded", "ok": ok}
     except Exception as e:
         return {"status": "error", "ok": False, "error": str(e)}
+
 
 @meta_router.get("/health")
 async def health():
@@ -60,6 +66,7 @@ async def meta_endpoints(request: Request):
     """
     return _generate_endpoint_map(request)
 
+
 @meta_router.get("/meta/endpoints.txt", response_class=PlainTextResponse)
 async def meta_endpoints_text(request: Request):
     """Returns a human-readable text report of the endpoint mapping."""
@@ -70,8 +77,10 @@ async def meta_endpoints_text(request: Request):
 
     width = max((len(k) for k in aliases.keys()), default=8) + 2
     lines = [f"{'ALIAS'.ljust(width)}PATH"]
-    lines.append(f"{'-'*width}{'-'*4}")
+    lines.append(f"{'-' * width}{'-' * 4}")
     for k in sorted(aliases.keys()):
         lines.append(f"{k.ljust(width)}{aliases[k]}")
     return "\n".join(lines)
+
+
 # highlight-end

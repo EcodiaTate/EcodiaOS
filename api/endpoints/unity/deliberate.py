@@ -17,12 +17,14 @@ logger = logging.getLogger(__name__)
 # --- Singleton Dependency Injection ---
 _manager_singleton: DeliberationManager | None = None
 
+
 def get_deliberation_manager() -> DeliberationManager:
     """Provides the singleton DeliberationManager instance to the endpoint."""
     global _manager_singleton
     if _manager_singleton is None:
         _manager_singleton = DeliberationManager()
     return _manager_singleton
+
 
 # --- Helper to read timeout from environment ---
 def _env_timeout_seconds() -> float | None:
@@ -34,6 +36,7 @@ def _env_timeout_seconds() -> float | None:
         return max(1.0, float(raw) / 1000.0)
     except (ValueError, TypeError):
         return None
+
 
 # --- Main Endpoint ---
 @router.post("/deliberate", response_model=DeliberationResponse)
@@ -69,11 +72,11 @@ async def start_deliberation(
         # Pydantic will validate it against the response_model.
         return result
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         err_msg = f"Deliberation timed out after {timeout} seconds."
         logger.error("[Unity API] %s (Topic: %s)", err_msg, spec.topic)
         raise HTTPException(status_code=504, detail=err_msg)
-    
+
     except Exception as e:
         logger.exception("[Unity API] An unexpected error occurred during deliberation.")
         # This is a final safeguard. The manager has its own internal error handling,

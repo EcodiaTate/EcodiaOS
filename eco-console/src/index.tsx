@@ -1,21 +1,28 @@
-/* D:\EcodiaOS\eco-console\src\index.tsx */
-import React from 'react';
-import ReactDOM from 'react-dom/client';
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
+const rootEl = document.getElementById('root');
+if (!rootEl) throw new Error('Root element #root not found');
+
+const root = createRoot(rootEl);
+const queryClient = new QueryClient();
+window.addEventListener('error', (e) => console.error('[window.error]', e.error || e.message));
+window.addEventListener('unhandledrejection', (e) => console.error('[unhandledrejection]', e.reason));
+
 root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
+  <StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
+    </QueryClientProvider>
+  </StrictMode>
 );
 
-// If you want to start measuring performance in your app, pass a function
-reportWebVitals(console.log)
-// or send to an analytics endpoint.
-//Learn more: https://bit.ly/CRA-vitals
+reportWebVitals(console.log);
 reportWebVitals();

@@ -7,11 +7,13 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from systems.axon.dependencies import get_scorecard_manager, get_lifecycle_manager, get_journal
+from systems.axon.dependencies import get_journal, get_lifecycle_manager, get_scorecard_manager
+
 # highlight-start
 from systems.axon.journal.mej import MerkleJournal
 from systems.axon.mesh.lifecycle import DriverLifecycleManager, DriverStatus
 from systems.axon.mesh.scorecard import ScorecardManager
+
 # highlight-end
 from systems.axon.security.attestation import verify_driver_attestation
 
@@ -46,11 +48,26 @@ class AutoRoller:
         last = self._last_roll_ts.get(capability, 0.0)
         return (time.time() - last) >= self.cfg.cooldown_sec
 
-    def _journal(self, *, capability: str, action: str, live_before: str, live_after: str | None, meta: dict[str, Any]) -> None:
+    def _journal(
+        self,
+        *,
+        capability: str,
+        action: str,
+        live_before: str,
+        live_after: str | None,
+        meta: dict[str, Any],
+    ) -> None:
         try:
-            get_journal().write_entry(_AutoRollDecision(
-                capability=capability, action=action, live_before=live_before, live_after=live_after, meta=meta, ts=time.time()
-            ))
+            get_journal().write_entry(
+                _AutoRollDecision(
+                    capability=capability,
+                    action=action,
+                    live_before=live_before,
+                    live_after=live_after,
+                    meta=meta,
+                    ts=time.time(),
+                )
+            )
         except Exception:
             pass
 
@@ -64,7 +81,12 @@ class AutoRoller:
         lifecycle: DriverLifecycleManager,
         journal: MerkleJournal,
     ) -> dict[str, Any]:
-        detail: dict[str, Any] = {"capability": capability, "shadow": shadow_name, "live": live_name, "decisions": []}
+        detail: dict[str, Any] = {
+            "capability": capability,
+            "shadow": shadow_name,
+            "live": live_name,
+            "decisions": [],
+        }
 
         if not self._cooldown_ok(capability):
             detail["cooldown"] = True
@@ -74,19 +96,25 @@ class AutoRoller:
         sh_m = scorecards.get_window_metrics(shadow_name, self.cfg.window_n) or {}
 
         # basic gates
-        if (sh_m.get("success_rate", 0.0) < self.cfg.min_success) or (sh_m.get("success_rate", 0.0) < (live_m.get("success_rate", 0.0) - self.cfg.sr_margin)):
+        if (sh_m.get("success_rate", 0.0) < self.cfg.min_success) or (
+            sh_m.get("success_rate", 0.0) < (live_m.get("success_rate", 0.0) - self.cfg.sr_margin)
+        ):
             detail["gate"] = "success_rate"
             return detail
         if sh_m.get("p95_ms", 9e9) > (live_m.get("p95_ms", 9e9) * self.cfg.p95_factor):
             detail["gate"] = "p95_latency"
             return detail
-        if (sh_m.get("avg_uplift", 0.0) - live_m.get("avg_uplift", 0.0)) < self.cfg.min_uplift_delta:
+        if (
+            sh_m.get("avg_uplift", 0.0) - live_m.get("avg_uplift", 0.0)
+        ) < self.cfg.min_uplift_delta:
             detail["gate"] = "uplift"
             return detail
 
         # attestation (optional)
         shadow_state = lifecycle.get_driver_state(shadow_name)
-        if self.cfg.require_attestation and (not shadow_state or not verify_driver_attestation(shadow_state.spec)):
+        if self.cfg.require_attestation and (
+            not shadow_state or not verify_driver_attestation(shadow_state.spec)
+        ):
             detail["gate"] = "attestation"
             return detail
 

@@ -18,8 +18,14 @@ async def request_driver_synthesis(
     Requests Simula to synthesize a driver from a spec/hint, then records the job in lifecycle.
     """
     client = await get_http_client()
-    path = getattr(ENDPOINTS, "SIMULA_DRIVER_SYNTH", None) or getattr(ENDPOINTS, "SIMULA_CODEGEN", "/simula/driver/synth")
-    payload = {"driver_name": driver_name, "api_spec_url": api_spec_url, "template_hint": template_hint}
+    path = getattr(ENDPOINTS, "SIMULA_DRIVER_SYNTH", None) or getattr(
+        ENDPOINTS, "SIMULA_CODEGEN", "/simula/driver/synth"
+    )
+    payload = {
+        "driver_name": driver_name,
+        "api_spec_url": api_spec_url,
+        "template_hint": template_hint,
+    }
     r = await client.post(path, json=payload)
     r.raise_for_status()
     data = r.json()

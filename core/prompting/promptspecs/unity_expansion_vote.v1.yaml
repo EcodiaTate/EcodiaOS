@@ -1,0 +1,16 @@
+id: unity_expansion_vote_001
+version: "1.0"
+scope: "unity.expansion.vote.v1"
+
+identity:
+  agent: "Unity.Voter"
+  persona_partial: "unity_verifier_base" # This persona is fitting for a rating task
+
+# No identity facets are needed for this simple task
+context_lenses: []
+
+partials:
+  - "expansion_vote_task"
+
+outputs:
+  parse_mode: "tolerant" # Tolerant, as we only need to parse a single number

@@ -1,9 +1,10 @@
-# FINAL, CENTRALIZED, SPEC-AWARE LLM GATEWAY
+# core/api/llm/call.py  (FINAL, CENTRALIZED, SPEC-AWARE LLM GATEWAY)
 from __future__ import annotations
 
+import json
 import time
 import traceback
-from typing import Any, Literal
+from typing import Any, Literal, Optional
 
 import httpx
 from fastapi import APIRouter, Body, Header, HTTPException, Response
@@ -11,9 +12,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # --- EcodiaOS Core Imports ---
 from core.llm.call_llm import execute_llm_call
+from core.services.synapse import synapse
 from systems.synapse.core.registry import arm_registry
 from systems.synapse.schemas import TaskContext as SynapseTaskContext
-from systems.synapse.sdk.client import SynapseClient
 
 call_router = APIRouter()
 
@@ -33,18 +34,15 @@ class ProviderOverrides(BaseModel):
     # Base (existing)
     json_mode: bool = Field(False)
 
-    # New (optional) — safely merged into Synapse policy
+    # Safe model knobs
     model: str | None = None
     max_tokens: int | None = Field(default=None, ge=1)
     temperature: float | None = Field(default=None, ge=0.0, le=2.0)
 
     # Tooling/schema (adapters translate per provider downstream)
-    tools: list[dict[str, Any]] | None = (
-        None  # universal tool specs (OpenAI/Anthropic/Gemini translated later)
-    )
+    tools: list[dict[str, Any]] | None = None
     tool_choice: str | None = Field(
-        default=None,
-        description='One of: "auto" | "none" | "<tool_name>"',
+        default=None, description='One of: "auto" | "none" | "<tool_name>"'
     )
     response_json_schema: dict[str, Any] | None = None
 
@@ -57,7 +55,7 @@ class ProviderOverrides(BaseModel):
 
 class LlmCallRequest(BaseModel):
     agent_name: str = Field(..., example="Simula")
-    messages: list[dict[str, str]] = Field(..., example=[{"role": "user", "content": "Hello!"}])
+    messages: list[dict[str, Any]] = Field(..., example=[{"role": "user", "content": "Hello!"}])
     task_context: TaskContext = Field(default_factory=TaskContext)
     provider_overrides: ProviderOverrides = Field(default_factory=ProviderOverrides)
 
@@ -110,35 +108,6 @@ class LlmCallResponse(BaseModel):
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-def _merge_policy(base: dict[str, Any], overrides: ProviderOverrides) -> dict[str, Any]:
-    """Caller wins, but only for known safe keys."""
-    merged = dict(base)
-    if overrides.model:
-        merged["model"] = overrides.model
-    if overrides.max_tokens is not None:
-        merged["max_tokens"] = int(overrides.max_tokens)
-    if overrides.temperature is not None:
-        merged["temperature"] = float(overrides.temperature)
-    # Non-model knobs are passed through separately to the bus
-    return merged
-
-
-def _bus_kwargs_from_overrides(ov: ProviderOverrides) -> dict[str, Any]:
-    """Translate overridable extras into bus kwargs (adapters will interpret)."""
-    out: dict[str, Any] = {"json_mode": ov.json_mode}
-    if ov.tools is not None:
-        out["tools"] = ov.tools
-    if ov.tool_choice:
-        out["tool_choice"] = ov.tool_choice
-    if ov.response_json_schema is not None:
-        out["response_json_schema"] = ov.response_json_schema
-    if ov.gemini_cached_content:
-        out["gemini_cached_content"] = ov.gemini_cached_content
-    if ov.metadata is not None:
-        out["metadata"] = ov.metadata
-    return out
-
-
 def _safe_int(x: Any, default: int = 0) -> int:
     try:
         return int(x)
@@ -153,13 +122,11 @@ def _extract_usage_tokens(usage_obj: Any) -> tuple[int, int, int]:
     """
     if usage_obj is None:
         return 0, 0, 0
-    # Pydantic model case
     if hasattr(usage_obj, "dict"):
         u = usage_obj.dict()
     elif isinstance(usage_obj, dict):
         u = usage_obj
     else:
-        # Generic object with attributes
         u = {
             "prompt_tokens": getattr(usage_obj, "prompt_tokens", 0),
             "completion_tokens": getattr(usage_obj, "completion_tokens", 0),
@@ -169,6 +136,116 @@ def _extract_usage_tokens(usage_obj: Any) -> tuple[int, int, int]:
     ct = _safe_int(u.get("completion_tokens", 0))
     tt = _safe_int(u.get("total_tokens", pt + ct))
     return pt, ct, tt
+
+
+def _normalize_messages(msgs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """
+    Ensure role/content exist and content is a string.
+    """
+    norm: list[dict[str, Any]] = []
+    for m in msgs or []:
+        role = m.get("role") or "user"
+        content = m.get("content")
+        if isinstance(content, (dict, list)):
+            try:
+                content = json.dumps(content, ensure_ascii=False)
+            except Exception:
+                content = str(content)
+        elif content is None:
+            content = ""
+        norm.append({"role": role, "content": content})
+    return norm
+
+
+def _merge_policy(base: dict[str, Any], overrides: ProviderOverrides) -> dict[str, Any]:
+    """
+    Correct precedence: defaults/dynamic/arm -> caller overrides (known keys only).
+    """
+    merged = dict(base)
+    if overrides.model:
+        merged["model"] = overrides.model
+    if overrides.max_tokens is not None:
+        merged["max_tokens"] = int(overrides.max_tokens)
+    if overrides.temperature is not None:
+        merged["temperature"] = float(overrides.temperature)
+    return merged
+
+
+def _bus_kwargs_from_overrides(ov: ProviderOverrides) -> dict[str, Any]:
+    """
+    Translate overridable extras into bus kwargs (adapters will interpret).
+    """
+    out: dict[str, Any] = {"json_mode": ov.json_mode}
+    if ov.tools is not None:
+        out["tools"] = ov.tools
+    if ov.tool_choice:
+        out["tool_choice"] = ov.tool_choice
+    if ov.response_json_schema is not None:
+        out["response_json_schema"] = ov.response_json_schema
+    if ov.gemini_cached_content:
+        out["gemini_cached_content"] = ov.gemini_cached_content
+    if ov.metadata is not None:
+        out["metadata"] = ov.metadata
+    return out
+
+
+def _extract_prompt_from_arm(arm_obj: Any) -> tuple[str, float, int]:
+    """
+    Supports both registry objects and raw JSON stored on the arm.
+    Returns (model, temperature, max_tokens).
+    """
+    # 1) If registry arm has a structured policy_graph with nodes
+    try:
+        nodes = getattr(getattr(arm_obj, "policy_graph", None), "nodes", None)
+        if isinstance(nodes, list) and nodes:
+            for n in nodes:
+                # n may be a pydantic object with attrs or a dict
+                n_type = getattr(n, "type", None) if not isinstance(n, dict) else n.get("type")
+                if n_type == "prompt":
+                    model = getattr(n, "model", None) if not isinstance(n, dict) else n.get("model")
+                    params = (
+                        getattr(n, "params", None)
+                        if not isinstance(n, dict)
+                        else n.get("params", {}) or {}
+                    )
+                    temp = float(params.get("temperature", 0.7))
+                    toks = int(params.get("max_tokens", 4096))
+                    if model:
+                        return model, temp, toks
+    except Exception:
+        pass
+
+    # 2) Try policy_graph_json (string) or policy_graph as JSON string
+    for attr in ("policy_graph_json", "policy_graph"):
+        raw = getattr(arm_obj, attr, None)
+        if isinstance(raw, str) and raw.strip().startswith("{"):
+            try:
+                pg = json.loads(raw)
+                for n in pg.get("nodes") or []:
+                    if n.get("type") == "prompt":
+                        model = n.get("model")
+                        params = n.get("params") or {}
+                        temp = float(params.get("temperature", 0.7))
+                        toks = int(params.get("max_tokens", 4096))
+                        if model:
+                            return model, temp, toks
+            except Exception:
+                continue
+
+    # 3) Absolute fallback
+    return "gpt-4o-mini", 0.7, 4096
+
+
+def _extract_llm_cfg_from_dynamic(champ_content: Any) -> dict[str, Any]:
+    """
+    Planner payloads might use 'llm_config' or 'llm_call' shape.
+    """
+    if isinstance(champ_content, dict):
+        if isinstance(champ_content.get("llm_config"), dict):
+            return champ_content["llm_config"]
+        if isinstance(champ_content.get("llm_call"), dict):
+            return champ_content["llm_call"]
+    return {}
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -190,45 +267,54 @@ async def call_llm_endpoint(
 ):
     t0 = time.perf_counter()
     try:
-        # 1) Synapse policy selection (arm)
-        synapse_client = SynapseClient()
         synapse_task_ctx = SynapseTaskContext(
             task_key=request.task_context.scope,
             goal=request.task_context.purpose or "Generic LLM Request",
             risk_level=request.task_context.risk,
             budget=request.task_context.budget,
+            metadata={},  # optional: carry request.provenance here if helpful
         )
+
+        # 1) Selection (policy/arm or dynamic plan)
         t_syn0 = time.perf_counter()
-        selection = await synapse_client.select_arm(synapse_task_ctx, candidates=[])
+        selection = await synapse.select_or_plan(synapse_task_ctx, candidates=[])
         t_syn1 = time.perf_counter()
 
-        arm = arm_registry.get_arm(selection.champion_arm.arm_id)
-        if not arm:
-            raise HTTPException(
-                status_code=503,
-                detail="Synapse failed to select a valid policy arm.",
-            )
+        champ = selection.champion_arm
+        arm_id = champ.arm_id if champ else ""
+        arm = arm_registry.get_arm(arm_id)  # may be None for dynamic LLM-plans
 
-        prompt_node = next((node for node in arm.policy_graph.nodes if node.type == "prompt"), None)
-        if not prompt_node:
-            raise HTTPException(
-                status_code=503,
-                detail="Selected policy arm has no prompt configuration.",
-            )
+        # 2) Resolve base policy from dynamic plan or PolicyArm
+        if champ and champ.content:
+            # Dynamic LLM-plan path
+            llm_cfg = _extract_llm_cfg_from_dynamic(champ.content)
+            base_policy = {
+                "model": llm_cfg.get("model", "gpt-4o-mini"),
+                "temperature": llm_cfg.get("temperature", 0.7),
+                "max_tokens": llm_cfg.get("max_tokens", 4096),
+                "arm_id": arm_id or "dyn::planner",
+            }
+        else:
+            # PolicyArm path
+            if not arm:
+                raise HTTPException(
+                    status_code=503, detail="Synapse selected a missing policy arm."
+                )
+            model, temp, toks = _extract_prompt_from_arm(arm)
+            base_policy = {
+                "model": model,
+                "temperature": temp,
+                "max_tokens": toks,
+                "arm_id": getattr(arm, "id", arm_id),
+            }
 
-        base_policy = {
-            "model": prompt_node.model,
-            "temperature": prompt_node.params.get("temperature", 0.5),
-            "max_tokens": prompt_node.params.get("max_tokens", 4096),
-            "arm_id": arm.id,
-        }
+        # 3) Caller overrides (known-safe keys only)
         policy = _merge_policy(base_policy, request.provider_overrides)
 
-        # 2) Execute the call through the LLM Bus
+        # 4) Bus kwargs: tools/schema/etc.
         bus_kwargs = _bus_kwargs_from_overrides(request.provider_overrides)
-
-        # Thread provenance/budget info to adapters/drivers
         bus_kwargs["provenance"] = request.provenance or {}
+
         if x_budget_ms:
             bus_kwargs.setdefault("headers", {})["x-budget-ms"] = x_budget_ms
         if x_deadline_ts:
@@ -236,44 +322,37 @@ async def call_llm_endpoint(
         if x_decision_id:
             bus_kwargs.setdefault("headers", {})["x-decision-id"] = x_decision_id
 
+        # 5) Execute provider call
+        messages = _normalize_messages(request.messages)
+
         t_bus0 = time.perf_counter()
-        # execute_llm_call signature should accept **bus_kwargs; unknown keys are ignored by adapters
         print("\n" + "=" * 20 + " LLM BUS CALL " + "=" * 20)
         print(f"[LLM Endpoint] Forwarding to execute_llm_call with policy: {policy}")
-        print(f"[LLM Endpoint] Forwarding kwargs: {bus_kwargs}")
         print("=" * 54 + "\n")
 
-        result = await execute_llm_call(
-            messages=request.messages,
-            policy=policy,
-            **bus_kwargs,
-        )
+        result = await execute_llm_call(messages=messages, policy=policy, **bus_kwargs)
         t_bus1 = time.perf_counter()
 
         if not isinstance(result, dict) or "error" in result:
             details = (result or {}).get("details") if isinstance(result, dict) else None
             raise HTTPException(
-                status_code=502,
-                detail=f"LLM Provider Failed: {details or 'unknown error'}",
+                status_code=502, detail=f"LLM Provider Failed: {details or 'unknown error'}"
             )
 
-        # 3) Timing: prefer provider-reported slice if available
+        # 6) Timing / usage
         result_timing = result.get("timing_ms") if isinstance(result, dict) else None
-        provider_ms_result = None
+        provider_ms_result: int | None = None
         if isinstance(result_timing, dict):
             pm = result_timing.get("provider_call_ms")
-            if isinstance(pm, int | float):
+            if isinstance(pm, (int, float)):
                 provider_ms_result = int(pm)
-
         provider_ms_final = (
             provider_ms_result if provider_ms_result is not None else int((t_bus1 - t_bus0) * 1000)
         )
 
-        # 4) Normalise usage + telemetry into headers (capture what you already print)
         usage = result.get("usage")
         pt, ct, tt = _extract_usage_tokens(usage)
 
-        # Provider/model best-effort discovery
         provider_name = (
             result.get("provider")
             or result.get("provider_name")
@@ -282,19 +361,18 @@ async def call_llm_endpoint(
         )
         model_name = policy.get("model") or (result.get("model") or "")
 
-        # 5) Build the final response (unchanged schema)
+        # 7) Build response
         final_response = LlmCallResponse(
             text=result.get("text"),
-            json_=result.get("json"),  # use internal name; serialized as "json" via alias
+            json_=result.get("json"),
             call_id=selection.episode_id,
             usage=result.get("usage"),
             policy_used={
-                **result.get("policy_used", {}),
+                **(result.get("policy_used") or {}),
                 "arm_id": policy.get("arm_id"),
                 "model": policy.get("model"),
                 "temperature": policy.get("temperature"),
                 "max_tokens": policy.get("max_tokens"),
-                # Best-effort provider echo (non-breaking)
                 **({"provider": provider_name} if provider_name else {}),
             },
             timing_ms={
@@ -304,12 +382,11 @@ async def call_llm_endpoint(
             },
         )
 
-        # 6) Observability headers (add LLM metrics so any caller can capture them)
+        # 8) Observability headers
         response.headers["X-Call-ID"] = final_response.call_id
         response.headers["X-Arm-ID"] = str(policy["arm_id"])
         response.headers["X-Provider-MS"] = str(provider_ms_final)
         response.headers["X-Cost-MS"] = str(final_response.timing_ms.get("total_ms", 0))
-        # Correlation echoes (if provided inbound)
         if x_decision_id:
             response.headers["X-Decision-Id"] = x_decision_id
         if x_budget_ms:
@@ -319,7 +396,6 @@ async def call_llm_endpoint(
                 response.headers["X-Spec-ID"] = request.provenance.get("spec_id", "")
             if request.provenance.get("spec_version"):
                 response.headers["X-Spec-Version"] = request.provenance.get("spec_version", "")
-        # LLM-specific standard headers
         if provider_name:
             response.headers["X-LLM-Provider"] = str(provider_name)
         if model_name:
@@ -332,15 +408,12 @@ async def call_llm_endpoint(
 
     except httpx.TimeoutException:
         raise HTTPException(
-            status_code=504,
-            detail="Gateway Timeout: Synapse or the LLM Provider timed out.",
+            status_code=504, detail="Gateway Timeout: Synapse or the LLM Provider timed out."
         )
     except HTTPException:
-        # re-raise FastAPI HTTP errors unchanged
         raise
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(
-            status_code=500,
-            detail=f"Internal Server Error: {type(e).__name__}: {e}",
+            status_code=500, detail=f"Internal Server Error: {type(e).__name__}: {e}"
         )

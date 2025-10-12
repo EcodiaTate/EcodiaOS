@@ -1,0 +1,19 @@
+from __future__ import annotations
+import asyncio
+import logging
+from systems.simula.learning.advice_engine import AdviceEngine
+
+log = logging.getLogger(__name__)
+
+async def run(seed_ids: list[str]) -> None:
+    engine = AdviceEngine()
+    for aid in seed_ids:
+        try:
+            t2 = await engine.synthesize_t2(aid)
+            if t2:
+                log.info("[AdviceJob] Synthesized T2 %s from seed %s", t2, aid)
+        except Exception as e:
+            log.exception("[AdviceJob] synth_t2 failed for %s: %r", aid, e)
+
+# Example usage:
+# asyncio.run(run(["<t1_id_1>", "<t1_id_2>"]))

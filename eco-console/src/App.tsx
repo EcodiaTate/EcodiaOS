@@ -1,11 +1,10 @@
 // src/App.tsx
-
-import React from 'react';
+import { type CSSProperties } from 'react';
 import { theme } from './theme';
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 import { AppProvider, useAppContext } from './context/AppContext';
-import { Toaster } from 'react-hot-toast'; // FIXED: Import Toaster
+import { Toaster } from 'react-hot-toast';
 
 import SynapseDashboard from './components/synapse/SynapseDashboard';
 import UnityDashboard from './components/unity/UnityDashboard';
@@ -18,7 +17,16 @@ import CodeIntelligenceDashboard from './components/qora/CodeIntelligenceDashboa
 import AxonDashboard from './components/axon/AxonDashboard';
 import DecisionJourneyHeader from './components/common/DecisionJourneyHeader';
 
-export type Page = 'Synapse' | 'Unity' | 'Atune' | 'Evo' | 'Qora' | 'Equor' | 'API Explorer' | 'Code Intelligence' | 'Axon Drivers';
+export type Page =
+  | 'Synapse'
+  | 'Unity'
+  | 'Atune'
+  | 'Evo'
+  | 'Qora'
+  | 'Equor'
+  | 'API Explorer'
+  | 'Code Intelligence'
+  | 'Axon Drivers';
 
 const PageRenderer = () => {
   const { activePage } = useAppContext();
@@ -37,6 +45,20 @@ const PageRenderer = () => {
   }
 };
 
+const gridStyle: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '240px 1fr',
+  gridTemplateRows: 'auto auto 1fr',
+  height: '100vh',
+  fontFamily: theme.fonts.body,
+  color: theme.colors.ink,
+  background: `
+    radial-gradient(80% 120% at 0% 0%, rgba(127,208,105,.10), transparent 50%),
+    radial-gradient(110% 160% at 100% 0%, rgba(244,211,94,.10), transparent 55%),
+    linear-gradient(${theme.colors.background}, ${theme.colors.background})
+  `,
+};
+
 const App = () => {
   return (
     <AppProvider>
@@ -50,19 +72,7 @@ const App = () => {
           },
         }}
       />
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '240px 1fr',
-        gridTemplateRows: 'auto auto 1fr',
-        height: '100vh',
-        fontFamily: theme.fonts.body,
-        color: theme.colors.ink,
-        background: `
-          radial-gradient(80% 120% at 0% 0%, rgba(127,208,105,.10), transparent 50%),
-          radial-gradient(110% 160% at 100% 0%, rgba(244,211,94,.10), transparent 55%),
-          linear-gradient(${theme.colors.background}, ${theme.colors.background})
-        `,
-      }}>
+      <div style={gridStyle}>
         <div style={{ gridColumn: '1 / 2', gridRow: '1 / 4' }}>
           <Sidebar />
         </div>
@@ -70,7 +80,7 @@ const App = () => {
           <Header />
         </div>
         <div style={{ gridColumn: '2 / 3', gridRow: '2 / 3', zIndex: 9 }}>
-            <DecisionJourneyHeader />
+          <DecisionJourneyHeader />
         </div>
         <main style={{ gridColumn: '2 / 3', gridRow: '3 / 4', overflowY: 'auto', padding: '24px' }}>
           <PageRenderer />

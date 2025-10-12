@@ -1,321 +1,173 @@
-# seed_db.py (diagnostic + resilient)
+# seed_db.py (refactored for robustness and clarity)
 from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 import sys
 import time
-import socket
-from typing import Iterable, Optional
-from urllib.parse import urlparse
+from typing import Optional
 
-from core.utils.neo.neo_driver import init_driver, close_driver
 from core.utils.neo.cypher_query import cypher_query
+from core.utils.neo.neo_driver import close_driver, init_driver
 
-try:
-    from systems.synk.core.tools.schema_bootstrap import ensure_schema as shared_ensure_schema  # type: ignore
-except Exception:
-    shared_ensure_schema = None  # type: ignore
+# FIX: Import the lightweight, dependency-free list of tool names DIRECTLY.
+# This is the crucial change that severs the dependency on heavy application code.
+from systems.simula.agent.tool_names import CANONICAL_TOOL_NAMES
+from systems.synapse.policy.policy_dsl import PolicyGraph, PolicyNode
 
-BENIGN = (
-    "Neo.ClientError.Schema.ConstraintAlreadyExists",
-    "Neo.ClientError.Schema.ConstraintWithNameAlreadyExists",
-    "Neo.ClientError.Schema.EquivalentSchemaRuleAlreadyExists",
-    "Neo.ClientError.Schema.IndexAlreadyExists",
-    "Neo.ClientError.Schema.EquivalentSchemaIndexAlreadyExists",
-)
+# --- Constants ---
+SIMULA_AGENT_NAME = "Simula"
+DEFAULT_NEO4J_URI = "neo4j://neo4j:7687"
 
-def log(msg: str) -> None:
-    print(msg, flush=True)
+# --- Logging Setup ---
+logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s", stream=sys.stdout)
+logger = logging.getLogger(__name__)
 
-def _env(name: str, default: Optional[str] = None) -> str | None:
+
+# --- Helpers ---
+
+
+def _env(name: str, default: str | None = None) -> str | None:
     return os.getenv(name, default)
 
-def _mask(s: str | None) -> str:
-    if not s:
+
+def _mask_password(pwd: str | None) -> str:
+    if not pwd:
         return "<unset>"
-    if len(s) <= 6:
-        return "***"
-    return s[:2] + "***" + s[-2:]
+    return pwd[:2] + "***" + pwd[-2:] if len(pwd) > 4 else "***"
 
-async def run_ddl(stmt: str, step: str = "ddl") -> None:
-    try:
-        await asyncio.wait_for(cypher_query(stmt), timeout=30)
-    except Exception as e:
-        msg = f"{e}"
-        if any(code in msg for code in BENIGN):
-            log(f"[{step}] benign → {stmt}")
-            return
-        raise
 
-async def ping_db() -> None:
-    await asyncio.wait_for(cypher_query("RETURN 1 AS ok"), timeout=10)
+# --- Database Operations ---
 
-def tcp_probe_from_neo4j_uri(uri: str) -> tuple[str, int]:
-    """
-    neo4j://host:7687 or bolt://host:7687 → (host, port)
-    """
-    parsed = urlparse(uri)
-    host = parsed.hostname or "localhost"
-    port = parsed.port or 7687
-    return host, port
-
-def tcp_check(host: str, port: int, timeout_s: float = 3.0) -> tuple[bool, str]:
-    try:
-        with socket.create_connection((host, port), timeout=timeout_s):
-            return True, "ok"
-    except Exception as e:
-        return False, f"{type(e).__name__}: {e}"
 
 async def wait_for_neo4j(max_wait_s: int = 120, interval_s: float = 1.5) -> None:
+    """Waits for the Neo4j database to become responsive."""
+    logger.info("Waiting for Neo4j to be ready...")
     t0 = time.time()
-    attempt = 0
-    while True:
-        attempt += 1
+    for attempt in range(1, int(max_wait_s / interval_s) + 2):
         try:
-            await ping_db()
+            await asyncio.wait_for(cypher_query("RETURN 1"), timeout=10)
             if attempt > 1:
-                log(f"[NEO4J] ready after {attempt} attempts, {time.time()-t0:.1f}s")
+                logger.info(f"Neo4j is ready after {attempt} attempts ({time.time() - t0:.1f}s).")
             return
         except Exception as e:
             if time.time() - t0 > max_wait_s:
                 raise TimeoutError(f"Neo4j not ready after {max_wait_s}s: {e}") from e
             await asyncio.sleep(interval_s)
 
-def safe_policy_graph(name: str) -> dict:
-    return {
-        "version": 1,
-        "id": f"pg::{name}",
-        "nodes": [{"id": "prompt", "type": "prompt", "model": "gpt-4o-mini", "params": {"temperature": 0.15}}],
-        "edges": [],
-        "constraints": [],
-        "meta": {"seeded": True, "arm": name},
-    }
 
 def get_simula_tool_names() -> list[str]:
-    try:
-        from systems.simula.agent.tool_registry import TOOLS  # type: ignore
-        return sorted(set(TOOLS.keys()))
-    except Exception:
-        return ["get_context_dossier", "apply_refactor_smart", "write_code", "run_tests", "read_file", "list_repo_files"]
-
-# ---------------- Schema ----------------
-
-# inside seed_db.py
-
-async def seed_constraints_and_indexes():
-    # Remove legacy/enterprise-only forms if present
-    await run_ddl("DROP CONSTRAINT profile_unique IF EXISTS")           # drop NODE KEY if it exists anywhere
-    await run_ddl("DROP CONSTRAINT profile_key IF EXISTS")              # legacy name
-    await run_ddl("DROP CONSTRAINT profile_agent_name IF EXISTS")       # legacy name
-
-    stmts = [
-        # Profiles / Identity — Community-friendly composite UNIQUE
-        "CREATE CONSTRAINT profile_identity IF NOT EXISTS "
-        "FOR (p:Profile) REQUIRE (p.agent, p.name) IS UNIQUE",
-
-        "CREATE CONSTRAINT facet_id_unique IF NOT EXISTS FOR (f:Facet) REQUIRE f.id IS UNIQUE",
-        "CREATE CONSTRAINT consrule_name  IF NOT EXISTS FOR (c:ConstitutionRule) REQUIRE c.name IS UNIQUE",
-        "CREATE CONSTRAINT agent_name     IF NOT EXISTS FOR (a:Agent) REQUIRE a.name IS UNIQUE",
-
-        # Policy Arms
-        "CREATE CONSTRAINT policyarm_id    IF NOT EXISTS FOR (a:PolicyArm) REQUIRE a.id IS UNIQUE",
-        "CREATE CONSTRAINT policyarm_armid IF NOT EXISTS FOR (a:PolicyArm) REQUIRE a.arm_id IS UNIQUE",
-
-        # Rules
-        "CREATE CONSTRAINT rule_id IF NOT EXISTS FOR (r:Rule) REQUIRE r.id IS UNIQUE",
-
-        # Code graph basics
-        "CREATE CONSTRAINT codefile_path IF NOT EXISTS FOR (cf:CodeFile) REQUIRE cf.path IS UNIQUE",
-
-        # Ingest state
-        "CREATE CONSTRAINT ingeststate_id IF NOT EXISTS FOR (s:IngestState) REQUIRE s.id IS UNIQUE",
-    ]
-    for s in stmts:
-        await run_ddl(s)
-
-
-async def ensure_ingest_states():
     """
-    Ensure ingest-state rows exist AND that `last_commit` property key is materialized.
-    Using '' (empty string) avoids Neo4j's UnknownPropertyKeyWarning on first reads.
+    Returns the canonical list of Simula tool names from the single source of truth.
     """
-    ids = {os.getenv("QORA_INGEST_STATE_ID", "wm"), "default"}
+    if not CANONICAL_TOOL_NAMES:
+        raise ImportError("Canonical tool name list is empty or could not be imported.")
+    return sorted(list(set(CANONICAL_TOOL_NAMES)))  # Use set to auto-dedupe aliases
 
-    # Create rows; set last_commit to '' on create so the key exists
+
+def create_seed_policy_graph(name: str) -> dict:
+    """Creates a safe, default policy graph using the canonical Pydantic model."""
+    graph = PolicyGraph(
+        version=1,
+        id=f"pg::{name}",
+        nodes=[
+            PolicyNode(
+                id="prompt", type="prompt", model="gpt-3.5-turbo", params={"temperature": 0.15}
+            )
+        ],
+        meta={"seeded": True, "arm": name},
+    )
+    return graph.model_dump(mode="json")
+
+
+# --- Seeding Function (Data Only) ---
+
+
+async def seed_simula_policy_arms():
+    """Seeds the database with PolicyArm nodes for all canonical Simula tools."""
+    tool_names = get_simula_tool_names()
+    logger.info(f"Found {len(tool_names)} canonical Simula tools to seed as PolicyArms.")
+
+    # This query ensures the Agent and its core Facet/Profile exist before creating arms.
+    # It's idempotent and won't cause conflicts.
     await cypher_query(
         """
-        UNWIND $ids AS sid
-        MERGE (s:IngestState {id:sid})
-        ON CREATE SET
-          s.created_at = datetime(),
-          s.last_commit = ''
-        """,
-        {"ids": list(ids)},
-    )
-
-    # Backfill any legacy NULLs to '' so future reads don't warn
-    await cypher_query(
-        """
-        MATCH (s:IngestState)
-        WHERE s.last_commit IS NULL
-        SET s.last_commit = ''
-        """
-    )
-
-
-# --------------- Seed Data ---------------
-
-async def migrate_policyarm_fields():
-    await cypher_query("""
-        MATCH (a:PolicyArm)
-        WHERE a.policy_graph IS NULL AND a.policy_graph_json IS NOT NULL
-        SET a.policy_graph = a.policy_graph_json
-    """)
-    await cypher_query("""
-        MATCH (a:PolicyArm)
-        WHERE a.id IS NULL AND a.arm_id IS NOT NULL
-        SET a.id = a.arm_id
-    """)
-
-async def seed_constitution_graph():
-    for agent in ("Simula", "simula"):
-        await cypher_query("""
-            MERGE (p:Profile {agent:$agent, name:'prod'})
-            MERGE (r:ConstitutionRule {name:'Base Safety'})
-            ON CREATE SET r.text='Base constitution rule (seed)', r.priority=100, r.active=true, r.created_at=datetime()
-            MERGE (p)-[:INCLUDES]->(r)
-        """, {"agent": agent})
-    await cypher_query("""
-        MERGE (a:Profile {agent:'__meta__', name:'placeholder_a'})
-        MERGE (b:Profile {agent:'__meta__', name:'placeholder_b'})
-        MERGE (a)-[:SUPERSEDED_BY]->(b)
-    """)
-
-async def seed_rule_key_warmup():
-    # Materialize the "max tokens" rule by its unique triple.
-    # If a legacy node exists (e.g., id='R_SEED_KEYS'), we reuse it and do NOT change its id.
-    await cypher_query(
-        """
-        MERGE (r:Rule {property:'max_tokens', operator:'<=', value:4096})
-        ON CREATE SET
-          r.id = 'R_MAX_TOKENS_4096',
-          r.rejection_reason = 'Response would exceed maximum token limit.',
-          r.created_at = datetime()
-        """
-    )
-
-
-async def seed_agent_and_facets():
-    await cypher_query("""
-        MERGE (a:Agent {name:'Simula'})
-        ON CREATE SET a.summary='Autonomous code evolution agent.',
-                      a.purpose='Understand, plan, and execute code changes safely.',
-                      a.created_at=datetime()
-        MERGE (f:Facet {id:'F_SIMULA_CORE_V1'})
-        ON CREATE SET f.title='Simula Core Identity',
-                      f.text='You are Simula, an autonomous code evolution orchestrator. Your goal is to understand, plan, and execute code changes based on high-level objectives.',
-                      f.name='Simula Core Identity'
-        SET f.name = coalesce(f.name, f.title)
+        MERGE (a:Agent {name: $agent_name})
+          ON CREATE SET a.summary='Autonomous code evolution agent.', a.created_at=datetime()
+        MERGE (f:Facet {id: 'F_SIMULA_CORE_V1'})
+          ON CREATE SET f.title='Simula Core Identity', f.name='Simula Core Identity', f.text='You are Simula...'
+        MERGE (p:Profile {agent: $agent_name, name:'prod'})
+        MERGE (r:ConstitutionRule {name:'Base Safety'})
+          ON CREATE SET r.text='Base constitution rule (seed)', r.priority=100, r.active=true
         MERGE (a)-[:HAS_FACET]->(f)
-    """)
+        MERGE (p)-[:INCLUDES]->(r)
+        """,
+        {"agent_name": SIMULA_AGENT_NAME},
+    )
 
-async def seed_policy_arms_and_constraints(tool_names: Iterable[str]):
-    names = list(tool_names)
-    await cypher_query("""
-        UNWIND $pairs AS row
-        MERGE (a:PolicyArm {id: row.name})
-        ON CREATE SET a.arm_id=row.name, a.mode='planful', a.policy_graph=row.graph_json, a.created_at=datetime()
-        ON MATCH SET  a.arm_id=row.name, a.mode='planful', a.policy_graph=row.graph_json, a.updated_at=datetime()
-    """, {"pairs": [{"name": n, "graph_json": json.dumps(safe_policy_graph(n))} for n in names]})
+    arm_data = [
+        {"name": n, "graph_json": json.dumps(create_seed_policy_graph(n))} for n in tool_names
+    ]
 
-        # ---- Attach the single "max tokens" Rule to all arms ----
+    # This MERGE query will create or update the PolicyArm nodes.
     await cypher_query(
         """
-        // Use the unique triple to select the canonical rule node
-        MATCH (r:Rule {property:'max_tokens', operator:'<=', value:4096})
-        WITH r
-        UNWIND $names AS name
-        MATCH (a:PolicyArm {id: name})
-        MERGE (a)-[:HAS_CONSTRAINT]->(r)
+        UNWIND $arms AS arm_data
+        MERGE (a:PolicyArm {id: arm_data.name})
+        ON CREATE SET
+            a.mode='planful',
+            a.policy_graph=arm_data.graph_json,
+            a.created_at=datetime()
+        ON MATCH SET
+            a.policy_graph=arm_data.graph_json,
+            a.updated_at=datetime()
         """,
-        {"names": names},
+        {"arms": arm_data},
     )
 
 
-async def seed_reward_metrics_and_config():
-    await cypher_query("""
-        MERGE (m:RewardMetric {name:'efficiency'}) SET m.weight=0.6, m.type='efficiency'
-        MERGE (m2:RewardMetric {name:'safety'})    SET m2.weight=0.4, m.type='safety'
-    """)
-    await cypher_query("""
-        MERGE (c:Config {key:'embedding_defaults'})
-        SET c.model='gemini-embedding-001', c.task_type='RETRIEVAL_DOCUMENT', c.dimensions=3072
-    """)
+# --- Main Orchestrator ---
 
-async def seed_initial_data():
-    await migrate_policyarm_fields()
-    await seed_constitution_graph()
-    await seed_rule_key_warmup()
-    await seed_agent_and_facets()
-    await seed_policy_arms_and_constraints(get_simula_tool_names())
-    await seed_reward_metrics_and_config()
 
-# --------------- Orchestrator ---------------
-
-async def run_step(name: str, coro, timeout: float | None = None):
-    log(f"[STEP] {name} …")
+async def run_step(name: str, coro):
+    """Utility to run and log a single seeding step."""
+    logger.info(f"[STEP] {name}...")
     try:
-        res = await asyncio.wait_for(coro, timeout=timeout) if timeout else await coro
-        log(f"[STEP] {name} ✓")
-        return res
+        await coro
+        logger.info(f"[STEP] {name} ✓")
     except Exception as e:
-        log(f"[STEP] {name} ✗  {type(e).__name__}: {e}")
+        logger.error(f"[STEP] {name} ✗ FAILED: {type(e).__name__}: {e}")
         raise
 
+
 async def main():
-    # Print connection info up front
-    uri = _env("NEO4J_URI") or _env("NEO4J_URL") or "neo4j://neo4j:7687"
-    user = _env("NEO4J_USERNAME") or _env("NEO4J_USER")
-    pwd = _env("NEO4J_PASSWORD") or _env("NEO4J_PASS")
-    minimal = _env("SEED_MINIMAL") == "1"
+    """Main function to connect to and seed the database."""
+    uri = _env("NEO4J_URI", DEFAULT_NEO4J_URI)
+    user = _env("NEO4J_USERNAME")
+    pwd = _env("NEO4J_PASSWORD")
 
-    host, port = tcp_probe_from_neo4j_uri(uri)
-    ok, why = tcp_check(host, port)
-    log(f"[CFG] NEO4J_URI={uri}")
-    log(f"[CFG] user={user or '<unset>'}, pass={_mask(pwd)}")
-    log(f"[NET] bolt tcp {host}:{port} → {why}")
+    logger.info("--- Starting Database Seeding ---")
+    logger.info(f"[CFG] NEO4J_URI={uri}")
+    logger.info(f"[CFG] user={user or '<unset>'}, pass={_mask_password(pwd)}")
 
-    log("--- Starting Database Seeding ---")
     try:
-        await init_driver()  # uses env creds
-        await run_step("wait_for_neo4j", wait_for_neo4j(), timeout=180)
+        await init_driver()
+        await run_step("Wait for Neo4j", wait_for_neo4j())
+        # The app's startup (`ensure_schema`) will handle constraints.
+        # This script now only seeds the PolicyArm data.
 
-        if shared_ensure_schema and not minimal:
-            await run_step("shared.ensure_schema", shared_ensure_schema(), timeout=180)
-        else:
-            log("[INFO] shared bootstrap skipped (absent or SEED_MINIMAL=1)")
-
-        await run_step("constraints/indexes", seed_constraints_and_indexes(), timeout=180)
-        await run_step("ensure_ingest_states", ensure_ingest_states(), timeout=60)
-
-        if minimal:
-            log("[INFO] SEED_MINIMAL=1 → skipping heavy seed data")
-        else:
-            await run_step("seed_initial_data", seed_initial_data(), timeout=300)
-
-    except asyncio.TimeoutError as e:
-        log(f"FATAL: step timed out: {e}")
-        sys.exit(1)
-    except Exception as e:
-        log(f"FATAL: unhandled error: {e!r}")
+    except Exception:
+        logger.critical("FATAL: A step failed during database seeding. See logs for details.")
         sys.exit(1)
     finally:
         await close_driver()
-    log("--- Database Seeding Complete ---")
+    logger.info("--- Database Seeding Complete ---")
+
 
 if __name__ == "__main__":
-    from dotenv import load_dotenv, find_dotenv
+    from dotenv import find_dotenv, load_dotenv
+
     load_dotenv(find_dotenv())
     asyncio.run(main())

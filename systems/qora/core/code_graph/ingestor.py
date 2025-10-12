@@ -1,14 +1,16 @@
 # systems/qora/core/code_graph/ingestor.py
-# --- INCREMENTAL INDEXER (FINAL) ---
+# --- INCREMENTAL INDEXER (FINAL, global lookup + full-pass rel rebuild) ---
 from __future__ import annotations
 
 import ast
 import hashlib
 import logging
-import subprocess
-from pathlib import Path
-from typing import Any, Dict, List, Tuple, Set
 import os
+import re
+import subprocess
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 # Optional ADR front matter support (pip package: python-frontmatter)
 try:
@@ -26,8 +28,163 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 VECTOR_DIM = 3072
 STD_LIBS = {
-    "os", "sys", "json", "re", "asyncio", "collections", "pathlib", "typing",
-    "ast", "hashlib", "logging", "codecs", "uuid", "time", "functools", "itertools", "subprocess"
+    # Core runtime
+    "sys",
+    "builtins",
+    "types",
+    "inspect",
+    "importlib",
+    "importlib_metadata",
+    "importlib_resources",
+    "site",
+    "sysconfig",
+    "runpy",
+    "pydoc",
+    "trace",
+    "tracemalloc",
+    "faulthandler",
+    "gc",
+    "warnings",
+    # OS / filesystem
+    "os",
+    "pathlib",
+    "stat",
+    "shutil",
+    "glob",
+    "fnmatch",
+    "fileinput",
+    "tempfile",
+    "tarfile",
+    "zipfile",
+    "zipimport",
+    "gzip",
+    "bz2",
+    "lzma",
+    "zlib",
+    "mmap",
+    # I/O, text, data formats
+    "io",
+    "codecs",
+    "string",
+    "textwrap",
+    "re",
+    "csv",
+    "configparser",
+    "plistlib",
+    "json",
+    "sqlite3",
+    "dbm",
+    # Math & number crunching
+    "math",
+    "cmath",
+    "decimal",
+    "fractions",
+    "statistics",
+    "random",
+    "numbers",
+    # Cryptography-ish & encoding
+    "hashlib",
+    "hmac",
+    "secrets",
+    "base64",
+    "binascii",
+    # Dates, locales, i18n
+    "datetime",
+    "calendar",
+    "locale",
+    "gettext",
+    "zoneinfo",
+    # Concurrency & async
+    "threading",
+    "queue",
+    "multiprocessing",
+    "concurrent",
+    "asyncio",
+    "subprocess",
+    "sched",
+    "signal",
+    "selectors",
+    "select",
+    # Networking & protocols
+    "socket",
+    "ssl",
+    "ipaddress",
+    "http",
+    "urllib",
+    "ftplib",
+    "poplib",
+    "imaplib",
+    "smtplib",
+    "nntplib",
+    "telnetlib",
+    "uuid",
+    "webbrowser",
+    "cgi",
+    "cgitb",
+    "wsgiref",
+    "xmlrpc",
+    # Markup, parsing
+    "html",
+    "html5lib",  # (html5lib is not stdlib; remove if you want *strict* stdlib only)
+    "xml",
+    "xmltodict",  # (xmltodict is not stdlib; remove for strictness)
+    "email",
+    # Data persistence & serialization
+    "pickle",
+    "pickletools",
+    "copy",
+    "shelve",
+    "marshal",
+    # Introspection, meta, language utilities
+    "abc",
+    "enum",
+    "typing",
+    "dataclasses",
+    "contextlib",
+    "contextvars",
+    "functools",
+    "itertools",
+    "operator",
+    "weakref",
+    # CLI utils
+    "argparse",
+    "getopt",
+    "readline",
+    "cmd",
+    "shlex",
+    # Debugging & testing
+    "traceback",
+    "pprint",
+    "doctest",
+    "unittest",
+    "unittest.mock",
+    "timeit",
+    "pdb",
+    "cProfile",
+    "profile",
+    # Time & OS details
+    "time",
+    "platform",
+    "resource",  # resource is POSIX-only
+    # GUI / audio (platform availability varies)
+    "tkinter",
+    "curses",
+    "tty",
+    "termios",
+    "audioop",
+    "wave",
+    "aifc",
+    "sunau",
+    "chunk",
+    "colorsys",
+    "imghdr",
+    # System integration
+    "ctypes",
+    "uuid",
+    "venv",
+    "ensurepip",
+    # Packaging/distribution (distutils is deprecated; still present on many)
+    "distutils",
 }
 ADR_GLOB = "docs/adr/**/*.md"
 
@@ -42,9 +199,43 @@ LABEL_CODEFILE = "CodeFile"
 # Builtins set for quick external resolution
 try:
     import builtins as _builtins_mod  # type: ignore
+
     BUILTINS = set(dir(_builtins_mod))
 except Exception:
     BUILTINS = set()
+
+TYPING_WORDS = {
+    "typing",
+    "Optional",
+    "List",
+    "Dict",
+    "Set",
+    "Tuple",
+    "Union",
+    "Literal",
+    "Annotated",
+    "Callable",
+    "Coroutine",
+    "Awaitable",
+    "Any",
+    "Self",
+    "Type",
+    "TypeVar",
+    "Generic",
+    "Iterable",
+    "Iterator",
+    "Mapping",
+    "Sequence",
+    "MutableMapping",
+    "MutableSequence",
+    "Collection",
+    "Reversible",
+    "Protocol",
+    "ParamSpec",
+    "Concatenate",
+    "NoReturn",
+    "Never",
+}
 
 
 # =============================================================================
@@ -98,9 +289,9 @@ async def _get_last_commit_from_graph(state_id: str = "default") -> str | None:
         """,
         {"id": state_id},
     )
-    last = rows[0]["last"] if rows else None
+    return rows[0]["last"] if rows else None
 
-# NEW: list tracked M/D relative to HEAD and untracked A (py only)
+
 def _git_worktree_changes(repo_root: Path) -> list[tuple[str, Path | None, Path | None]]:
     """
     Returns (status, old_path, new_path) for worktree changes since HEAD, covering:
@@ -118,12 +309,39 @@ def _git_worktree_changes(repo_root: Path) -> list[tuple[str, Path | None, Path 
         except Exception:
             return []
 
-    ws = _lines(["git", "diff", "--name-status", "--find-renames", "--diff-filter=AMDR", "HEAD", "--", "*.py"])
-    idx = _lines(["git", "diff", "--cached", "--name-status", "--find-renames", "--diff-filter=AMDR", "HEAD", "--", "*.py"])
+    ws = _lines(
+        [
+            "git",
+            "diff",
+            "--name-status",
+            "--find-renames",
+            "--diff-filter=AMDR",
+            "HEAD",
+            "--",
+            "*.py",
+        ]
+    )
+    idx = _lines(
+        [
+            "git",
+            "diff",
+            "--cached",
+            "--name-status",
+            "--find-renames",
+            "--diff-filter=AMDR",
+            "HEAD",
+            "--",
+            "*.py",
+        ]
+    )
     new = _lines(["git", "ls-files", "--others", "--exclude-standard", "--", "*.py"])
 
     def _add(st: str, oldp: Path | None, newp: Path | None):
-        key = (st, str(oldp.relative_to(repo_root)) if oldp else "", str(newp.relative_to(repo_root)) if newp else "")
+        key = (
+            st,
+            str(oldp.relative_to(repo_root)) if oldp else "",
+            str(newp.relative_to(repo_root)) if newp else "",
+        )
         if key in seen:
             return
         seen.add(key)
@@ -150,19 +368,24 @@ def _git_worktree_changes(repo_root: Path) -> list[tuple[str, Path | None, Path 
 
     return changes
 
+
 async def _set_last_commit_in_graph(commit: str, state_id: str = "default") -> None:
     await cypher_query(
-        "MERGE (s:IngestState {id:$id}) "
-        "SET s.last_commit = $c, s.updated_at = timestamp()",
+        "MERGE (s:IngestState {id:$id}) SET s.last_commit = $c, s.updated_at = timestamp()",
         {"id": state_id, "c": commit},
     )
 
 
 def _git_head(repo_root: Path) -> str | None:
     try:
-        return subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], cwd=str(repo_root)
-        ).decode().strip()
+        return (
+            subprocess.check_output(
+                ["git", "rev-parse", "HEAD"],
+                cwd=str(repo_root),
+            )
+            .decode()
+            .strip()
+        )
     except Exception:
         return None
 
@@ -173,10 +396,23 @@ def _git_changes(repo_root: Path, since_commit: str) -> list[tuple[str, Path | N
     Paths are absolute Path objects rooted at repo_root.
     """
     try:
-        out = subprocess.check_output(
-            ["git", "diff", "--name-status", "--find-renames", "--diff-filter=AMDR", f"{since_commit}..HEAD", "--", "*.py"],
-            cwd=str(repo_root),
-        ).decode().splitlines()
+        out = (
+            subprocess.check_output(
+                [
+                    "git",
+                    "diff",
+                    "--name-status",
+                    "--find-renames",
+                    "--diff-filter=AMDR",
+                    f"{since_commit}..HEAD",
+                    "--",
+                    "*.py",
+                ],
+                cwd=str(repo_root),
+            )
+            .decode()
+            .splitlines()
+        )
     except Exception:
         return []
 
@@ -210,7 +446,7 @@ def _all_py_files(repo_root: Path) -> list[Path]:
 # ADR loader (frontmatter optional with safe fallback)
 # =============================================================================
 class _Post:
-    def __init__(self, metadata: Dict[str, Any], content: str):
+    def __init__(self, metadata: dict[str, Any], content: str):
         self.metadata = metadata or {}
         self.content = content or ""
 
@@ -226,7 +462,7 @@ def _load_adr_file(adr_path: Path) -> _Post:
 
     # Fallback: parse naive YAML block between leading '---' ... '---'
     text = adr_path.read_text(encoding="utf-8", errors="replace")
-    meta: Dict[str, Any] = {}
+    meta: dict[str, Any] = {}
     content = text
 
     lines = text.splitlines()
@@ -237,6 +473,7 @@ def _load_adr_file(adr_path: Path) -> _Post:
             content = "\n".join(lines[end + 1 :])
             try:
                 import yaml  # optional
+
                 meta = yaml.safe_load(fm_text) or {}
             except Exception:
                 meta = {}
@@ -252,56 +489,254 @@ def _load_adr_file(adr_path: Path) -> _Post:
     return _Post(meta, content)
 
 
-# =============================================================================
-# Symbol Resolver
-# =============================================================================
+@dataclass
+class ResolverConfig:
+    current_file_info: dict[str, Any] | None = None
+    all_files_cache: dict[str, dict[str, Any]] | None = None
+    module_to_file_path: dict[str, str] | None = None
+    module_to_defines_global: dict[str, dict[str, str]] | None = None
+    repo_root: str | Path | None = None  # optional; not strictly needed but useful for logging
+
+
 class SymbolResolver:
     """
     Resolve an identifier to either:
-      - internal symbol FQN ('internal_symbol')
+      - internal symbol FQN ('internal_symbol')   e.g. '.../codegen.py::JobContext'
       - internal module file path ('internal_module')  (maps to CodeFile.path)
-      - external ('external')
+      - external ('external')  (3rd-party/builtin)
       - unknown ('unknown')
+
+    Backwards-compatible constructor:
+      - SymbolResolver(config=ResolverConfig(...))
+      - SymbolResolver(current_file_info=..., all_files_cache=..., module_to_file_path=..., ...)
+      - SymbolResolver()  # (no-arg; safe defaults)
     """
 
-    def __init__(self, current_file_info: Dict, all_files_cache: Dict[str, Dict[str, Any]], module_to_file_path: Dict[str, str]):
-        self.current_file_info = current_file_info
-        self.all_files_cache = all_files_cache
-        self.module_to_file_path = module_to_file_path
-        self.local_symbols = {name: fqn for name, fqn in current_file_info.get("defines", {}).items()}
+    _ID_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*")
 
-    def resolve(self, name: str) -> Tuple[str | None, str]:
-        # Local define in this file
+    def __init__(
+        self,
+        *args,
+        config: ResolverConfig | None = None,
+        current_file_info: dict[str, Any] | None = None,
+        all_files_cache: dict[str, dict[str, Any]] | None = None,
+        module_to_file_path: dict[str, str] | None = None,
+        module_to_defines_global: dict[str, dict[str, str]] | None = None,
+        repo_root: str | Path | None = None,
+        **extras: Any,
+    ):
+        """
+        Back-compat rules:
+        - Positional legacy order:
+            1) current_file_info
+            2) all_files_cache
+            3) module_to_file_path
+            4) module_to_defines_global (optional)
+        - Or pass a ResolverConfig via 'config'
+        - Or pass explicit kwargs (preferred)
+        - Unknown kwargs are kept as attributes for forward-compat
+        """
+        # Prevent conflicting use of config + explicit kwargs/positional
+        if config and (
+            args
+            or any(
+                v is not None
+                for v in (
+                    current_file_info,
+                    all_files_cache,
+                    module_to_file_path,
+                    module_to_defines_global,
+                    repo_root,
+                )
+            )
+        ):
+            raise ValueError("Pass either 'config' or positional/keyword fields, not both.")
+
+        # 1) Resolve from config if provided
+        if config:
+            current_file_info = config.current_file_info
+            all_files_cache = config.all_files_cache
+            module_to_file_path = config.module_to_file_path
+            module_to_defines_global = config.module_to_defines_global
+            repo_root = config.repo_root
+
+        # 2) Legacy positional mapping (if args are present)
+        #    Expected shapes: (cf, cache, mtp) or (cf, cache, mtp, mdg)
+        if args:
+            n = len(args)
+            if n not in (3, 4):
+                raise TypeError(
+                    f"SymbolResolver legacy positional args must be 3 or 4, got {n}. "
+                    "Expected: (current_file_info, all_files_cache, module_to_file_path[, module_to_defines_global])",
+                )
+            (cf, cache, mtp, *rest) = args
+            mdg = rest[0] if rest else None
+
+            # Only fill from positional if the kwarg wasn’t already provided
+            current_file_info = cf if current_file_info is None else current_file_info
+            all_files_cache = cache if all_files_cache is None else all_files_cache
+            module_to_file_path = mtp if module_to_file_path is None else module_to_file_path
+            module_to_defines_global = (
+                mdg if module_to_defines_global is None else module_to_defines_global
+            )
+
+        # 3) Normalize & defaults
+        self.current_file_info: dict[str, Any] = current_file_info or {"imports": {}, "defines": {}}
+        self.all_files_cache: dict[str, dict[str, Any]] = all_files_cache or {}
+        self.module_to_file_path: dict[str, str] = module_to_file_path or {}
+        self.module_to_defines_global: dict[str, dict[str, str]] = module_to_defines_global or {}
+        self.repo_root: Path | None = Path(repo_root).resolve() if repo_root else None
+
+        # quick lookup for local defines in this file
+        self.local_symbols: dict[str, str] = {
+            name: fqn for name, fqn in self.current_file_info.get("defines", {}).items()
+        }
+
+        # Store extras (forward-compat)
+        for k, v in extras.items():
+            setattr(self, k, v)
+
+        # Light validation / diagnostics (don’t crash)
+        imports_val = self.current_file_info.get("imports", {})
+        if not isinstance(imports_val, dict):
+            logger.warning(
+                "[SymbolResolver] current_file_info.imports is not a dict; got %r",
+                type(imports_val),
+            )
+        if not isinstance(self.local_symbols, dict):
+            logger.warning(
+                "[SymbolResolver] current_file_info.defines is not a dict; got %r",
+                type(self.current_file_info.get("defines")),
+            )
+
+    # -------------------------- core helpers --------------------------
+
+    def _resolve_module_and_symbol(self, module: str, symbol: str) -> tuple[str | None, str]:
+        """
+        Try local (files touched this run) then fallback to global defines snapshot.
+        Returns (FQN, kind)
+        """
+        # Prefer local cache (files touched this run)
+        file_path = self.module_to_file_path.get(module)
+        if file_path:
+            target_info = self.all_files_cache.get(file_path) or {}
+            defs = target_info.get("defines", {}) or {}
+            if symbol in defs:
+                return defs[symbol], "internal_symbol"
+
+        # Fall back to global graph snapshot (preloaded)
+        defs_global = (self.module_to_defines_global or {}).get(module, {}) or {}
+        if symbol in defs_global:
+            return defs_global[symbol], "internal_symbol"
+
+        return None, "unknown"
+
+    # --------------------------- public API ---------------------------
+
+    def resolve(self, name: str) -> tuple[str | None, str]:
+        """
+        Resolve a single identifier or dotted reference.
+        Returns (target, kind) with kind in {'internal_symbol','internal_module','external','unknown'}
+        """
+
+        # 1) Local define in this file (top-level class/func)
         if name in self.local_symbols:
             return self.local_symbols[name], "internal_symbol"
 
-        # Imported alias
-        if name in self.current_file_info["imports"]:
-            full_import = self.current_file_info["imports"][name]
+        imports = self.current_file_info.get("imports", {}) or {}
 
-            # (a) Direct module mapping
+        # 2) Exact import alias (e.g. 'JobContext' when `from ... import JobContext as JobContext`)
+        if name in imports:
+            full_import = imports[name]
+            # (a) Direct module mapping (alias is a module)
             if full_import in self.module_to_file_path:
                 return self.module_to_file_path[full_import], "internal_module"
-
-            # (b) module.symbol where module part is internal file, symbol in its defines
+            # (b) alias is a symbol imported from a module -> resolve by module+symbol
             parts = full_import.split(".")
             if len(parts) > 1:
                 module_part = ".".join(parts[:-1])
                 symbol_part = parts[-1]
-                file_path = self.module_to_file_path.get(module_part)
-                if file_path:
-                    target_file_info = self.all_files_cache.get(file_path)
-                    if target_file_info and symbol_part in target_file_info.get("defines", {}):
-                        return target_file_info["defines"][symbol_part], "internal_symbol"
-
-            # (c) External library (first segment as package name)
+                fqn, kind = self._resolve_module_and_symbol(module_part, symbol_part)
+                if fqn:
+                    return fqn, kind
+            # (c) Not ours -> treat as external library root
             return full_import.split(".")[0], "external"
 
-        # Builtins count as external (we won't create edges for them)
+        # 3) Dotted attribute like "alias.symbol" or "alias.subpkg.symbol"
+        if "." in name:
+            head, tail = name.split(".", 1)  # head = alias/module name, tail = rest
+            # Is the head an import alias we recorded?
+            if head in imports:
+                base_mod = imports[head]  # e.g., "systems.simula.service.services.codegen"
+                tail_parts = tail.split(".")
+                symbol_part = tail_parts[-1]  # last piece is usually the class/func
+                # Try module_part = base_mod or base_mod + ".subpkg..."
+                module_part = (
+                    base_mod if len(tail_parts) == 1 else base_mod + "." + ".".join(tail_parts[:-1])
+                )
+
+                # (i) Try exact module_part
+                fqn, kind = self._resolve_module_and_symbol(module_part, symbol_part)
+                if fqn:
+                    return fqn, kind
+
+                # (ii) Fallback: try just base_mod
+                fqn, kind = self._resolve_module_and_symbol(base_mod, symbol_part)
+                if fqn:
+                    return fqn, kind
+
+                # Not internal -> treat as external package call
+                return base_mod.split(".")[0], "external"
+
+        # 4) Builtins count as external (we don't link them)
         if name in BUILTINS:
             return name, "external"
 
+        # 5) Unknown
         return None, "unknown"
+
+    def resolve_all_from_expr(self, expr: str) -> list[str]:
+        """
+        Extract internal symbol FQNs embedded in an expression, ignoring typing/builtins.
+        Example:
+          'Optional[codegen.JobContext | None]' -> ['systems/.../codegen.py::JobContext']
+        """
+        out: list[str] = []
+        seen: set[str] = set()
+        if not expr:
+            return out
+
+        for tok in self._ID_RE.findall(expr):
+            if tok in seen:
+                continue
+            seen.add(tok)
+            base = tok.split(".")[0]
+            if base in TYPING_WORDS or base in BUILTINS or base == "None":
+                continue
+            fqn, kind = self.resolve(tok)
+            if fqn and kind == "internal_symbol":
+                out.append(fqn)
+        return out
+
+    # ----------------------- convenience ctor ------------------------
+
+    @classmethod
+    def from_maps(
+        cls,
+        *,
+        current_file_info: dict[str, Any] | None = None,
+        all_files_cache: dict[str, dict[str, Any]] | None = None,
+        module_to_file_path: dict[str, str] | None = None,
+        module_to_defines_global: dict[str, dict[str, str]] | None = None,
+        repo_root: str | Path | None = None,
+    ) -> SymbolResolver:
+        return cls(
+            current_file_info=current_file_info,
+            all_files_cache=all_files_cache,
+            module_to_file_path=module_to_file_path,
+            module_to_defines_global=module_to_defines_global,
+            repo_root=repo_root,
+        )
 
 
 # =============================================================================
@@ -310,13 +745,15 @@ class SymbolResolver:
 async def _pass_one_create_nodes(
     file_path: Path,
     repo_root: Path,
-    file_cache: Dict[str, Dict[str, Any]],
+    file_cache: dict[str, dict[str, Any]],
     *,
     force: bool = False,
 ) -> int:
     """
     Upserts CodeFile + its Code symbols.
     Re-embeds a symbol only if its content hash changed or embedding version changed (unless force=True).
+    NOTE: Even when a file is unchanged, we still parse and fill file_cache so
+          relationships can be rebuilt for *all* files in pass 2.
     """
     try:
         source_code = file_path.read_text(encoding="utf-8")
@@ -328,15 +765,6 @@ async def _pass_one_create_nodes(
     file_module = _path_to_module(file_path, repo_root)
     file_hash = _hash_text(source_code)
 
-# Early exit: if file content hash unchanged (and not force), skip nodes+rels work.
-    if not force:
-        prev = await cypher_query(
-            "OPTIONAL MATCH (f:CodeFile {path:$path}) RETURN f.hash AS h",
-            {"path": rel_path},
-        )
-
-        if prev and prev[0].get("h") == file_hash:
-            return 0
     # Upsert CodeFile by path (keep fqn for backward compatibility)
     await cypher_query(
         f"MERGE (f:{LABEL_CODEFILE} {{path:$path}}) "
@@ -348,14 +776,19 @@ async def _pass_one_create_nodes(
     existing = await cypher_query(
         """
         MATCH (:CodeFile {path:$path})-[:DEFINES]->(c:Code)
-        RETURN c.fqn AS fqn, c.content_hash AS content_hash, coalesce(c.embedding_version,0) AS v
+        RETURN c.fqn AS fqn,
+            c.content_hash AS content_hash,
+            coalesce(c.embedding_version,0) AS v,
+            c.embedding IS NULL AS missing
         """,
         {"path": rel_path},
     )
-    existing_map = {row["fqn"]: (row["content_hash"], int(row["v"])) for row in existing}
+    existing_map = {
+        row["fqn"]: (row["content_hash"], int(row["v"]), bool(row["missing"])) for row in existing
+    }
 
     # Prepare cache structure for pass-2
-    file_info: Dict[str, Any] = {
+    file_info: dict[str, Any] = {
         "path": rel_path,
         "module": file_module,
         "imports": {},
@@ -377,7 +810,7 @@ async def _pass_one_create_nodes(
             for alias in node.names:
                 file_info["imports"][alias.asname or alias.name] = f"{node.module}.{alias.name}"
 
-    # Ensure child->parent links for call collection
+    # Ensure child->parent links for call collection (best-effort)
     for parent in ast.walk(tree):
         for child in ast.iter_child_nodes(parent):
             setattr(child, "parent", parent)  # type: ignore
@@ -389,7 +822,14 @@ async def _pass_one_create_nodes(
         content_hash = _hash_bytes((src + "\n\n" + doc).encode("utf-8"))
 
         have = existing_map.get(node_fqn)
-        needs_embed = force or (not have) or (have[0] != content_hash) or (have[1] != EMBEDDING_VERSION)
+        missing_emb = have[2] if have else True
+        needs_embed = (
+            force
+            or (not have)
+            or (have[0] != content_hash)
+            or (have[1] != EMBEDDING_VERSION)
+            or missing_emb
+        )
 
         params = {
             "fqn": node_fqn,
@@ -405,7 +845,9 @@ async def _pass_one_create_nodes(
         if needs_embed:
             emb = None
             try:
-                emb = await get_embedding(src + ("\n\n" + doc if doc else ""), dimensions=VECTOR_DIM)
+                emb = await get_embedding(
+                    src + ("\n\n" + doc if doc else ""), dimensions=VECTOR_DIM
+                )
             except Exception:
                 emb = None
             params["embedding"] = emb
@@ -476,7 +918,7 @@ async def _pass_one_create_nodes(
 
 
 # =============================================================================
-# Pass 2: Relationships (clear & rebuild for touched files)
+# Pass 2: Relationships (clear & rebuild for selected files)
 # =============================================================================
 async def _clear_outgoing_rels_for_file(rel_path: str) -> None:
     # Remove file-level IMPORTS and symbol-level rels for this file
@@ -491,6 +933,7 @@ async def _clear_outgoing_rels_for_file(rel_path: str) -> None:
         {"path": rel_path},
     )
 
+
 async def _delete_file_graph(rel_path: str) -> None:
     """Remove a CodeFile and its defined Code symbols (and their incident rels)."""
     await cypher_query(
@@ -502,13 +945,20 @@ async def _delete_file_graph(rel_path: str) -> None:
         {"path": rel_path},
     )
 
+
 async def _pass_two_create_relationships(
     file_key: str,  # rel_path string used as key in file_cache
-    file_cache: Dict[str, Dict[str, Any]],
-    module_to_file_path: Dict[str, str],
+    file_cache: dict[str, dict[str, Any]],
+    module_to_file_path: dict[str, str],
+    module_to_defines_global: dict[str, dict[str, str]] | None = None,
 ) -> int:
     file_info = file_cache[file_key]
-    resolver = SymbolResolver(file_info, file_cache, module_to_file_path)
+    resolver = SymbolResolver(
+        file_info,
+        file_cache,
+        module_to_file_path,
+        module_to_defines_global=module_to_defines_global,
+    )
     rels_created = 0
 
     # IMPORTS (file -> file or file -> Library)
@@ -549,7 +999,7 @@ async def _pass_two_create_relationships(
                 )
                 rels_created += 1
 
-    # CALLS (func -> func)
+    # CALLS (func -> symbol), dotted names supported
     for func_fqn, call_names in file_info.get("function_calls", {}).items():
         for call_name in call_names:
             target, kind = resolver.resolve(call_name)
@@ -563,17 +1013,16 @@ async def _pass_two_create_relationships(
                 )
                 rels_created += 1
 
-    # USES_TYPE (func -> type symbol)
+    # USES_TYPE (func -> type symbol), handle generics / unions
     for func_fqn, hint_names in file_info.get("type_hints", {}).items():
         for hint in hint_names:
-            target, kind = resolver.resolve(hint)
-            if target and kind == "internal_symbol":
+            for dst_fqn in resolver.resolve_all_from_expr(hint):
                 await cypher_query(
                     f"""
                     MATCH (src:{LABEL_CODE} {{fqn:$src}}), (dst:{LABEL_CODE} {{fqn:$dst}})
                     MERGE (src)-[:USES_TYPE]->(dst)
                     """,
-                    {"src": func_fqn, "dst": target},
+                    {"src": func_fqn, "dst": dst_fqn},
                 )
                 rels_created += 1
 
@@ -589,7 +1038,7 @@ async def _pass_three_ingest_adrs_incremental(repo_root: Path, *, force: bool = 
         try:
             post = _load_adr_file(adr_path)
 
-            title = (post.metadata.get("title") or adr_path.stem)
+            title = post.metadata.get("title") or adr_path.stem
             status = post.metadata.get("status", "unknown")
             related_paths = post.metadata.get("related_code", []) or []
 
@@ -622,7 +1071,10 @@ async def _pass_three_ingest_adrs_incremental(repo_root: Path, *, force: bool = 
             if needs_embed:
                 emb = None
                 try:
-                    emb = await get_embedding(f"ADR: {title}\nStatus: {status}\n\n{content}", dimensions=VECTOR_DIM)
+                    emb = await get_embedding(
+                        f"ADR: {title}\nStatus: {status}\n\n{content}",
+                        dimensions=VECTOR_DIM,
+                    )
                 except Exception:
                     emb = None
                 params["embedding"] = emb
@@ -669,15 +1121,17 @@ async def patrol_and_ingest(
 ) -> dict[str, Any]:
     """
     Main entry point.
-    - If Git available and changed_only=True, only process files changed since last successful run.
-    - Within each changed file, only re-embed symbols whose content changed (or embedding version bumped).
-    - Relationships are rebuilt only for touched files.
+    - If Git available and changed_only=True, only process files changed since last successful run
+      (but we still parse *all* candidate files to rebuild relationships).
+    - Within each file, only re-embed symbols whose content changed (or embedding version bumped) unless force=True.
+    - Relationships are rebuilt for every file parsed this run.
     """
     repo_root = Path(root_dir).resolve()
     state = state_id or os.getenv("QORA_INGEST_STATE_ID", "default")
 
     # Ensure indices/constraints
     from .schema import ensure_all_graph_indices
+
     try:
         await ensure_all_graph_indices()
     except Exception:
@@ -689,9 +1143,9 @@ async def patrol_and_ingest(
     head = _git_head(repo_root)
     last = await _get_last_commit_from_graph(state) if head else None
 
-    candidates: Set[Path] = set()
+    candidates: set[Path] = set()
 
-    if not (force or not changed_only or not head or not last):
+    if head and last and not force and changed_only:
         # normal commit-to-commit diff
         changes = _git_changes(repo_root, last)
         dels = 0
@@ -707,10 +1161,9 @@ async def patrol_and_ingest(
             elif st in ("A", "M") and newp:
                 candidates.add(newp)
 
-        # If the commit diff is empty, consider worktree changes (uncommitted edits)
+        # Consider uncommitted edits if diff is empty
         if not candidates and dels == 0:
-            wt_changes = _git_worktree_changes(repo_root)
-            for st, oldp, newp in wt_changes:
+            for st, oldp, newp in _git_worktree_changes(repo_root):
                 if st == "D" and oldp:
                     rel = str(oldp.relative_to(repo_root)).replace("\\", "/")
                     await _delete_file_graph(rel)
@@ -720,21 +1173,50 @@ async def patrol_and_ingest(
         if not candidates:
             candidates = set(_all_py_files(repo_root))
     else:
-             candidates = set(_all_py_files(repo_root))
+        candidates = set(_all_py_files(repo_root))
 
-    # ---------- PASS 1: upsert nodes for candidate files ----------
-    file_cache: Dict[str, Dict[str, Any]] = {}
+    # ---------- PASS 1: upsert nodes (and ALWAYS fill file_cache) ----------
+    file_cache: dict[str, dict[str, Any]] = {}
     for file_path in sorted(candidates):
         up = await _pass_one_create_nodes(file_path, repo_root, file_cache, force=force)
         if up > 0:
             total_nodes += up
             files_processed += 1
+        else:
+            # unchanged file still parsed and placed in file_cache (so we can rebuild relationships)
+            files_processed += 1
 
-      # ---------- PASS 2: clear/rebuild relationships only for files we touched ----------
-    module_to_file_path = {info["module"]: key for key, info in file_cache.items()}
+    # Build GLOBAL lookups from graph (module -> path, and module -> {name->fqn})
+    # so we can resolve symbols across files we didn't touch.
+    mod_rows = await cypher_query("MATCH (f:CodeFile) RETURN f.module AS module, f.path AS path")
+    module_to_file_path_global = {
+        r["module"]: r["path"] for r in mod_rows if r.get("module") and r.get("path")
+    }
+    def_rows = await cypher_query(
+        "MATCH (f:CodeFile)-[:DEFINES]->(c:Code) RETURN f.module AS module, c.name AS name, c.fqn AS fqn",
+    )
+    module_to_defines_global: dict[str, dict[str, str]] = {}
+    for r in def_rows:
+        mod = r.get("module")
+        nm = r.get("name")
+        fq = r.get("fqn")
+        if not (mod and nm and fq):
+            continue
+        module_to_defines_global.setdefault(mod, {})[nm] = fq
+
+    # Merge local modules (from this run) over global mapping (local wins)
+    module_to_file_path_local = {info["module"]: key for key, info in file_cache.items()}
+    module_to_file_path = {**module_to_file_path_global, **module_to_file_path_local}
+
+    # ---------- PASS 2: clear/rebuild relationships for ALL files we parsed ----------
     for file_key in list(file_cache.keys()):
         await _clear_outgoing_rels_for_file(file_key)
-        rels = await _pass_two_create_relationships(file_key, file_cache, module_to_file_path)
+        rels = await _pass_two_create_relationships(
+            file_key,
+            file_cache,
+            module_to_file_path,
+            module_to_defines_global=module_to_defines_global,
+        )
         total_rels += rels
 
     # PASS 3: ADRs (incremental)
@@ -755,4 +1237,6 @@ async def patrol_and_ingest(
         "since": last,
         "state_id": state,
     }
+
+
 # touch

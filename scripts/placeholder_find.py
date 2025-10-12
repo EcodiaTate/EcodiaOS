@@ -86,7 +86,7 @@ TEXT_EXTS = {
     ".service",
 }
 
-# Phrases to detect (case-insensitive). Use careful regex with word boundaries where helpful.
+# Souls to detect (case-insensitive). Use careful regex with word boundaries where helpful.
 PLACEHOLDER_PATTERNS = [
     r"\bplaceholder\b",
     r"\bfor\s+now\b",
@@ -143,7 +143,7 @@ def read_text_safely(p: Path) -> str:
 
 
 def find_matches(text: str) -> list[str]:
-    # Return the unique phrases that matched (best-effort labeling by pattern)
+    # Return the unique souls that matched (best-effort labeling by pattern)
     matches = []
     for m in COMPILED_RE.finditer(text):
         span = m.group(0).strip()
@@ -198,7 +198,7 @@ def write_report(root: Path, out_path: Path, hits: list[tuple[Path, list[str]]])
     lines.append("---")
     lines.append("")
 
-    for idx, (path, phrases) in enumerate(hits, 1):
+    for idx, (path, souls) in enumerate(hits, 1):
         rel = path.relative_to(root) if path.is_relative_to(root) else path
         text = read_text_safely(path)
         # Sanity clamp to avoid exploding the file size in extreme cases
@@ -211,9 +211,9 @@ def write_report(root: Path, out_path: Path, hits: list[tuple[Path, list[str]]])
         lines.append(f"## {idx}. `{rel}`")
         lines.append("")
         lines.append(f"- **Absolute path:** `{path}`")
-        lines.append(f"- **Match count (unique spans):** {len(phrases)}")
+        lines.append(f"- **Match count (unique spans):** {len(souls)}")
         # Show unique matched snippets (not all occurrences) to guide what to fix
-        for ph in phrases:
+        for ph in souls:
             lines.append(f"  - `{ph}`")
         lines.append("")
         lines.append("<details>")
@@ -260,9 +260,9 @@ def main():
 
     if args.dry_run:
         print(f"[DRY RUN] Would include {len(hits)} files:")
-        for p, phrases in hits:
+        for p, souls in hits:
             rel = p.relative_to(root) if p.is_relative_to(root) else p
-            print(f" - {rel}  ({len(phrases)} unique match spans)")
+            print(f" - {rel}  ({len(souls)} unique match spans)")
         return
 
     write_report(root, out_path, hits)

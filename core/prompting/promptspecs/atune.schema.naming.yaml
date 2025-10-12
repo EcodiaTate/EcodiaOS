@@ -3,11 +3,11 @@ version: 1.0.0
 scope: atune.schema.naming
 identity:
   agent: "Atune"
-  persona_partial: "partials/identity.j2"
+  persona_partial: "identity"
 safety:
   partials:
-    - "partials/safety_min.j2"
-    - "partials/json_guard_strict.j2"
+    - "safety_min"
+    - "json_guard_strict"
 outputs:
   schema_ref: "core/prompting/schemas/atune_schema_naming_output.json"
   parse_mode: "strict_json"
@@ -18,7 +18,7 @@ budget_policy:
 context_lenses:
   - "equor.identity"
 partials:
-  - "partials/output_schema_hint.j2"
+  - "output_schema_hint"
   - "atune_schema_naming"
 ablation_knobs:
   temperature: [0.0, 0.2]

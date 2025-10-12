@@ -11,10 +11,10 @@ try:
     clean_encoded_str = encoded_str.strip()
     missing_padding = len(clean_encoded_str) % 4
     if missing_padding:
-        clean_encoded_str += '=' * (4 - missing_padding)
-    
+        clean_encoded_str += "=" * (4 - missing_padding)
+
     decoded_bytes = base64.b64decode(clean_encoded_str)
-    print(decoded_bytes.decode('utf-8'))
+    print(decoded_bytes.decode("utf-8"))
 
 except Exception as e:
     print(f"--- DECODING FAILED: {e} ---")

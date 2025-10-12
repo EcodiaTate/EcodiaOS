@@ -1,0 +1,642 @@
+2025-09-03T04:11:03.065061Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo\\cookies"), AnchoredSystemPathBuf(".turbo\\cookies\\.turbo-cookie"), AnchoredSystemPathBuf(".turbo\\cookies\\1.cookie")}
+2025-09-03T04:11:03.065792Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T04:11:03.080831Z  WARN daemon_server: turborepo_lib::commands::daemon: daemon already running
+2025-09-03T04:11:03.159864Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo\\daemon\\ff61efafc2b97c55-turbo.log.2025-09-03")}
+2025-09-03T04:11:03.159935Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T04:11:03.866717Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo\\daemon\\ff61efafc2b97c55-turbo.log.2025-09-03")}
+2025-09-03T04:11:03.866731Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T04:12:05.658404Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\axon\\loop\\__pycache__")}
+2025-09-03T04:12:05.658430Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T04:12:34.957843Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".ecodia\\approved_patches"), AnchoredSystemPathBuf(".ecodia")}
+2025-09-03T04:12:34.957860Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T09:49:14.116404Z  WARN daemon_server: turborepo_lib::commands::daemon: daemon already running
+2025-09-03T09:49:14.255924Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo\\cookies\\1.cookie"), AnchoredSystemPathBuf(".turbo\\cookies"), AnchoredSystemPathBuf(".turbo\\cookies\\.turbo-cookie")}
+2025-09-03T09:49:14.258505Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T09:49:14.848471Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo\\daemon\\ff61efafc2b97c55-turbo.log.2025-09-03")}
+2025-09-03T09:49:14.848506Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T09:55:45.744622Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("frontend-voxis\\src\\app\\api\\voxis\\talk\\route.ts")}
+2025-09-03T09:55:45.745314Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("frontend-voxis"), path: AnchoredSystemPathBuf("frontend-voxis") }}))
+2025-09-03T09:55:47.535987Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("frontend-voxis\\src\\app\\api\\voxis\\talk\\route.ts")}
+2025-09-03T09:55:47.536018Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("frontend-voxis"), path: AnchoredSystemPathBuf("frontend-voxis") }}))
+2025-09-03T09:55:47.935986Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-09-03T09:55:47.947571Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("frontend-voxis\\src\\app\\api\\voxis\\talk\\route.ts")}
+2025-09-03T09:55:47.947602Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("frontend-voxis"), path: AnchoredSystemPathBuf("frontend-voxis") }}))
+2025-09-03T09:55:47.947759Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-09-03T10:10:57.971836Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("core\\prompting\\templates.yaml")}
+2025-09-03T10:10:58.000481Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:11:02.936436Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("core\\prompting\\templates.yaml")}
+2025-09-03T10:11:02.936463Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:24:45.945207Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\New folder")}
+2025-09-03T10:24:45.945286Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:24:48.341503Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\primitives"), AnchoredSystemPathBuf("systems\\unity\\core\\New folder")}
+2025-09-03T10:24:48.341544Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:24:51.547532Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\primitives\\__init__.py")}
+2025-09-03T10:24:51.547551Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:24:51.945331Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\primitives\\__init__.py")}
+2025-09-03T10:24:51.945354Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:25:07.049825Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\primitives\\proposal.py")}
+2025-09-03T10:25:07.049854Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:25:07.447571Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\primitives\\proposal.py")}
+2025-09-03T10:25:07.447594Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:28:45.743201Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\primitives\\proposal.py")}
+2025-09-03T10:28:45.743233Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:29:00.744274Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\primitives\\critique.py")}
+2025-09-03T10:29:00.744301Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:29:00.935645Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\primitives\\critique.py")}
+2025-09-03T10:29:00.935661Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:29:09.744777Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\primitives\\planning.py")}
+2025-09-03T10:29:09.744867Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:29:10.041731Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\primitives\\planning.py")}
+2025-09-03T10:29:10.041777Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:29:20.842911Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\primitives\\expansion.py")}
+2025-09-03T10:29:20.843004Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:29:21.138049Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\primitives\\expansion.py")}
+2025-09-03T10:29:21.138078Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:29:30.244569Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\primitives\\synthesis.py")}
+2025-09-03T10:29:30.244663Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:29:30.448464Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\primitives\\synthesis.py")}
+2025-09-03T10:29:30.448479Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:29:30.539144Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\primitives\\synthesis.py")}
+2025-09-03T10:29:30.539176Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:31:11.743661Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\protocols\\aletheia_protocol.py")}
+2025-09-03T10:31:11.743697Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:31:12.038561Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\protocols\\aletheia_protocol.py")}
+2025-09-03T10:31:12.038580Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:31:12.140943Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\protocols\\aletheia_protocol.py")}
+2025-09-03T10:31:12.140965Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:31:16.347346Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\protocols\\aletheia_protocol.py")}
+2025-09-03T10:31:16.347394Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:34:02.546027Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\primitives\\proposal.py")}
+2025-09-03T10:34:02.546059Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:34:08.943375Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\primitives\\critique.py")}
+2025-09-03T10:34:08.943391Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:34:16.337272Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\protocols\\aletheia_protocol.py")}
+2025-09-03T10:34:16.337294Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:34:16.445073Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\protocols\\aletheia_protocol.py")}
+2025-09-03T10:34:16.445100Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:36:27.139224Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\room\\orchestrator.py")}
+2025-09-03T10:36:27.139242Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:36:51.540421Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\protocols\\aletheia_protocol.py")}
+2025-09-03T10:36:51.540453Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:40:14.151200Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T10:40:14.151261Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:40:14.441615Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T10:40:14.442269Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:46:37.051427Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\room\\orchestrator.py")}
+2025-09-03T10:46:37.051463Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:46:40.639760Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\room\\orchestrator.py")}
+2025-09-03T10:46:40.639789Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:46:42.037635Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\room\\orchestrator.py")}
+2025-09-03T10:46:42.037659Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:53:35.313768Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\protocols\\argument_mining.py")}
+2025-09-03T10:53:35.313796Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:53:42.214278Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\protocols\\cognition.py"), AnchoredSystemPathBuf("systems\\unity\\core\\protocols\\concurrent_competition.py"), AnchoredSystemPathBuf("systems\\unity\\core\\protocols\\critique_and_repair.py")}
+2025-09-03T10:53:42.214415Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:53:42.312961Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\protocols\\meta_criticism.py"), AnchoredSystemPathBuf("systems\\unity\\core\\protocols\\debate.py"), AnchoredSystemPathBuf("systems\\unity\\core\\protocols\\federated_consensus.py")}
+2025-09-03T10:53:42.312993Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:54:02.425788Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\room\\orchestrator.py")}
+2025-09-03T10:54:02.425858Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:54:02.512451Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\room\\orchestrator.py")}
+2025-09-03T10:54:02.512506Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:54:11.313330Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\room\\orchestrator.py")}
+2025-09-03T10:54:11.313346Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:54:11.421542Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\room\\orchestrator.py")}
+2025-09-03T10:54:11.421558Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:54:26.917058Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\room\\orchestrator.py")}
+2025-09-03T10:54:26.917102Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:54:27.021338Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\room\\orchestrator.py")}
+2025-09-03T10:54:27.021364Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:54:40.620669Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\room\\orchestrator.py")}
+2025-09-03T10:54:40.620698Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:54:46.010929Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\room\\orchestrator.py")}
+2025-09-03T10:54:46.010956Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:54:55.310412Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\room\\orchestrator.py")}
+2025-09-03T10:54:55.310447Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:54:56.304993Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\room\\orchestrator.py")}
+2025-09-03T10:54:56.305017Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:54:56.417373Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\room\\orchestrator.py")}
+2025-09-03T10:54:56.417397Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T10:54:57.514534Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\room\\orchestrator.py")}
+2025-09-03T10:54:57.514579Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:00:52.873227Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\room\\orchestrator.py")}
+2025-09-03T11:00:52.873270Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:03:35.363200Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\room\\orchestrator.py")}
+2025-09-03T11:03:35.363255Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:03:48.753950Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\room\\orchestrator.py")}
+2025-09-03T11:03:48.753996Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:03:53.156958Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\unity\\core\\room\\orchestrator.py")}
+2025-09-03T11:03:53.156985Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:52:15.081313Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T11:52:15.081851Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:52:15.193566Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T11:52:15.193656Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:54:38.882557Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T11:54:38.882610Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:54:40.973579Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T11:54:40.973599Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:54:45.374164Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T11:54:45.374187Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:54:47.277467Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T11:54:47.277489Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:54:47.383731Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T11:54:47.383751Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:54:55.472953Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T11:54:55.472978Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:54:59.871785Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T11:54:59.871807Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:55:03.673091Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T11:55:03.673551Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:55:07.773399Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T11:55:07.773424Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:55:11.381299Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T11:55:11.381347Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:55:14.773557Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T11:55:14.773589Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:55:14.869997Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T11:55:14.870013Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:55:18.371316Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T11:55:18.371349Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:55:20.371572Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T11:55:20.371628Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:55:23.869409Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T11:55:23.869425Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:55:27.382460Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T11:55:27.383085Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:56:20.472478Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:56:20.472552Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:56:29.567993Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:56:29.568044Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:56:31.179725Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:56:31.179749Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:56:38.269349Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:56:38.269366Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:56:39.472537Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:56:39.472558Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:56:46.565222Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:56:46.565237Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:56:47.973409Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:56:47.973440Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:56:55.473103Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:56:55.473128Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:56:56.769815Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:56:56.769838Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:57:03.269570Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:57:03.269584Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:57:04.471979Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:57:04.472002Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:57:10.878547Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:57:10.878598Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:57:11.965909Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:57:11.965923Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:57:18.566351Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:57:18.566370Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:57:20.565627Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:57:20.565651Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:57:26.471870Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:57:26.471888Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:57:27.672917Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:57:27.672958Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:57:38.064787Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:57:38.064809Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:57:39.470054Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:57:39.470076Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:57:52.671648Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:57:52.671781Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:57:54.173286Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:57:54.173303Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:58:04.172204Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:58:04.172289Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:58:05.464123Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:58:05.464145Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:58:11.376061Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:58:11.376086Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:58:12.673570Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:58:12.673592Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:58:18.875319Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:58:18.875346Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:58:20.875682Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:58:20.875705Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:58:27.766130Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:58:27.766153Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:58:29.063454Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:58:29.063478Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:58:35.064257Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:58:35.064300Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:58:36.562315Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:58:36.562337Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:58:37.874597Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900577.jsonl")}
+2025-09-03T11:58:37.874617Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:59:10.765229Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T11:59:10.765252Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:59:29.170072Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T11:59:29.170087Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:59:35.565497Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T11:59:35.565522Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:59:39.964465Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T11:59:39.964481Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:59:54.670923Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T11:59:54.670954Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:59:54.763797Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T11:59:54.763846Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T11:59:59.559776Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T11:59:59.559800Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:00:00.668419Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T12:00:00.668441Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:00:19.167617Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T12:00:19.167633Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:00:20.169271Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T12:00:20.169293Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:00:27.872503Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T12:00:27.872524Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:00:28.667451Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T12:00:28.667473Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:00:34.872679Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T12:00:34.872697Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:00:36.059447Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T12:00:36.059469Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:00:43.058730Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T12:00:43.058755Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:00:43.966001Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T12:00:43.966039Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:01:05.370320Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T12:01:05.370369Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:01:08.367928Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T12:01:08.367947Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:01:18.965485Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T12:01:18.965507Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:01:20.057188Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T12:01:20.057212Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:01:26.767866Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T12:01:26.767883Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:01:27.871375Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T12:01:27.871399Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:01:39.166724Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T12:01:39.166742Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:01:40.169259Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T12:01:40.169280Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:01:59.569682Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T12:01:59.569710Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:02:00.863890Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T12:02:00.863920Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:02:07.457055Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T12:02:07.457085Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:02:09.361532Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T12:02:09.361557Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:02:19.570428Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T12:02:19.570459Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:02:20.657640Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T12:02:20.657678Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:02:22.164767Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756900792.jsonl")}
+2025-09-03T12:02:22.164790Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:09:01.956146Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("core\\prompting\\templates.yaml")}
+2025-09-03T12:09:01.956216Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:09:03.755843Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("core\\prompting\\templates.yaml")}
+2025-09-03T12:09:03.755872Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:11:27.751957Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\agent\\tools.py")}
+2025-09-03T12:11:27.751997Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:13:38.044656Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\nscs\\agent_tools.py")}
+2025-09-03T12:13:38.044716Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:14:14.944581Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\agent\\orchestrator\\utils.py")}
+2025-09-03T12:14:14.944610Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:14:48.036093Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\nscs\\agent_tools.py")}
+2025-09-03T12:14:48.036122Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:15:07.646157Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\nscs\\agent_tools.py")}
+2025-09-03T12:15:07.646173Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:15:09.639487Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\nscs\\agent_tools.py")}
+2025-09-03T12:15:09.639510Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:15:10.744994Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\nscs\\agent_tools.py")}
+2025-09-03T12:15:10.745082Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:15:19.337814Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\nscs\\agent_tools.py")}
+2025-09-03T12:15:19.337836Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:17:19.133899Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\agent\\tool_specs_additions.py")}
+2025-09-03T12:17:19.133931Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:17:21.449426Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\agent\\tool_specs_additions.py")}
+2025-09-03T12:17:21.449443Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:17:23.134631Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\agent\\tool_specs_additions.py")}
+2025-09-03T12:17:23.134658Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:17:39.234050Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\nscs\\agent_tools.py")}
+2025-09-03T12:17:39.234108Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:17:40.835831Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\nscs\\agent_tools.py")}
+2025-09-03T12:17:40.835856Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:17:44.634676Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\nscs\\agent_tools.py")}
+2025-09-03T12:17:44.634715Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:17:47.235458Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\nscs\\agent_tools.py")}
+2025-09-03T12:17:47.235520Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:18:32.246101Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\nscs\\agent_tools.py")}
+2025-09-03T12:18:32.246119Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:22:17.731596Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:22:17.731663Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:22:22.432953Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:22:22.432966Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:22:28.637512Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:22:28.637535Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:22:29.434657Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:22:29.434676Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:22:36.826437Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:22:36.826470Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:22:37.729540Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:22:37.729553Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:22:44.338194Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:22:44.338214Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:22:45.339563Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:22:45.339590Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:22:50.932826Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:22:50.932842Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:22:51.748041Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:22:51.748057Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:23:00.026648Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:23:00.026663Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:23:04.932300Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:23:04.932320Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:23:06.026785Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:23:06.026802Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:23:11.230458Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:23:11.230493Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:23:12.026902Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:23:12.026917Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:23:17.931659Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:23:17.931674Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:23:19.135730Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:23:19.135747Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:23:25.433149Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:23:25.433173Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:23:26.134834Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:23:26.134860Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:23:35.227804Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:23:35.227848Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:23:39.634281Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:23:39.634297Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:23:46.347160Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:23:46.347185Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:23:53.026771Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:23:53.026795Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:23:53.833496Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:23:53.833510Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:24:02.838435Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:24:02.838453Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:24:07.337082Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:24:07.337097Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:24:08.025016Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902136.jsonl")}
+2025-09-03T12:24:08.025035Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:25:56.357032Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T12:25:56.357105Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:26:03.431392Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T12:26:03.431464Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:26:05.322469Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T12:26:05.322482Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:26:08.232896Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T12:26:08.233012Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:26:11.532371Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T12:26:11.532396Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:26:15.244106Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T12:26:15.244125Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:26:28.223834Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T12:26:28.223872Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:26:28.332578Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T12:26:28.332624Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:26:37.930423Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T12:26:37.930497Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:26:48.531723Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T12:26:48.531751Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:26:55.628594Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T12:26:55.628640Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:27:00.622586Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("payload.json")}
+2025-09-03T12:27:00.622601Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:27:22.128004Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:27:22.128018Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:27:26.427068Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:27:26.427084Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:27:29.327611Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:27:29.327626Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:27:35.130409Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:27:35.130423Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:27:38.021873Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:27:38.021891Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:27:43.426985Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:27:43.427001Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:27:46.333339Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:27:46.333364Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:27:52.131887Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:27:52.131907Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:27:56.122882Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:27:56.122908Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:28:03.727093Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:28:03.727273Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:28:07.823958Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:28:07.823982Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:28:14.227845Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:28:14.227872Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:28:19.832787Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:28:19.832809Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:28:23.333895Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:28:23.333912Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:28:29.729168Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:28:29.729205Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:28:32.722601Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:28:32.722619Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:28:39.527306Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:28:39.527323Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:28:42.623185Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:28:42.623214Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:28:48.222661Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:28:48.222698Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:28:53.419322Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:28:53.419348Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:28:59.023481Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:28:59.023497Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:29:03.425925Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:29:03.425953Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:29:29.231525Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:29:29.231542Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:29:38.827850Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("core\\prompting\\templates.yaml")}
+2025-09-03T12:29:38.827866Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:29:54.719157Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:29:54.719175Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:30:01.518704Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("core\\prompting\\templates.yaml")}
+2025-09-03T12:30:01.518780Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:30:01.618133Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("core\\prompting\\templates.yaml")}
+2025-09-03T12:30:01.618152Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:30:02.023627Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756902439.jsonl")}
+2025-09-03T12:30:02.023797Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:30:05.519094Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("core\\prompting\\templates.yaml")}
+2025-09-03T12:30:05.519116Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:30:05.633489Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("core\\prompting\\templates.yaml")}
+2025-09-03T12:30:05.633506Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:39:57.170316Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:39:57.179760Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:40:08.011538Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:40:08.013329Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:40:15.709866Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:40:15.709898Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:40:19.710647Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:40:19.710673Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:40:26.824362Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:40:26.824384Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:40:34.523704Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:40:34.523734Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:40:45.010733Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:40:45.010771Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:40:50.108909Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:40:50.108957Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:40:58.924129Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:40:58.924196Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:41:04.010822Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:41:04.010917Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:41:14.916408Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:41:14.916499Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:41:22.509358Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:41:22.509391Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:41:34.619115Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:41:34.619154Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:41:38.319788Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:41:38.319811Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:41:48.414889Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:41:48.414906Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:41:53.117251Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:41:53.117284Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:42:01.007483Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:42:01.007544Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:42:06.110143Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:42:06.110259Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:42:13.508539Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:42:13.508595Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:42:18.416923Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:42:18.416982Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:42:25.614370Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:42:25.614391Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:42:28.819183Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:42:28.819202Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:43:00.909001Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:43:00.909021Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:43:32.514533Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:43:32.514562Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:43:41.320319Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:43:41.320362Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:43:45.209776Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:43:45.209803Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:43:51.615968Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:43:51.615996Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:43:58.209897Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:43:58.209942Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T12:43:59.710040Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756903191.jsonl")}
+2025-09-03T12:43:59.710069Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:00:05.105850Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("core\\prompting\\templates.yaml")}
+2025-09-03T13:00:05.105972Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:00:14.202170Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("core\\prompting\\templates.yaml")}
+2025-09-03T13:00:14.202245Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:01:31.193829Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("core\\prompting\\templates.yaml")}
+2025-09-03T13:01:31.193870Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:01:31.309290Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("core\\prompting\\templates.yaml")}
+2025-09-03T13:01:31.309316Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:01:32.295350Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("core\\prompting\\templates.yaml")}
+2025-09-03T13:01:32.295415Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:03:39.700935Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\agent\\tools.py")}
+2025-09-03T13:03:39.700977Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:03:47.906229Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\agent\\tools.py")}
+2025-09-03T13:03:47.906261Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:03:59.501578Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\agent\\tools.py")}
+2025-09-03T13:03:59.501598Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:04:16.895445Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\nscs\\agent_tools.py")}
+2025-09-03T13:04:16.895474Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:04:19.304629Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\nscs\\agent_tools.py")}
+2025-09-03T13:04:19.304649Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:06:56.892129Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\agent\\tools.py")}
+2025-09-03T13:06:56.892174Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:07:51.092181Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("core\\prompting\\templates.yaml")}
+2025-09-03T13:07:51.092209Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:11:57.291090Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:11:57.291133Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:12:06.395848Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:12:06.395939Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:12:14.297528Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:12:14.297571Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:12:23.891799Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:12:23.891819Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:12:28.192649Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:12:28.192685Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:12:34.300955Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:12:34.300978Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:12:37.990661Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:12:37.990721Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:12:44.490630Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:12:44.490648Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:12:47.594725Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:12:47.594758Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:12:53.995317Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:12:53.995331Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:12:57.096383Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:12:57.096401Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:13:04.300470Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:13:04.300497Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:13:07.100280Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:13:07.100295Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:13:12.392737Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:13:12.392757Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:13:17.196974Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:13:17.197029Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:13:26.806177Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:13:26.806192Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:13:30.397339Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:13:30.397375Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:13:37.490932Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:13:37.490946Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:13:41.199231Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:13:41.199252Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:13:48.801257Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:13:48.801288Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:13:56.000129Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:13:56.000171Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:14:09.688681Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:14:09.688718Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:14:09.799752Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:14:09.799875Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:14:38.295559Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:14:38.295585Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:14:44.595772Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:14:44.595791Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:14:47.187293Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:14:47.187567Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:14:52.992643Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:14:52.992663Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:14:55.591029Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:14:55.591045Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:15:01.495290Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:15:01.495319Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:15:05.087847Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:15:05.087868Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:15:06.298272Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756905112.jsonl")}
+2025-09-03T13:15:06.298296Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:23:40.592015Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("core\\prompting\\templates.yaml")}
+2025-09-03T13:23:40.592114Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:28:58.996927Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756906115.jsonl")}
+2025-09-03T13:28:58.997212Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:29:20.522487Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756906115.jsonl")}
+2025-09-03T13:29:20.522521Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:30:51.085889Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756906115.jsonl")}
+2025-09-03T13:30:51.085939Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:30:57.396913Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756906115.jsonl")}
+2025-09-03T13:30:57.396927Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:31:00.783357Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756906115.jsonl")}
+2025-09-03T13:31:00.783373Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:31:11.388349Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756906115.jsonl")}
+2025-09-03T13:31:11.388380Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:31:14.381675Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".simula\\traces\\2025-09-03\\run_1756906115.jsonl")}
+2025-09-03T13:31:14.381689Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:39:23.889563Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\nscs\\agent_tools.py")}
+2025-09-03T13:39:23.889594Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:40:32.989732Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\agent\\orchestrator\\tool_safety.py")}
+2025-09-03T13:40:32.989758Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:40:39.195549Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\agent\\orchestrator\\tool_safety.py")}
+2025-09-03T13:40:39.195565Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:41:31.586399Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("core\\prompting\\templates.yaml")}
+2025-09-03T13:41:31.586501Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:41:33.686692Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("core\\prompting\\templates.yaml")}
+2025-09-03T13:41:33.686827Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:48:55.380055Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\agent\\orchestrator\\tool_safety.py")}
+2025-09-03T13:48:55.380264Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:48:56.479974Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\agent\\orchestrator\\tool_safety.py")}
+2025-09-03T13:48:56.480041Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:49:02.587564Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\agent\\orchestrator\\tool_safety.py")}
+2025-09-03T13:49:02.587582Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-09-03T13:49:05.590845Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("systems\\simula\\agent\\orchestrator\\tool_safety.py")}
+2025-09-03T13:49:05.590879Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))

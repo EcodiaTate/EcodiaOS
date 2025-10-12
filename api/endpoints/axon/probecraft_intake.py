@@ -4,6 +4,7 @@ from __future__ import annotations
 # highlight-start
 import time
 import uuid
+
 # highlight-end
 from typing import Any
 
@@ -14,8 +15,10 @@ from systems.atune.gaps.schema import CapabilityGapEvent
 from systems.axon.mesh.lifecycle import DriverLifecycleManager, DriverStatus
 from systems.axon.mesh.registry import DriverRegistry
 from systems.axon.mesh.scorecard import ScorecardManager
+
 # highlight-start
 from systems.axon.schemas import AxonIntent
+
 # highlight-end
 from systems.axon.security.attestation import AttestationManager  # expected in your tree
 
@@ -98,19 +101,19 @@ async def _request_unity_playbook(
 
 
 async def _post_ab_trial(
-# highlight-start
+    # highlight-start
     challenger: str,
     capability: str,
     decision_id: str,
     gap: CapabilityGapEvent,
-# highlight-end
+    # highlight-end
 ) -> dict[str, Any]:
     """
     Kick off A/B (or shadow-only) to compare the challenger vs incumbent.
     """
     client = await get_http_client()
     ab_path = getattr(ENDPOINTS, "AXON_AB_RUN", "/ab/run")
-# highlight-start
+    # highlight-start
     # Construct a valid AxonIntent for the A/B trial.
     # Use the first exemplar from the gap event to form the parameters.
     params = {}
@@ -130,7 +133,7 @@ async def _post_ab_trial(
     )
     headers = {"x-decision-id": decision_id}
     r = await client.post(ab_path, json=intent.model_dump(), headers=headers)
-# highlight-end
+    # highlight-end
     r.raise_for_status()
     return r.json()
 
@@ -236,12 +239,12 @@ async def probecraft_intake(
     ab_result = {}
     try:
         ab_result = await _post_ab_trial(
-# highlight-start
+            # highlight-start
             challenger=driver_name,
             capability=realized_capability,
             decision_id=decision_id,
             gap=gap,
-# highlight-end
+            # highlight-end
         )
     except Exception as e:
         ab_result = {"warning": f"ab_start_failed: {e}"}

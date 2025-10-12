@@ -10,6 +10,7 @@ from systems.unity.schemas import DeliberationSpec, VerdictModel
 
 
 def _jsonable(obj: Any) -> Any:
+    """A helper function to safely serialize complex objects to JSON."""
     if obj is None or isinstance(obj, bool | int | float | str):
         return obj
     if isinstance(obj, list | tuple | set):
@@ -19,17 +20,13 @@ def _jsonable(obj: Any) -> Any:
     md = getattr(obj, "model_dump", None)
     if callable(md):
         return _jsonable(md())
-    dct = getattr(obj, "__dict__", None)
-    if isinstance(dct, dict):
-        return _jsonable(dct)
     return str(obj)
 
 
 async def create_deliberation_node(
-    episode_id: str,
-    spec: DeliberationSpec,
-    rcu_start_ref: str,
+    episode_id: str, spec: DeliberationSpec, rcu_start_ref: str
 ) -> str:
+    """Creates the main Deliberation node in the graph."""
     deliberation_id = f"delib_{uuid.uuid4().hex}"
     props = {
         "id": deliberation_id,
@@ -40,43 +37,62 @@ async def create_deliberation_node(
         "rcu_start_ref": rcu_start_ref,
         "status": "started",
         "spec": json.dumps(_jsonable(spec), separators=(",", ":"), ensure_ascii=False),
-        "created_at": None,  # allow DB default datetime()
     }
-    await add_node("Deliberation", props)
+    await cypher_query(
+        """
+        MERGE (d:Deliberation {id: $id})
+        ON CREATE SET d.created_at = datetime()
+        SET d += $props
+        """,
+        {"id": deliberation_id, "props": props},
+    )
     return deliberation_id
 
 
 async def annotate_deliberation(deliberation_id: str, **fields: Any) -> None:
+    """Adds or updates properties on an existing Deliberation node."""
     if not fields:
         return
-    fields = _jsonable(fields)
+
+    # FIX: Explicitly serialize any nested dictionary values to JSON strings.
+    sanitized_fields = {}
+    for key, value in fields.items():
+        if isinstance(value, dict):
+            sanitized_fields[key] = json.dumps(
+                _jsonable(value), separators=(",", ":"), ensure_ascii=False
+            )
+        else:
+            sanitized_fields[key] = value
+
     await cypher_query(
-        "MATCH (d:Deliberation {id:$id}) SET d += $fields RETURN d.id",
-        {"id": deliberation_id, "fields": fields},
+        "MATCH (d:Deliberation {id:$id}) SET d += $fields",
+        {"id": deliberation_id, "fields": sanitized_fields},
     )
 
 
 async def record_transcript_chunk(deliberation_id: str, turn: int, role: str, content: str) -> str:
+    """Creates a TranscriptChunk and atomically links it to the Deliberation."""
     chunk_id = f"tc_{uuid.uuid4().hex}"
-    await add_node(
-        "TranscriptChunk",
-        {
-            "id": chunk_id,
-            "deliberation_id": deliberation_id,
-            "turn": int(turn),
-            "role": role,
-            "content": content,
-        },
-    )
-    await add_relationship(
-        src_match={"label": "Deliberation", "match": {"id": deliberation_id}},
-        dst_match={"label": "TranscriptChunk", "match": {"id": chunk_id}},
-        rel_type="HAS_TRANSCRIPT",
+    props = {
+        "id": chunk_id,
+        "deliberation_id": deliberation_id,
+        "turn": int(turn),
+        "role": role,
+        "content": content,
+    }
+    await cypher_query(
+        """
+        MATCH (d:Deliberation {id: $deliberation_id})
+        CREATE (t:TranscriptChunk $props)
+        MERGE (d)-[:HAS_TRANSCRIPT]->(t)
+        """,
+        {"deliberation_id": deliberation_id, "props": props},
     )
     return chunk_id
 
 
 async def create_artifact(deliberation_id: str, artifact_type: str, body: dict[str, Any]) -> str:
+    """Creates an Artifact node (e.g., for a plan or search tree) and links it."""
     art_id = f"art_{uuid.uuid4().hex}"
     await add_node(
         "Artifact",
@@ -95,6 +111,7 @@ async def create_artifact(deliberation_id: str, artifact_type: str, body: dict[s
 
 
 async def upsert_claim(deliberation_id: str, claim_text: str, created_by_role: str) -> str:
+    """Creates a Claim node for use in an argument map."""
     claim_id = f"claim_{uuid.uuid4().hex}"
     await add_node(
         "Claim",
@@ -120,6 +137,7 @@ async def link_support_or_attack(
     rel_type: str,
     rationale: str,
 ) -> str:
+    """Creates a Support or Attack node to link two other nodes."""
     link_id = f"{rel_type.lower()}_{uuid.uuid4().hex}"
     link_label = "Support" if rel_type == "SUPPORTED_BY" else "Attack"
 
@@ -138,19 +156,21 @@ async def link_support_or_attack(
 
 
 async def finalize_verdict(deliberation_id: str, verdict: VerdictModel, rcu_end_ref: str) -> str:
+    """Creates the final Verdict node, links it, and updates the Deliberation status."""
     verdict_id = f"verdict_{uuid.uuid4().hex}"
     vprops = {"id": verdict_id, "rcu_end_ref": rcu_end_ref, **_jsonable(verdict)}
-    await add_node("Verdict", vprops)
-    await add_relationship(
-        src_match={"label": "Deliberation", "match": {"id": deliberation_id}},
-        dst_match={"label": "Verdict", "match": {"id": verdict_id}},
-        rel_type="RESULTED_IN",
-    )
+
     await cypher_query(
         """
-        MATCH (d:Deliberation {id:$id})
-        SET d.status = 'completed', d.rcu_end_ref = $rcu
+        MATCH (d:Deliberation {id: $deliberation_id})
+        CREATE (v:Verdict $props)
+        MERGE (d)-[:RESULTED_IN]->(v)
+        SET d.status = 'completed', d.rcu_end_ref = $rcu_end_ref
         """,
-        {"id": deliberation_id, "rcu": rcu_end_ref},
+        {
+            "deliberation_id": deliberation_id,
+            "props": vprops,
+            "rcu_end_ref": rcu_end_ref,
+        },
     )
     return verdict_id

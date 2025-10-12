@@ -27,17 +27,17 @@ class PatchHandoff:
         """Constructs the payload for the Simula handoff."""
         return SimulaPatchBrief(
             brief_id=f"sb_{uuid4().hex[:10]}",
-            source="nova", 
-            candidate_id=winner.candidate_id, 
-            playbook=winner.playbook, 
-            problem=brief.problem, 
-            context=brief.context or {}, 
-            mechanism_spec=winner.spec.get("mechanism_graph", {}), 
-            capability_spec=winner.spec.get("capability_spec", {}), 
-            obligations=winner.obligations or {}, 
-            rollback_contract=winner.rollback_contract or {}, 
-            evidence=winner.evidence or {}, 
-            provenance={"nova_brief_id": brief.brief_id, "decision_id": decision_id or ""}, 
+            source="nova",
+            candidate_id=winner.candidate_id,
+            playbook=winner.playbook,
+            problem=brief.problem,
+            context=brief.context or {},
+            mechanism_spec=winner.spec.get("mechanism_graph", {}),
+            capability_spec=winner.spec.get("capability_spec", {}),
+            obligations=winner.obligations or {},
+            rollback_contract=winner.rollback_contract or {},
+            evidence=winner.evidence or {},
+            provenance={"nova_brief_id": brief.brief_id, "decision_id": decision_id or ""},
         )
 
     async def submit(

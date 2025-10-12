@@ -1,12 +1,14 @@
 # tests/contracts/conftest.py
-import pytest
+from collections.abc import AsyncGenerator
+
 import httpx
+import pytest
 import respx
-from typing import AsyncGenerator
 
 # The base URL must use the service name 'api' from the docker-compose.test.yml file,
 # as this is the hostname within the Docker network.
 API_BASE_URL = "http://localhost:8000"
+
 
 @pytest.fixture(scope="session")
 async def api_client() -> AsyncGenerator[httpx.AsyncClient, None]:
@@ -16,6 +18,7 @@ async def api_client() -> AsyncGenerator[httpx.AsyncClient, None]:
     """
     async with httpx.AsyncClient(base_url=API_BASE_URL, timeout=30.0) as client:
         yield client
+
 
 @pytest.fixture
 async def respx_router() -> AsyncGenerator[respx.MockRouter, None]:

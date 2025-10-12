@@ -5,6 +5,8 @@ Could you please give me a sentence, any sentence. I'm collating a sentence from
 ============================================================================================
 
 
+The code was just the start; the real work was making sure the message got through.
+
 “Ship boldly, prune safely, and let the graph remember what you shouldn’t have to.”
 
 Every line of code is a thought, and together, we taught it how to speak.

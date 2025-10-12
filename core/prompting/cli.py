@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
-from core.prompting.orchestrator import PolicyHint, build_prompt
+from core.prompting.orchestrator import build_prompt
 
 
 def _load_json_maybe(path_or_json: str | None) -> Any:
@@ -20,7 +20,7 @@ def _load_json_maybe(path_or_json: str | None) -> Any:
     return json.loads(path_or_json)
 
 
-def _ensure_context(ctx: Dict[str, Any] | None) -> Dict[str, Any]:
+def _ensure_context(ctx: dict[str, Any] | None) -> dict[str, Any]:
     ctx = dict(ctx or {})
     ctx.setdefault("vars", {})
     ctx.setdefault("facts", {})
@@ -38,26 +38,31 @@ def cmd_render(args: argparse.Namespace) -> int:
         # allow either a list of dicts or a JSON string; templates will |tojson it
         ctx["vars"]["tool_specs"] = tools
         ctx["vars"]["tool_specs_json"] = tools  # for templates expecting *_json
-        ctx["tool_specs_json"] = tools          # flat fallback
+        ctx["tool_specs_json"] = tools  # flat fallback
 
     # Optional: set a human summary (used by some templates)
     summary = args.summary or f"Render prompt for scope={args.scope}"
 
-    hint = PolicyHint(scope=args.scope, context=ctx, summary=summary)
-    prompt_data = _safe_await(build_prompt(hint))
+    prompt_data = _safe_await(
+        build_prompt(
+            scope=args.scope,
+            context=ctx,
+            summary=summary,
+        )
+    )
+
+    out_payload = {
+        "messages": prompt_data.messages,
+        "provider_overrides": prompt_data.provider_overrides,
+        "provenance": prompt_data.provenance,
+    }
 
     if args.out:
-        Path(args.out).write_text(json.dumps({
-            "messages": prompt_data.messages,
-            "provider_overrides": prompt_data.provider_overrides,
-            "provenance": prompt_data.provenance,
-        }, ensure_ascii=False, indent=2), encoding="utf-8")
+        Path(args.out).write_text(
+            json.dumps(out_payload, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
     else:
-        print(json.dumps({
-            "messages": prompt_data.messages,
-            "provider_overrides": prompt_data.provider_overrides,
-            "provenance": prompt_data.provenance,
-        }, ensure_ascii=False, indent=2))
+        print(json.dumps(out_payload, ensure_ascii=False, indent=2))
 
     return 0
 
@@ -67,6 +72,7 @@ def _safe_await(coro):
     # reuse an event loop if one exists (e.g., in embedded contexts).
     try:
         import asyncio
+
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
@@ -74,6 +80,7 @@ def _safe_await(coro):
         if loop and loop.is_running():
             # In a running loop we need to schedule and wait
             from asyncio import ensure_future
+
             fut = ensure_future(coro)
             # crude: spin until done (CLI usage only)
             while not fut.done():
@@ -85,7 +92,7 @@ def _safe_await(coro):
         raise
 
 
-def main(argv: List[str] | None = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="python -m core.prompting.cli")
     sub = ap.add_subparsers(dest="cmd", required=True)
 

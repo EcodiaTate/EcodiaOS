@@ -55,24 +55,21 @@ def _get_path(obj: Any, path: Sequence[str], default=None):
     return cur if cur is not None else default
 
 
-def _extract_tests(step_or_objective: Any) -> list[str]:
+def _extract_tests(objective: dict[str, Any]) -> list[str]:
     """
-    Resolution order:
-      1) step.tests
-      2) (step.objective or objective).acceptance.tests
-      3) (..).acceptance.unit_tests.patterns
-      4) (..).acceptance.unit_tests.paths
+    Resolution order (works for dicts):
+      1) objective.tests (if it's a step dict)
+      2) objective.acceptance.tests
+      3) objective.acceptance.unit_tests.patterns
+      4) objective.acceptance.unit_tests.paths
     """
-    # step override
-    tests = _get(step_or_objective, "tests", None)
+    tests = objective.get("tests")  # Handles case where a step_dict is passed
     if not tests:
-        carrier = _get(step_or_objective, "objective", None) or step_or_objective
-        acc = _get(carrier, "acceptance", {}) or {}
+        acc = objective.get("acceptance", {}) or {}
         tests = (
-            _get(acc, "tests", None)
-            or _get_path(acc, ["unit_tests", "patterns"], None)
-            or _get_path(acc, ["unit_tests", "paths"], None)
-            or []
+            acc.get("tests")
+            or _get_path(acc, ["unit_tests", "patterns"])
+            or _get_path(acc, ["unit_tests", "paths"])
         )
     # normalize to list[str]
     if isinstance(tests, str | Path):
@@ -151,17 +148,14 @@ def _ratio(passed: int, total: int) -> float:
 # --------------------------------- API --------------------------------------
 
 
-def run(step_or_objective: Any, sandbox_session) -> dict[str, Any]:
+def run(objective: dict[str, Any], sandbox_session) -> dict[str, Any]:
     """
     Execute pytest inside the provided sandbox session.
-
-    - Accepts either a `step` or an `objective` (dict or object).
+    - Accepts an `objective` or `step` dictionary.
     - Selects tests per resolution order above.
     - Produces coverage.xml and parses per-file coverage.
-
-    Returns the structured dict documented in the module docstring.
     """
-    tests = _expand_test_selection(_extract_tests(step_or_objective))
+    tests = _expand_test_selection(_extract_tests(objective))
 
     # Pytest invocation:
     # - quiet

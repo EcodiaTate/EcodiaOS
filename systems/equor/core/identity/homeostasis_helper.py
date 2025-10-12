@@ -1,11 +1,10 @@
 # systems/equor/core/identity/homeostasis_helper.py
 from __future__ import annotations
 
+import logging
 import time
 from hashlib import sha256
 from typing import Any, Dict, Optional, Tuple
-
-import logging
 
 try:
     # Optional; safe if missing
@@ -22,11 +21,11 @@ IMMUNE_HEADER_NAME = "x-ecodia-immune"
 DEFAULT_HEADERS = {IMMUNE_HEADER_NAME: "1"}
 
 # Tune these
-COOLDOWN_SEC = 30            # don't re-compose within this window if state identical
-IDEMPOTENCY_TTL_SEC = 300    # key lifetime for idempotency (Redis/Neo4j fallback)
+COOLDOWN_SEC = 30  # don't re-compose within this window if state identical
+IDEMPOTENCY_TTL_SEC = 300  # key lifetime for idempotency (Redis/Neo4j fallback)
 
 
-def _fp(applied_patch_id: Optional[str], breaches: Optional[list[str]]) -> str:
+def _fp(applied_patch_id: str | None, breaches: list[str] | None) -> str:
     key = f"{applied_patch_id or ''}|{','.join(sorted(breaches or []))}"
     return sha256(key.encode("utf-8")).hexdigest()[:32]
 
@@ -41,16 +40,16 @@ class HomeostasisHelper:
       - Always set immune header on internal compose to avoid governance recursion.
     """
 
-    def __init__(self, redis: Optional["Redis"] = None):
+    def __init__(self, redis: Redis | None = None):
         self.redis = redis
         # in-process fast-path cache: episode_id -> (fp, ts)
-        self._mem: Dict[str, Tuple[str, int]] = {}
+        self._mem: dict[str, tuple[str, int]] = {}
 
     async def should_compose(
         self,
         episode_id: str,
-        applied_patch_id: Optional[str],
-        breaches: Optional[list[str]],
+        applied_patch_id: str | None,
+        breaches: list[str] | None,
     ) -> bool:
         fp = _fp(applied_patch_id, breaches)
         now = int(time.time())
@@ -68,7 +67,9 @@ class HomeostasisHelper:
             try:
                 key = f"equor:homeostasis:{episode_id}:{fp}"
                 if not await self.redis.setnx(key, now):
-                    logger.debug("Homeostasis: skip compose (redis idempotent) ep=%s fp=%s", episode_id, fp)
+                    logger.debug(
+                        "Homeostasis: skip compose (redis idempotent) ep=%s fp=%s", episode_id, fp
+                    )
                     return False
                 await self.redis.expire(key, IDEMPOTENCY_TTL_SEC)
             except Exception as e:
@@ -92,7 +93,9 @@ class HomeostasisHelper:
                 # If relationship already existed, treat as duplicate within TTL window.
                 existed = bool(rows and rows[0].get("existed") is False)
                 if existed:
-                    logger.debug("Homeostasis: skip compose (neo idempotent) ep=%s fp=%s", episode_id, fp)
+                    logger.debug(
+                        "Homeostasis: skip compose (neo idempotent) ep=%s fp=%s", episode_id, fp
+                    )
                     return False
             except Exception as e:
                 # If graph is down, fall through to allow compose rather than fail silently.
@@ -108,11 +111,11 @@ class HomeostasisHelper:
         agent: str,
         episode_id: str,
         profile_name: str = "prod",
-        context: Optional[Dict[str, Any]] = None,
-        applied_patch_id: Optional[str] = None,
-        breaches: Optional[list[str]] = None,
-        decision_id: Optional[str] = None,
-    ) -> Optional[Dict[str, Any]]:
+        context: dict[str, Any] | None = None,
+        applied_patch_id: str | None = None,
+        breaches: list[str] | None = None,
+        decision_id: str | None = None,
+    ) -> dict[str, Any] | None:
         """
         If gating allows, call /equor/compose internally with immune header and return JSON.
         Otherwise return None (no-op).
@@ -131,7 +134,9 @@ class HomeostasisHelper:
             "context": context or {},
         }
 
-        r = await post_internal(ENDPOINTS.EQUOR_COMPOSE, json=payload, headers=headers, timeout=10.0)
+        r = await post_internal(
+            ENDPOINTS.EQUOR_COMPOSE, json=payload, headers=headers, timeout=10.0
+        )
         try:
             return r.json()
         except Exception:

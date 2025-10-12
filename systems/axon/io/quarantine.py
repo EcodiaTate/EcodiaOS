@@ -108,6 +108,7 @@ class Quarantine:
             "li",
             "ul",
             "ol",
+            "a",
         },
     ):
         self.html_allowed_tags = html_allowed_tags

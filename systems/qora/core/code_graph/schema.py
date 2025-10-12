@@ -1,9 +1,11 @@
 # systems/qora/core/code_graph/schema.py
 # --- GOD-LEVEL UPGRADE (FINAL) ---
 from __future__ import annotations
+
 from core.utils.neo.cypher_query import cypher_query
 
-VECTOR_DIM = 3072 # As defined in embeddings_gemini.py
+VECTOR_DIM = 3072  # As defined in embeddings_gemini.py
+
 
 async def ensure_all_graph_indices() -> dict[str, str]:
     """
@@ -23,10 +25,8 @@ async def ensure_all_graph_indices() -> dict[str, str]:
             CREATE FULLTEXT INDEX code_fts IF NOT EXISTS
             FOR (n:Code) ON EACH [n.name, n.path, n.docstring]
             """,
-        
         # --- Library Node Constraint ---
         "library_name_constraint": "CREATE CONSTRAINT library_name IF NOT EXISTS FOR (l:Library) REQUIRE l.name IS UNIQUE",
-        
         # --- Conflict Learning Indexes ---
         "conflict_uuid_constraint": "CREATE CONSTRAINT conflict_uuid IF NOT EXISTS FOR (c:Conflict) REQUIRE c.uuid IS UNIQUE",
         "conflict_embedding_index": f"""
@@ -34,7 +34,6 @@ async def ensure_all_graph_indices() -> dict[str, str]:
             FOR (c:Conflict) ON (c.embedding)
             OPTIONS {{ indexConfig: {{ `vector.dimensions`: {VECTOR_DIM}, `vector.similarity_function`: 'cosine' }} }}
             """,
-            
         # --- NEW: Multi-Modal Context Indexes ---
         "deliberation_id_constraint": "CREATE CONSTRAINT deliberation_id IF NOT EXISTS FOR (d:Deliberation) REQUIRE d.deliberation_id IS UNIQUE",
         "adr_path_constraint": "CREATE CONSTRAINT adr_path IF NOT EXISTS FOR (a:ArchitecturalDecision) REQUIRE a.path IS UNIQUE",
@@ -53,5 +52,5 @@ async def ensure_all_graph_indices() -> dict[str, str]:
             results[name] = "Applied"
         except Exception as e:
             results[name] = f"Failed or already exists: {e!r}"
-            
+
     return results

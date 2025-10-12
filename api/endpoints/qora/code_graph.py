@@ -1,5 +1,4 @@
-# api/endpoints/qora/code_graph.py
-# --- AMBITIOUS UPGRADE (ADDED GOAL-ORIENTED CONTEXT ENDPOINT) ---
+# --- GOAL-ORIENTED CONTEXT & UTILITIES ---
 from __future__ import annotations
 
 import asyncio
@@ -8,23 +7,24 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-# Now importing the full get_dossier
+from core.llm.embeddings_gemini import get_embedding
+
+# Semantic/structural utilities + dossier builder
 from systems.qora.core.code_graph.dossier_service import (
     _get_semantic_neighbors,
     _get_structural_neighbors,
     get_dossier,
 )
-from core.llm.embeddings_gemini import get_embedding
-from core.utils.neo.cypher_query import cypher_query
 
+code_graph_router = APIRouter(tags=["qora", "code_graph"])
 
-code_graph_router = APIRouter()
+# ---------- Schemas ----------
 
-### --- API Schemas --- ###
 
 class SemanticSearchRequest(BaseModel):
-    query_text: str = Field(..., description="The natural language query to search for similar code.")
+    query_text: str = Field(..., description="Natural-language goal / query for relevant code.")
     top_k: int = Field(5, ge=1, le=50, description="Number of results to return.")
+
 
 class CallGraphResponse(BaseModel):
     ok: bool
@@ -34,85 +34,108 @@ class CallGraphResponse(BaseModel):
     siblings: list[dict]
     file: dict | None
 
-### --- Endpoints --- ###
+
+# ---------- Endpoints ----------
+
 
 @code_graph_router.get("/visualize")
-async def get_full_graph_visualization_query() -> dict[str, str]:
+async def get_full_graph_visualization_query(
+    limit: int = Query(200, ge=1, le=2000),
+) -> dict[str, str]:
     """
-    Returns the comprehensive Cypher query for visualizing the full code graph,
-    including files, functions, classes, libraries, and all their relationships.
+    Returns a Cypher you can paste in Neo4j Browser to visualize the code graph.
+    Includes CodeFile, Function, Class, Library and their relationships.
     """
-    query = """
+    # Fixed WHERE typo: second WHERE must filter on 'm', not 'n'
+    query = f"""
     MATCH (n)
     WHERE n:CodeFile OR n:Function OR n:Class OR n:Library
     OPTIONAL MATCH p=(n)-[r]-(m)
-    WHERE m:CodeFile OR m:Function OR n:Class OR n:Library
-    RETURN n, r, m
-    LIMIT 200
-    """ 
+    WHERE m:CodeFile OR m:Function OR m:Class OR m:Library
+    RETURN DISTINCT n, r, m
+    LIMIT {limit}
+    """
     return {
-        "description": "Run this query in your Neo4j Browser to visualize the enriched code graph. It will show all code elements, libraries, and their connections.",
-        "query": query
+        "description": "Run this in Neo4j Browser to visualize all code nodes and library links.",
+        "query": query.strip(),
     }
+
 
 @code_graph_router.post("/semantic_search")
 async def semantic_search(req: SemanticSearchRequest) -> dict[str, Any]:
     """
-    Performs a vector-based semantic search across all indexed code functions and classes.
+    Vector-based semantic search across indexed code symbols.
     """
+    q = (req.query_text or "").strip()
+    if not q:
+        raise HTTPException(status_code=400, detail="query_text must not be empty")
     try:
-        embedding = await get_embedding(req.query_text) 
-        search_results = await _get_semantic_neighbors(embedding, req.top_k)
-        return {"ok": True, "hits": search_results}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Semantic search failed: {e!r}")
-
-@code_graph_router.get("/call_graph", response_model=CallGraphResponse)
-async def get_call_graph(fqn: str = Query(..., description="The FQN of the target, e.g., 'path/to/file.py::my_func'")) -> CallGraphResponse:
-    """
-    Retrieves the direct callers and callees for a specific function from the Code Graph.
-    """
-    try:
-        graph_data = await _get_structural_neighbors(fqn)
-        if not graph_data:
-            raise HTTPException(status_code=404, detail=f"FQN '{fqn}' not found in the Code Graph.")
-            
-        return CallGraphResponse(
-            ok=True,
-            target_fqn=fqn,
-            callers=graph_data.get("callers", []),
-            callees=graph_data.get("callees", []),
-            siblings=graph_data.get("siblings", []),
-            file=graph_data.get("file")
-        ) 
+        embedding = await get_embedding(q)
+        hits = await _get_semantic_neighbors(embedding, req.top_k)
+        return {"ok": True, "hits": hits or []}
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Call graph retrieval failed: {e!r}")
+        raise HTTPException(status_code=500, detail=f"semantic_search_error: {e!r}")
+
+
+@code_graph_router.get("/call_graph", response_model=CallGraphResponse)
+async def get_call_graph(
+    fqn: str = Query(..., description="FQN like 'path/to/file.py::Class::func' or '...::func'"),
+) -> CallGraphResponse:
+    """
+    Retrieves direct callers/callees and sibling symbols for an FQN.
+    """
+    f = (fqn or "").strip()
+    if not f:
+        raise HTTPException(status_code=400, detail="fqn must not be empty")
+    try:
+        graph = await _get_structural_neighbors(f)
+        if not graph:
+            raise HTTPException(status_code=404, detail=f"FQN '{f}' not found in the Code Graph.")
+        return CallGraphResponse(
+            ok=True,
+            target_fqn=f,
+            callers=graph.get("callers", []),
+            callees=graph.get("callees", []),
+            siblings=graph.get("siblings", []),
+            file=graph.get("file"),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"call_graph_error: {e!r}")
+
 
 @code_graph_router.post("/goal_oriented_context")
 async def get_goal_context(req: SemanticSearchRequest) -> dict[str, Any]:
     """
-    NEW: Finds the most relevant code entities for a high-level goal and returns
-    a collection of dossiers for them. This is a proactive context-gathering tool.
+    Finds the most relevant code entities for a high-level goal (semantic KNN),
+    then builds a dossier for each hit.
     """
+    q = (req.query_text or "").strip()
+    if not q:
+        raise HTTPException(status_code=400, detail="query_text must not be empty")
     try:
-        embedding = await get_embedding(req.query_text)
-        # Find the top K most relevant code nodes
-        search_results = await _get_semantic_neighbors(embedding, req.top_k)
-        if not search_results:
+        embedding = await get_embedding(q)
+        hits = await _get_semantic_neighbors(embedding, req.top_k)
+        if not hits:
             return {"ok": True, "relevant_dossiers": []}
 
-        # For each hit, build its full dossier
-        dossier_tasks = [
-            get_dossier(target_fqn=hit['fqn'], intent=req.query_text)
-            for hit in search_results
-        ]
-        dossiers = await asyncio.gather(*dossier_tasks)
-        
-        # Filter out any dossiers that had errors
-        successful_dossiers = [d for d in dossiers if "error" not in d]
-        
-        return {"ok": True, "relevant_dossiers": successful_dossiers}
+        # Build dossiers for each FQN; intent = the goal text for extra signal
+        tasks = [get_dossier(target_fqn=h["fqn"], intent=q) for h in hits if "fqn" in h]
+        dossiers = await asyncio.gather(*tasks, return_exceptions=True)
+
+        good: list[dict[str, Any]] = []
+        for d in dossiers:
+            if isinstance(d, Exception):
+                # Keep going; surface partials
+                continue
+            if isinstance(d, dict) and not d.get("error") and d.get("status") != "error":
+                good.append(d)
+
+        return {"ok": True, "relevant_dossiers": good}
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get goal context: {e!r}")
+        raise HTTPException(status_code=500, detail=f"goal_context_error: {e!r}")

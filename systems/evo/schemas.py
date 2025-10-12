@@ -5,7 +5,8 @@ from time import time
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
-from systems.nova.schemas import AuctionResult 
+
+from systems.nova.schemas import AuctionResult
 
 # --------- IDs ----------
 ConflictID = str
@@ -66,7 +67,7 @@ class ConflictNode(BaseModel):
     conflict_id: ConflictID
     t_created: float = Field(default_factory=time)
     source_system: str
-    kind: str # Simplified for compatibility
+    kind: str  # Simplified for compatibility
     description: str
     context: dict = Field(default_factory=dict)
     severity: Literal["low", "medium", "high", "critical"] = "medium"
@@ -125,8 +126,9 @@ class EvolutionProposal(Proposal):
 class ObviousnessReport(BaseModel):
     """
     The formal output from the ObviousnessGate, used throughout Evo.
-    
+
     """
+
     conflict_ids: list[ConflictID]
     is_obvious: bool
     score: float
@@ -140,19 +142,22 @@ class EscalationResult(BaseModel):
     """
     The final, structured result of a successful escalation cycle.
     This is the data contract the EvoEngine's escalate method MUST return.
-    
+
     """
+
     decision_id: str
     report: ObviousnessReport
     brief_id: str
     provenance: dict = Field(default_factory=dict)
-    candidates: list[dict] = Field(default_factory=list) # Summaries of InventionCandidates
+    candidates: list[dict] = Field(default_factory=list)  # Summaries of InventionCandidates
     auction: AuctionResult
+
 
 class EscalationRequest(BaseModel):
     conflict_ids: list[ConflictID]
     brief_overrides: dict = Field(default_factory=dict)
     budget_ms: int | None = None
+
 
 class ReplayCapsule(BaseModel):
     """Self-contained, reproducible record of an Evo cognitive cycle."""

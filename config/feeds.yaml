@@ -1,0 +1,67 @@
+version: 1
+
+defaults:
+  enabled: true
+  timeout_sec: 12
+  schedule: "every_5m"
+
+sources:
+  # ——— Google News searches (last 24h) ———
+  - id: gnews-apnews-24h
+    kind: rss
+    url: "https://news.google.com/rss/search?q=when:24h+allinurl:apnews.com&hl=en-AU&gl=AU&ceid=AU:en"
+    tags: [google_news, apnews, last24h]
+
+  - id: gnews-bloomberg-24h
+    kind: rss
+    url: "https://news.google.com/rss/search?q=when:24h+allinurl:bloomberg.com&hl=en-AU&gl=AU&ceid=AU:en"
+    tags: [google_news, bloomberg, last24h]
+
+  # Optional overall Google News AU feed
+  - id: gnews-frontpage-au
+    kind: rss
+    url: "https://news.google.com/rss?hl=en-AU&gl=AU&ceid=AU:en"
+    tags: [google_news, australia]
+
+  # ——— Global / AU outlets ———
+  - id: bbc-world
+    kind: rss
+    url: "https://feeds.bbci.co.uk/news/world/rss.xml"
+    tags: [world, bbc]
+
+  - id: abc-top
+    kind: rss
+    url: "https://www.abc.net.au/news/feed/51120/rss.xml"
+    tags: [australia, abc]
+
+  - id: guardian-au
+    kind: rss
+    url: "https://www.theguardian.com/australia-news/rss"
+    tags: [australia, guardian]
+
+  - id: smh
+    kind: rss
+    url: "https://www.smh.com.au/rss/feed.xml"
+    tags: [australia, smh]
+
+  # ——— Science / tech ———
+  - id: nyt-science
+    kind: rss
+    url: "https://rss.nytimes.com/services/xml/rss/nyt/Science.xml"
+    tags: [science, nytimes]
+
+  - id: nature-journal
+    kind: rss
+    url: "https://www.nature.com/nature.rss"
+    tags: [science, nature]
+
+  - id: hn-front
+    kind: rss
+    url: "https://hnrss.org/frontpage"
+    tags: [tech, startups, hackernews]
+
+  # ——— Positive news ———
+  - id: goodnewsnetwork
+    kind: rss
+    url: "https://www.goodnewsnetwork.org/category/news/feed/"
+    tags: [positive, goodnews]

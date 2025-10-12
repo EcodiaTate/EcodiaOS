@@ -6,7 +6,9 @@ from .auto_pipeline import auto_pipeline_router
 from .bb import bb_router
 from .cache_hygiene import cache_hygiene_router
 from .catalog_admin import catalog_admin_router
+from .code_graph import code_graph_router
 from .codemod import codemod_router
+from .conflict import conflicts_router
 from .coverage_quick import coverage_quick_router
 from .dossier import dossier_router
 from .gcb import gcb_router
@@ -27,6 +29,7 @@ from .recipes import recipes_router
 from .rg_search import rg_router
 from .safety_scans import safety_router
 from .secrets_scan import secrets_scan_router
+from .services_api import constitution_router, deliberation_router, learning_router
 from .shadow_run import shadow_run_router
 from .spec_eval import spec_eval_router
 from .tools_catalog import catalogue_router
@@ -35,11 +38,6 @@ from .wm_search import wm_search_router
 from .wm_symbols import wm_symbols_router
 from .workspace_snapshot import workspace_router
 from .xref import xref_router
-from .code_graph import code_graph_router
-from .services_api import constitution_router
-from .conflict import conflicts_router
-from .services_api import deliberation_router
-from .services_api import learning_router
 
 qora_router = APIRouter()
 qora_router.include_router(code_graph_router, prefix="/code_graph")

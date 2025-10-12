@@ -87,6 +87,9 @@ def gated_sync(flag_key: str, default: bool = False, *, ret: Any = None):
 
 
 # ---------- 4) Daemon/loop helper ----------
+# systems/synk/core/switchboard/gatekit.py
+
+
 async def gated_loop(
     task_coro: Callable[[], Awaitable[Any]],
     *,
@@ -98,18 +101,30 @@ async def gated_loop(
     await asyncio.sleep(random.uniform(0, min(5, default_interval)))  # small stagger
     while True:
         try:
+            # First, check if the task should run
             if await gate(enabled_key, True):
                 try:
                     await task_coro()
+                except asyncio.CancelledError:
+                    raise  # Re-raise to allow clean shutdown
                 except Exception:
-                    pass  # never crash the loop
+                    pass  # As intended, never let the task crash the loop
+
+            # Next, determine the sleep interval for this iteration
             interval = default_interval
             if interval_key:
                 try:
                     interval = await sb.get_int(interval_key, default_interval)
                 except Exception:
-                    interval = default_interval
-        finally:
+                    pass  # Silently fall back to the default interval
+
             if jitter:
                 interval += random.uniform(-jitter, jitter)
+
+            # Finally, sleep for the calculated duration
             await asyncio.sleep(max(1, interval))
+
+        except asyncio.CancelledError:
+            # If the loop is cancelled at any await point (gate, task, or sleep),
+            # break the loop to allow the application to shut down cleanly.
+            break

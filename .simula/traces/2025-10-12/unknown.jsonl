@@ -1,0 +1,76 @@
+{"type": "tool_start", "name": "get_context_dossier", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T00:51:30.362152+00:00"}
+{"type": "tool_end", "name": "get_context_dossier", "ok": true, "err": null, "extra": {}, "duration_ms": 362.6041800000053, "result": {"_redacted": true}, "ts": "2025-10-12T00:51:30.724748+00:00"}
+{"type": "tool_start", "name": "memory_read", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T00:51:30.883127+00:00"}
+{"type": "tool_end", "name": "memory_read", "ok": true, "err": null, "extra": {}, "duration_ms": 63.43681799998535, "result": {"_redacted": true}, "ts": "2025-10-12T00:51:30.946538+00:00"}
+{"type": "tool_start", "name": "memory_write", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T00:52:17.533266+00:00"}
+{"type": "tool_end", "name": "memory_write", "ok": true, "err": null, "extra": {}, "duration_ms": 55.08770099999083, "result": {"_redacted": true}, "ts": "2025-10-12T00:52:17.588341+00:00"}
+{"type": "tool_start", "name": "get_context_dossier", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T01:20:45.704497+00:00"}
+{"type": "tool_end", "name": "get_context_dossier", "ok": true, "err": null, "extra": {}, "duration_ms": 406.7520380001497, "result": {"_redacted": true}, "ts": "2025-10-12T01:20:46.111233+00:00"}
+{"type": "tool_start", "name": "memory_read", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T01:20:46.162652+00:00"}
+{"type": "tool_end", "name": "memory_read", "ok": true, "err": null, "extra": {}, "duration_ms": 29.617436000080488, "result": {"_redacted": true}, "ts": "2025-10-12T01:20:46.192242+00:00"}
+{"type": "tool_start", "name": "memory_write", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T01:21:29.856271+00:00"}
+{"type": "tool_end", "name": "memory_write", "ok": true, "err": null, "extra": {}, "duration_ms": 47.95888100011325, "result": {"_redacted": true}, "ts": "2025-10-12T01:21:29.904217+00:00"}
+{"type": "tool_start", "name": "get_context_dossier", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T01:25:05.673212+00:00"}
+{"type": "tool_end", "name": "get_context_dossier", "ok": true, "err": null, "extra": {}, "duration_ms": 329.48550300034185, "result": {"_redacted": true}, "ts": "2025-10-12T01:25:06.002631+00:00"}
+{"type": "tool_start", "name": "memory_read", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T01:25:06.059250+00:00"}
+{"type": "tool_end", "name": "memory_read", "ok": true, "err": null, "extra": {}, "duration_ms": 26.667889000236755, "result": {"_redacted": true}, "ts": "2025-10-12T01:25:06.085907+00:00"}
+{"type": "tool_start", "name": "memory_write", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T01:25:47.403934+00:00"}
+{"type": "tool_end", "name": "memory_write", "ok": true, "err": null, "extra": {}, "duration_ms": 50.87354700026481, "result": {"_redacted": true}, "ts": "2025-10-12T01:25:47.454795+00:00"}
+{"type": "tool_start", "name": "get_context_dossier", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T01:59:33.978898+00:00"}
+{"type": "tool_end", "name": "get_context_dossier", "ok": true, "err": null, "extra": {}, "duration_ms": 349.68569700049557, "result": {"_redacted": true}, "ts": "2025-10-12T01:59:34.328552+00:00"}
+{"type": "tool_start", "name": "memory_read", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T01:59:34.381395+00:00"}
+{"type": "tool_end", "name": "memory_read", "ok": true, "err": null, "extra": {}, "duration_ms": 35.59277199929056, "result": {"_redacted": true}, "ts": "2025-10-12T01:59:34.416960+00:00"}
+{"type": "tool_start", "name": "get_context_dossier", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T02:35:40.704460+00:00"}
+{"type": "tool_end", "name": "get_context_dossier", "ok": true, "err": null, "extra": {}, "duration_ms": 337.5726570002371, "result": {"_redacted": true}, "ts": "2025-10-12T02:35:41.042001+00:00"}
+{"type": "tool_start", "name": "memory_read", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T02:35:41.132902+00:00"}
+{"type": "tool_end", "name": "memory_read", "ok": true, "err": null, "extra": {}, "duration_ms": 49.18469899985212, "result": {"_redacted": true}, "ts": "2025-10-12T02:35:41.182122+00:00"}
+{"type": "tool_start", "name": "memory_write", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T02:36:24.833856+00:00"}
+{"type": "tool_end", "name": "memory_write", "ok": true, "err": null, "extra": {}, "duration_ms": 71.12074999986362, "result": {"_redacted": true}, "ts": "2025-10-12T02:36:24.904887+00:00"}
+{"type": "tool_start", "name": "get_context_dossier", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T02:45:18.892945+00:00"}
+{"type": "tool_end", "name": "get_context_dossier", "ok": true, "err": null, "extra": {}, "duration_ms": 428.0066920000536, "result": {"_redacted": true}, "ts": "2025-10-12T02:45:19.320949+00:00"}
+{"type": "tool_start", "name": "memory_read", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T02:45:19.389287+00:00"}
+{"type": "tool_end", "name": "memory_read", "ok": true, "err": null, "extra": {}, "duration_ms": 38.521206000041275, "result": {"_redacted": true}, "ts": "2025-10-12T02:45:19.427799+00:00"}
+{"type": "tool_start", "name": "memory_write", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T02:45:54.396163+00:00"}
+{"type": "tool_end", "name": "memory_write", "ok": true, "err": null, "extra": {}, "duration_ms": 44.816434000495065, "result": {"_redacted": true}, "ts": "2025-10-12T02:45:54.440974+00:00"}
+{"type": "tool_start", "name": "get_context_dossier", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T02:50:50.882577+00:00"}
+{"type": "tool_end", "name": "get_context_dossier", "ok": true, "err": null, "extra": {}, "duration_ms": 349.6305150001717, "result": {"_redacted": true}, "ts": "2025-10-12T02:50:51.232108+00:00"}
+{"type": "tool_start", "name": "memory_read", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T02:50:51.285156+00:00"}
+{"type": "tool_end", "name": "memory_read", "ok": true, "err": null, "extra": {}, "duration_ms": 49.70166099974449, "result": {"_redacted": true}, "ts": "2025-10-12T02:50:51.334837+00:00"}
+{"type": "tool_start", "name": "read_file", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T02:51:28.976115+00:00"}
+{"type": "tool_end", "name": "read_file", "ok": true, "err": null, "extra": {}, "duration_ms": 2419.8790410000584, "result": {"_redacted": true}, "ts": "2025-10-12T02:51:31.396000+00:00"}
+{"type": "tool_start", "name": "run_tests", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T02:51:31.433181+00:00"}
+{"type": "tool_end", "name": "run_tests", "ok": false, "err": "AttributeError(\"'SandboxConfig' object has no attribute 'pip_install'\")", "extra": {}, "duration_ms": 64.20527899990702, "ts": "2025-10-12T02:51:31.497384+00:00"}
+{"type": "tool_start", "name": "propose_intelligent_patch", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T02:51:31.564304+00:00"}
+{"type": "tool_end", "name": "propose_intelligent_patch", "ok": true, "err": null, "extra": {}, "duration_ms": 393.68080999975064, "result": {"_redacted": true}, "ts": "2025-10-12T02:51:31.957979+00:00"}
+{"type": "tool_start", "name": "run_tests", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T02:51:31.992915+00:00"}
+{"type": "tool_end", "name": "run_tests", "ok": false, "err": "AttributeError(\"'SandboxConfig' object has no attribute 'pip_install'\")", "extra": {}, "duration_ms": 37.65961699991749, "ts": "2025-10-12T02:51:32.030565+00:00"}
+{"type": "tool_start", "name": "memory_write", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T02:51:36.365264+00:00"}
+{"type": "tool_end", "name": "memory_write", "ok": true, "err": null, "extra": {}, "duration_ms": 42.71225799948297, "result": {"_redacted": true}, "ts": "2025-10-12T02:51:36.407949+00:00"}
+{"type": "tool_start", "name": "get_context_dossier", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T03:02:39.748957+00:00"}
+{"type": "tool_end", "name": "get_context_dossier", "ok": true, "err": null, "extra": {}, "duration_ms": 393.5147530000904, "result": {"_redacted": true}, "ts": "2025-10-12T03:02:40.142452+00:00"}
+{"type": "tool_start", "name": "memory_read", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T03:02:40.261311+00:00"}
+{"type": "tool_end", "name": "memory_read", "ok": true, "err": null, "extra": {}, "duration_ms": 78.42759899995144, "result": {"_redacted": true}, "ts": "2025-10-12T03:02:40.339723+00:00"}
+{"type": "tool_start", "name": "run_tests", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T03:03:21.247283+00:00"}
+{"type": "tool_end", "name": "run_tests", "ok": false, "err": "AttributeError(\"'SandboxConfig' object has no attribute 'pip_install'\")", "extra": {}, "duration_ms": 43.856637999851955, "ts": "2025-10-12T03:03:21.291126+00:00"}
+{"type": "tool_start", "name": "propose_intelligent_patch", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T03:03:21.524632+00:00"}
+{"type": "tool_end", "name": "propose_intelligent_patch", "ok": true, "err": null, "extra": {}, "duration_ms": 948.2599559996743, "result": {"_redacted": true}, "ts": "2025-10-12T03:03:22.472888+00:00"}
+{"type": "tool_start", "name": "run_tests", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T03:03:22.508346+00:00"}
+{"type": "tool_end", "name": "run_tests", "ok": false, "err": "AttributeError(\"'SandboxConfig' object has no attribute 'pip_install'\")", "extra": {}, "duration_ms": 48.05089599994972, "ts": "2025-10-12T03:03:22.556386+00:00"}
+{"type": "tool_start", "name": "memory_write", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T03:03:27.707026+00:00"}
+{"type": "tool_end", "name": "memory_write", "ok": true, "err": null, "extra": {}, "duration_ms": 48.134202000255755, "result": {"_redacted": true}, "ts": "2025-10-12T03:03:27.755150+00:00"}
+{"type": "tool_start", "name": "get_context_dossier", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T03:48:15.612341+00:00"}
+{"type": "tool_end", "name": "get_context_dossier", "ok": true, "err": null, "extra": {}, "duration_ms": 344.6548840001924, "result": {"_redacted": true}, "ts": "2025-10-12T03:48:15.956903+00:00"}
+{"type": "tool_start", "name": "memory_read", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T03:48:16.002982+00:00"}
+{"type": "tool_end", "name": "memory_read", "ok": true, "err": null, "extra": {}, "duration_ms": 32.832355000209645, "result": {"_redacted": true}, "ts": "2025-10-12T03:48:16.035803+00:00"}
+{"type": "tool_start", "name": "get_context_dossier", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T03:48:52.436951+00:00"}
+{"type": "tool_end", "name": "get_context_dossier", "ok": true, "err": null, "extra": {}, "duration_ms": 308.420961999218, "result": {"_redacted": true}, "ts": "2025-10-12T03:48:52.745367+00:00"}
+{"type": "tool_start", "name": "memory_read", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T03:48:52.812563+00:00"}
+{"type": "tool_end", "name": "memory_read", "ok": true, "err": null, "extra": {}, "duration_ms": 42.89207600049849, "result": {"_redacted": true}, "ts": "2025-10-12T03:48:52.855424+00:00"}
+{"type": "tool_start", "name": "get_context_dossier", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T03:53:25.673634+00:00"}
+{"type": "tool_end", "name": "get_context_dossier", "ok": true, "err": null, "extra": {}, "duration_ms": 347.75633000026573, "result": {"_redacted": true}, "ts": "2025-10-12T03:53:26.021387+00:00"}
+{"type": "tool_start", "name": "memory_read", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T03:53:26.084689+00:00"}
+{"type": "tool_end", "name": "memory_read", "ok": true, "err": null, "extra": {}, "duration_ms": 24.441192999802297, "result": {"_redacted": true}, "ts": "2025-10-12T03:53:26.109130+00:00"}
+{"type": "tool_start", "name": "get_context_dossier", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T03:59:04.052418+00:00"}
+{"type": "tool_end", "name": "get_context_dossier", "ok": true, "err": null, "extra": {}, "duration_ms": 345.30425499906414, "result": {"_redacted": true}, "ts": "2025-10-12T03:59:04.397656+00:00"}
+{"type": "tool_start", "name": "memory_read", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-12T03:59:04.509371+00:00"}
+{"type": "tool_end", "name": "memory_read", "ok": true, "err": null, "extra": {}, "duration_ms": 57.72572100067919, "result": {"_redacted": true}, "ts": "2025-10-12T03:59:04.567094+00:00"}

@@ -26,9 +26,9 @@
     "api\\endpoints\\unity\\__init__.py": "34339fe4404af341d23ef4828b92b20017bb70cc",
     "api\\endpoints\\unity\\deliberate.py": "77f91d3b173e157208e5d3d86adfafcc8db865ee",
     "api\\endpoints\\voxis\\__init__.py": "83747c076d303620da95a40bd2ee61a50576be7e",
-    "api\\endpoints\\voxis\\generate_phrase.py": "dc581dfbfd2065532dfb452707948a606a3d2349",
+    "api\\endpoints\\voxis\\generate_soul.py": "dc581dfbfd2065532dfb452707948a606a3d2349",
     "api\\endpoints\\voxis\\interface_mood.py": "264f355933d02705a616c0a42d1274bffffc29d2",
-    "api\\endpoints\\voxis\\match_phrase.py": "56cd60b3d2707633d10b7c7c5a56f1fa78ddcf55",
+    "api\\endpoints\\voxis\\match_soul.py": "56cd60b3d2707633d10b7c7c5a56f1fa78ddcf55",
     "api\\endpoints\\voxis\\talk.py": "41dac6f54191ce6e95151b8c572957d481c7ec7f",
     "api\\endpoints\\synapse\\__init__.py": "3282f86fdc994709e85f55d2861998761509c901",
     "api\\endpoints\\synapse\\tools.py": "255afc109e6b7508a58129b9480ad52cfd41da95",
@@ -553,9 +553,9 @@
     "api/endpoints/unity/__init__.py": "75f0b85bc3bb6b0e5c460a42ef371abc78105fbb",
     "api/endpoints/unity/deliberate.py": "f4e4d27be7ad592bc0dd0dfbe95357f2d6a0ae7e",
     "api/endpoints/voxis/__init__.py": "b3c3fe62206cf7d1215fb1aa073bbb84098dd1dd",
-    "api/endpoints/voxis/generate_phrase.py": "0e7518216950d8ecd87875fb2ffcf98bb833a804",
+    "api/endpoints/voxis/generate_soul.py": "0e7518216950d8ecd87875fb2ffcf98bb833a804",
     "api/endpoints/voxis/interface_mood.py": "c6a573d8566f0c5e916c87bcdaea0283431ca931",
-    "api/endpoints/voxis/match_phrase.py": "b4b3c1e3b03f0323d59d6da35f6f623bdb015d96",
+    "api/endpoints/voxis/match_soul.py": "b4b3c1e3b03f0323d59d6da35f6f623bdb015d96",
     "api/endpoints/voxis/talk.py": "030517cc32f89b596e3c84ee4014276e69a0fb95",
     "api/endpoints/synapse/__init__.py": "a33dc23871dd168c487dc6e626644e13ed08e4a6",
     "api/endpoints/synapse/tools.py": "593f88f906f65b87a136b183576c9a93793240cb",
@@ -1541,23 +1541,23 @@
       "kind": "Function",
       "name": "_env_timeout_seconds"
     },
-    "api\\endpoints\\voxis\\generate_phrase.py::_word_tokens": {
-      "file": "api\\endpoints\\voxis\\generate_phrase.py",
+    "api\\endpoints\\voxis\\generate_soul.py::_word_tokens": {
+      "file": "api\\endpoints\\voxis\\generate_soul.py",
       "kind": "Function",
       "name": "_word_tokens"
     },
-    "api\\endpoints\\voxis\\generate_phrase.py::_six_word_score": {
-      "file": "api\\endpoints\\voxis\\generate_phrase.py",
+    "api\\endpoints\\voxis\\generate_soul.py::_six_word_score": {
+      "file": "api\\endpoints\\voxis\\generate_soul.py",
       "kind": "Function",
       "name": "_six_word_score"
     },
-    "api\\endpoints\\voxis\\generate_phrase.py::_punctuation_ok": {
-      "file": "api\\endpoints\\voxis\\generate_phrase.py",
+    "api\\endpoints\\voxis\\generate_soul.py::_punctuation_ok": {
+      "file": "api\\endpoints\\voxis\\generate_soul.py",
       "kind": "Function",
       "name": "_punctuation_ok"
     },
-    "api\\endpoints\\voxis\\generate_phrase.py::_overlap_ratio": {
-      "file": "api\\endpoints\\voxis\\generate_phrase.py",
+    "api\\endpoints\\voxis\\generate_soul.py::_overlap_ratio": {
+      "file": "api\\endpoints\\voxis\\generate_soul.py",
       "kind": "Function",
       "name": "_overlap_ratio"
     },
@@ -10481,23 +10481,23 @@
       "kind": "Function",
       "name": "_env_timeout_seconds"
     },
-    "api/endpoints/voxis/generate_phrase.py::_word_tokens": {
-      "file": "api/endpoints/voxis/generate_phrase.py",
+    "api/endpoints/voxis/generate_soul.py::_word_tokens": {
+      "file": "api/endpoints/voxis/generate_soul.py",
       "kind": "Function",
       "name": "_word_tokens"
     },
-    "api/endpoints/voxis/generate_phrase.py::_six_word_score": {
-      "file": "api/endpoints/voxis/generate_phrase.py",
+    "api/endpoints/voxis/generate_soul.py::_six_word_score": {
+      "file": "api/endpoints/voxis/generate_soul.py",
       "kind": "Function",
       "name": "_six_word_score"
     },
-    "api/endpoints/voxis/generate_phrase.py::_punctuation_ok": {
-      "file": "api/endpoints/voxis/generate_phrase.py",
+    "api/endpoints/voxis/generate_soul.py::_punctuation_ok": {
+      "file": "api/endpoints/voxis/generate_soul.py",
       "kind": "Function",
       "name": "_punctuation_ok"
     },
-    "api/endpoints/voxis/generate_phrase.py::_overlap_ratio": {
-      "file": "api/endpoints/voxis/generate_phrase.py",
+    "api/endpoints/voxis/generate_soul.py::_overlap_ratio": {
+      "file": "api/endpoints/voxis/generate_soul.py",
       "kind": "Function",
       "name": "_overlap_ratio"
     },
@@ -22961,63 +22961,63 @@
       "max"
     ],
     [
-      "api\\endpoints\\voxis\\generate_phrase.py::_word_tokens",
+      "api\\endpoints\\voxis\\generate_soul.py::_word_tokens",
       "findall"
     ],
     [
-      "api\\endpoints\\voxis\\generate_phrase.py::_word_tokens",
+      "api\\endpoints\\voxis\\generate_soul.py::_word_tokens",
       "lower"
     ],
     [
-      "api\\endpoints\\voxis\\generate_phrase.py::_six_word_score",
+      "api\\endpoints\\voxis\\generate_soul.py::_six_word_score",
       "_word_tokens"
     ],
     [
-      "api\\endpoints\\voxis\\generate_phrase.py::_six_word_score",
+      "api\\endpoints\\voxis\\generate_soul.py::_six_word_score",
       "max"
     ],
     [
-      "api\\endpoints\\voxis\\generate_phrase.py::_six_word_score",
+      "api\\endpoints\\voxis\\generate_soul.py::_six_word_score",
       "len"
     ],
     [
-      "api\\endpoints\\voxis\\generate_phrase.py::_six_word_score",
+      "api\\endpoints\\voxis\\generate_soul.py::_six_word_score",
       "abs"
     ],
     [
-      "api\\endpoints\\voxis\\generate_phrase.py::_six_word_score",
+      "api\\endpoints\\voxis\\generate_soul.py::_six_word_score",
       "len"
     ],
     [
-      "api\\endpoints\\voxis\\generate_phrase.py::_punctuation_ok",
+      "api\\endpoints\\voxis\\generate_soul.py::_punctuation_ok",
       "findall"
     ],
     [
-      "api\\endpoints\\voxis\\generate_phrase.py::_overlap_ratio",
+      "api\\endpoints\\voxis\\generate_soul.py::_overlap_ratio",
       "set"
     ],
     [
-      "api\\endpoints\\voxis\\generate_phrase.py::_overlap_ratio",
+      "api\\endpoints\\voxis\\generate_soul.py::_overlap_ratio",
       "set"
     ],
     [
-      "api\\endpoints\\voxis\\generate_phrase.py::_overlap_ratio",
+      "api\\endpoints\\voxis\\generate_soul.py::_overlap_ratio",
       "_word_tokens"
     ],
     [
-      "api\\endpoints\\voxis\\generate_phrase.py::_overlap_ratio",
+      "api\\endpoints\\voxis\\generate_soul.py::_overlap_ratio",
       "_word_tokens"
     ],
     [
-      "api\\endpoints\\voxis\\generate_phrase.py::_overlap_ratio",
+      "api\\endpoints\\voxis\\generate_soul.py::_overlap_ratio",
       "len"
     ],
     [
-      "api\\endpoints\\voxis\\generate_phrase.py::_overlap_ratio",
+      "api\\endpoints\\voxis\\generate_soul.py::_overlap_ratio",
       "len"
     ],
     [
-      "api\\endpoints\\voxis\\generate_phrase.py::_overlap_ratio",
+      "api\\endpoints\\voxis\\generate_soul.py::_overlap_ratio",
       "join"
     ],
     [
@@ -50301,63 +50301,63 @@
       "max"
     ],
     [
-      "api/endpoints/voxis/generate_phrase.py::_word_tokens",
+      "api/endpoints/voxis/generate_soul.py::_word_tokens",
       "findall"
     ],
     [
-      "api/endpoints/voxis/generate_phrase.py::_word_tokens",
+      "api/endpoints/voxis/generate_soul.py::_word_tokens",
       "lower"
     ],
     [
-      "api/endpoints/voxis/generate_phrase.py::_six_word_score",
+      "api/endpoints/voxis/generate_soul.py::_six_word_score",
       "_word_tokens"
     ],
     [
-      "api/endpoints/voxis/generate_phrase.py::_six_word_score",
+      "api/endpoints/voxis/generate_soul.py::_six_word_score",
       "max"
     ],
     [
-      "api/endpoints/voxis/generate_phrase.py::_six_word_score",
+      "api/endpoints/voxis/generate_soul.py::_six_word_score",
       "len"
     ],
     [
-      "api/endpoints/voxis/generate_phrase.py::_six_word_score",
+      "api/endpoints/voxis/generate_soul.py::_six_word_score",
       "abs"
     ],
     [
-      "api/endpoints/voxis/generate_phrase.py::_six_word_score",
+      "api/endpoints/voxis/generate_soul.py::_six_word_score",
       "len"
     ],
     [
-      "api/endpoints/voxis/generate_phrase.py::_punctuation_ok",
+      "api/endpoints/voxis/generate_soul.py::_punctuation_ok",
       "findall"
     ],
     [
-      "api/endpoints/voxis/generate_phrase.py::_overlap_ratio",
+      "api/endpoints/voxis/generate_soul.py::_overlap_ratio",
       "set"
     ],
     [
-      "api/endpoints/voxis/generate_phrase.py::_overlap_ratio",
+      "api/endpoints/voxis/generate_soul.py::_overlap_ratio",
       "set"
     ],
     [
-      "api/endpoints/voxis/generate_phrase.py::_overlap_ratio",
+      "api/endpoints/voxis/generate_soul.py::_overlap_ratio",
       "_word_tokens"
     ],
     [
-      "api/endpoints/voxis/generate_phrase.py::_overlap_ratio",
+      "api/endpoints/voxis/generate_soul.py::_overlap_ratio",
       "_word_tokens"
     ],
     [
-      "api/endpoints/voxis/generate_phrase.py::_overlap_ratio",
+      "api/endpoints/voxis/generate_soul.py::_overlap_ratio",
       "len"
     ],
     [
-      "api/endpoints/voxis/generate_phrase.py::_overlap_ratio",
+      "api/endpoints/voxis/generate_soul.py::_overlap_ratio",
       "len"
     ],
     [
-      "api/endpoints/voxis/generate_phrase.py::_overlap_ratio",
+      "api/endpoints/voxis/generate_soul.py::_overlap_ratio",
       "join"
     ],
     [

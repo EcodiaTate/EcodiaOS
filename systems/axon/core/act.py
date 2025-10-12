@@ -15,10 +15,12 @@ from systems.axon.dependencies import (
 from systems.axon.events.builder import build_followups
 from systems.axon.events.emitter import emit_followups_bg
 from systems.axon.learning.feedback import ingest_action_outcome
-# highlight-start
-from systems.axon.safety.validation import CapabilityValidator
+
 # highlight-end
 from systems.axon.safety.twin import run_in_twin
+
+# highlight-start
+from systems.axon.safety.validation import CapabilityValidator
 from systems.axon.schemas import ActionResult, AxonIntent
 
 
@@ -32,7 +34,7 @@ async def execute_intent(intent: AxonIntent, *, decision_id: str | None = None) 
     breaker = get_circuit_breaker()
     contracts = get_contracts_engine()
     journal = get_journal()
-# highlight-start
+    # highlight-start
     validator = CapabilityValidator()
 
     # -------- Ingress & auth --------
@@ -49,7 +51,7 @@ async def execute_intent(intent: AxonIntent, *, decision_id: str | None = None) 
         except Exception:
             pass
         return res
-# highlight-end
+    # highlight-end
 
     # -------- preconditions --------
     pre = contracts.check_pre(intent)
@@ -126,7 +128,7 @@ async def execute_intent(intent: AxonIntent, *, decision_id: str | None = None) 
                             **intent.model_dump(),
                             "intent_id": f"{intent.intent_id}::rollback",
                             "params": intent.rollback_contract.get("params", {}),
-                        }
+                        },
                     )
                     rb_res = await live.push(rb)
                     rollback_status = f"rollback_{rb_res.status}"
@@ -136,7 +138,11 @@ async def execute_intent(intent: AxonIntent, *, decision_id: str | None = None) 
             result = ActionResult(
                 intent_id=intent.intent_id,
                 status="fail",
-                outputs={"error": "postconditions_failed", "reason": post.reason, "rollback": rollback_status},
+                outputs={
+                    "error": "postconditions_failed",
+                    "reason": post.reason,
+                    "rollback": rollback_status,
+                },
                 side_effects=result.side_effects,
                 counterfactual_metrics=result.counterfactual_metrics,
                 follow_up_events=result.follow_up_events,
@@ -164,7 +170,9 @@ async def execute_intent(intent: AxonIntent, *, decision_id: str | None = None) 
 
         # -------- learning feedback (predicted vs actual) --------
         try:
-            await ingest_action_outcome(intent=intent, predicted_result=twin, actual_result=result, decision_id=decision_id)
+            await ingest_action_outcome(
+                intent=intent, predicted_result=twin, actual_result=result, decision_id=decision_id
+            )
         except Exception:
             pass
 
@@ -185,7 +193,9 @@ async def execute_intent(intent: AxonIntent, *, decision_id: str | None = None) 
             pass
         # still emit a feedback record for learning
         try:
-            await ingest_action_outcome(intent=intent, predicted_result=twin, actual_result=res, decision_id=decision_id)
+            await ingest_action_outcome(
+                intent=intent, predicted_result=twin, actual_result=res, decision_id=decision_id
+            )
         except Exception:
             pass
         return res

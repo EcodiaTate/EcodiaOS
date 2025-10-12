@@ -7,7 +7,7 @@ from __future__ import annotations
 import time
 from typing import Any, List
 
-from fastapi import APIRouter, Path, Query, Response, HTTPException
+from fastapi import APIRouter, HTTPException, Path, Query, Response
 from pydantic import BaseModel
 
 from systems.evo.runtime import get_engine
@@ -16,13 +16,15 @@ from systems.evo.schemas import ConflictID, ConflictNode
 conflicts_router = APIRouter(tags=["evo-conflicts"])
 _engine = get_engine()
 
+
 def _stamp_cost(res: Response, start: float) -> None:
     ms = int((time.perf_counter() - start) * 1000)
     res.headers["X-Cost-MS"] = str(ms)
 
 
 class BatchRequest(BaseModel):
-    conflicts: List[ConflictNode | dict]
+    conflicts: list[ConflictNode | dict]
+
 
 @conflicts_router.post("/batch", response_model=dict)
 def create_conflicts_batch(req: BatchRequest, response: Response) -> dict:

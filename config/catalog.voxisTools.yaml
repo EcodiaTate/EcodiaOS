@@ -1,0 +1,273 @@
+# config/catalog.voxisTools.yaml
+endpoints:
+  - driver_name: "google_pse"
+    endpoint: "probe"
+    mode: "probe"
+    title: "Google Web Search"
+    description: "Performs a web search using a Google Programmable Search Engine to find up-to-date information, news, or specific facts from the internet. Useful for questions about current events, weather, or anything that requires fresh data."
+    tags: ["search", "web", "internet", "current_events", "news"]
+    arg_schema:
+      type: "object"
+      properties:
+        query:
+          type: "string"
+          description: "The search query."
+        num:
+          type: "integer"
+          description: "Number of results to return."
+        safe:
+          type: "string"
+          enum: ["active", "off"]
+          description: "Search safety level."
+      required: ["query"]
+    defaults:
+      num: 5
+      safe: "active"
+
+  - driver_name: "open_meteo"
+    endpoint: "probe"
+    mode: "probe"
+    title: "Get Weather Snapshot"
+    description: |
+      Fetches current weather and a summary of hourly/daily forecast using Open-Meteo's global endpoint.
+      Internally geocodes a location name into coordinates, applies sensible defaults (3-day forecast).
+    tags: ["weather", "forecast", "location"]
+    arg_schema:
+      type: "object"
+      properties:
+        location:
+          type: "string"
+          description: "ONLY the **ACTUAL** name of the city/town to get weather data for (e.g., 'Sunshine Coast' NOT 'Sunny Coast'). Do not include state or country."
+        forecast_days:
+          type: "integer"
+          minimum: 1
+          maximum: 16
+          description: "How many days to include in the forecast summary (default 3)."
+        hourly:
+          type: "array"
+          items:
+            type: "string"
+          description: "Hourly variables (e.g., temperature_2m, precipitation, weather_code, wind_speed_10m, cloud_cover)."
+        daily:
+          type: "array"
+          items:
+            type: "string"
+          description: "Daily variables (e.g., temperature_2m_max, temperature_2m_min, precipitation_sum, uv_index_max, weather_code, sunrise, sunset)."
+        current:
+          type: "boolean"
+          description: "Include current weather block (default true)."
+      required: ["location"]
+    defaults:
+      forecast_days: 3
+      current: true
+
+  - driver_name: "qora"
+    endpoint: "semantic_search"
+    mode: "probe"
+    title: "Ecodia Memory Search (Semantic)"
+    description: |
+      Introspect Ecodia’s own memory and history using embeddings-based retrieval across SAFE graph artifacts
+      (events, system responses, identity states, consensus notes, and more). No internal endpoints exposed.
+    tags: ["search", "semantic", "memory", "introspection", "graph", "safe"]
+    arg_schema:
+      type: "object"
+      properties:
+        query:
+          type: "string"
+          description: "Natural-language cue, e.g., 'planner guardrails discussion' or 'latest identity state change'."
+        top_k:
+          type: "integer"
+          minimum: 1
+          maximum: 50
+          description: "Number of results to return (default 5)."
+      required: ["query"]
+    defaults:
+      top_k: 5
+
+  - driver_name: "nager"
+    endpoint: "public_holidays"
+    mode: "probe"
+    title: "Public Holidays"
+    description: "Official public holidays by country and year (Nager.Date)."
+    tags: ["calendar", "holidays", "planning"]
+    arg_schema:
+      type: "object"
+      properties:
+        country_code:
+          type: "string"
+          description: "ISO-3166-1 alpha-2 code, e.g., 'AU'."
+        year:
+          type: "integer"
+          minimum: 1900
+          maximum: 2100
+      required: ["country_code", "year"]
+
+  - driver_name: "rssdriver"
+    endpoint: "fetch"
+    mode: "probe"
+    title: "Fetch RSS/Atom Feed"
+    description: "Pull latest items from an RSS or Atom feed."
+    tags: ["news", "updates", "feeds"]
+    arg_schema:
+      type: "object"
+      properties:
+        url: { type: "string", description: "RSS/Atom feed URL." }
+        max_items: { type: "integer", minimum: 1, maximum: 50 }
+      required: ["url"]
+    defaults:
+      max_items: 10
+
+  - driver_name: "nominatim"
+    endpoint: "geocode"
+    mode: "probe"
+    title: "Geocode Place (OSM)"
+    description: "Resolve a place name to coordinates and basic address parts (OpenStreetMap Nominatim)."
+    tags: ["geocoding", "maps", "location"]
+    arg_schema:
+      type: "object"
+      properties:
+        query: { type: "string", description: "Place text (e.g., 'Sunshine Coast')." }
+        limit: { type: "integer", minimum: 1, maximum: 10 }
+      required: ["query"]
+    defaults:
+      limit: 3
+
+  - driver_name: "fxrates"
+    endpoint: "latest"
+    mode: "probe"
+    title: "Exchange Rates"
+    description: "Latest FX rates from exchangerate.host."
+    tags: ["finance", "currency", "fx"]
+    arg_schema:
+      type: "object"
+      properties:
+        base: { type: "string", description: "Base currency (e.g., 'AUD')." }
+        symbols:
+          type: "array"
+          items: { type: "string" }
+          description: "Optional list of target currencies."
+      required: []
+    defaults:
+      base: "AUD"
+
+  - driver_name: "open_meteo"
+    endpoint: "hourly_forecast"
+    mode: "probe"
+    title: "Hourly Weather (Next Hours/Days)"
+    description: |
+      Hourly-focused forecast (global best-model blend). Optionally control the number of forecast hours.
+      Accepts location name or lat/lon and returns a lean hourly payload.
+    tags: ["weather", "hourly", "forecast"]
+    arg_schema:
+      type: "object"
+      properties:
+        location: { type: "string", description: "ONLY the **actual** name of the city/town to get weather data for (e.g., 'Sunshine Coast' NOT 'Sunny Coast'). Do not include state or country." }
+        latitude: { type: "number" }
+        longitude: { type: "number" }
+        forecast_hours: { type: "integer", minimum: 1, maximum: 384, description: "How many hours to include (max 16 days worth)." }
+        hourly:
+          type: "array"
+          items: { type: "string" }
+          description: "Hourly variables list. Defaults to sensible set."
+        include_current: { type: "boolean" }
+        temperature_unit:
+          type: "string"
+          enum: ["celsius", "fahrenheit"]
+        wind_speed_unit:
+          type: "string"
+          enum: ["kmh", "ms", "mph", "kn"]
+        precipitation_unit:
+          type: "string"
+          enum: ["mm", "inch"]
+        timeformat:
+          type: "string"
+          enum: ["iso8601", "unixtime"]
+        timezone: { type: "string" }
+      required: []
+    defaults:
+      include_current: true
+
+  - driver_name: "open_meteo"
+    endpoint: "daily_forecast"
+    mode: "probe"
+    title: "Daily Weather (Up to 16 Days)"
+    description: |
+      Daily-focused forecast (global best-model blend). Returns a lean daily payload with highs/lows, precip, UV, sunrise/sunset, etc.
+    tags: ["weather", "daily", "forecast"]
+    arg_schema:
+      type: "object"
+      properties:
+        location: { type: "string", description: "ONLY the **ACTUAL** name of the city/town to get weather data for (e.g., 'Sunshine Coast' NOT 'Sunny Coast'). Do not include state or country." }
+        latitude: { type: "number" }
+        longitude: { type: "number" }
+        forecast_days: { type: "integer", minimum: 1, maximum: 16 }
+        daily:
+          type: "array"
+          items: { type: "string" }
+          description: "Daily variables list. Defaults to sensible set."
+        include_current: { type: "boolean" }
+        temperature_unit:
+          type: "string"
+          enum: ["celsius", "fahrenheit"]
+        wind_speed_unit:
+          type: "string"
+          enum: ["kmh", "ms", "mph", "kn"]
+        precipitation_unit:
+          type: "string"
+          enum: ["mm", "inch"]
+        timeformat:
+          type: "string"
+          enum: ["iso8601", "unixtime"]
+        timezone: { type: "string" }
+      required: []
+    defaults:
+      forecast_days: 7
+      include_current: true
+      
+  - driver_name: "memory"
+    endpoint: "semantic_search"
+    mode: "probe"
+    title: "Semantic Memory Search"
+    description: |
+      Searches through the user's long-term conversational history to find memories relevant to a query. 
+      Use this to recall past conversations, preferences, or facts the user has mentioned before.
+    tags: ["memory", "semantic", "history", "recall", "introspection"]
+    arg_schema:
+      type: "object"
+      properties:
+        query: { type: "string", description: "The natural language query to search for in memory. Should be a concise question or statement." }
+        limit: { type: "integer", minimum: 1, maximum: 20, description: "The maximum number of memory snippets to return." }
+      required: ["query"]
+    defaults:
+      limit: 5
+
+  - driver_name: "open_meteo"
+    endpoint: "radiation_forecast"
+    mode: "probe"
+    title: "Solar Radiation Forecast"
+    description: |
+      Solar radiation variables (shortwave, direct, DNI, diffuse, GTI) for solar/ET₀ use-cases.
+      Optional tilt/azimuth controls the GTI calculation; set either or both to 'nan' semantics via omission.
+    tags: ["weather", "radiation", "solar", "energy"]
+    arg_schema:
+      type: "object"
+      properties:
+        location: { type: "string", description: "ONLY the **ACTUAL** name of the city/town to get weather data for (e.g., 'Sunshine Coast' NOT 'Sunny Coast'). Do not include state or country." }
+        latitude: { type: "number" }
+        longitude: { type: "number" }
+        forecast_days: { type: "integer", minimum: 1, maximum: 16 }
+        hourly:
+          type: "array"
+          items: { type: "string" }
+          description: "Radiation variables (defaults set)."
+        tilt: { type: "number", description: "Panel tilt in degrees (0–90). Omit for tracker assumption." }
+        azimuth: { type: "number", description: "Azimuth degrees (0 south, -90 east, 90 west, ±180 north). Omit for tracker assumption." }
+        include_current: { type: "boolean" }
+        timeformat:
+          type: "string"
+          enum: ["iso8601", "unixtime"]
+        timezone: { type: "string" }
+      required: []
+    defaults:
+      forecast_days: 3
+      include_current: true

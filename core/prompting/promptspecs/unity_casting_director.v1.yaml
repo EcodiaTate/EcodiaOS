@@ -1,0 +1,16 @@
+id: unity_casting_director_001
+version: "1.0"
+scope: "unity.casting_director.v1"
+
+identity:
+  agent: "Unity.CastingDirector"
+  persona_partial: "unity_planner_base" # This persona is suitable for a selection task
+
+# No identity facets are needed for this simple, objective task
+context_lenses: []
+
+partials:
+  - "casting_director_task"
+
+outputs:
+  parse_mode: "strict_json"

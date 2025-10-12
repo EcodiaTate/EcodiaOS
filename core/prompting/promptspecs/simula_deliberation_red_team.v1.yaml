@@ -1,0 +1,41 @@
+# core/prompting/promptspecs/simula_deliberation_red_team.v1.yaml
+- id: "simula.deliberation.red_team.v1"
+  version: "v1"
+  scope: "simula.deliberation.red_team"
+
+  identity:
+    agent: "Simula.RedTeam"
+    persona_partial: "persona_simula_guardrails"
+
+  context_lenses:
+    - "lens_simula_advice_preplan"
+    
+  partials:
+    - "persona_simula_guardrails"
+    - "advice_injection_guardrails"    # let the red-team see prior pitfalls
+    - "scl_red_team_system_rules"
+    - "scl_red_team_context_block"
+    - "scl_output_contract_critique"
+    - "scl_red_team_user_block"
+
+  outputs:
+    parse_mode: "auto_repair"
+    schema:
+      type: object
+      additionalProperties: false
+      required: ["summary", "findings", "recommendation"]
+      properties:
+        summary:
+          type: string
+          description: "A one-sentence summary of the critique's conclusion."
+        findings:
+          type: array
+          items:
+            type: object
+            required: ["risk_level", "category", "description"]
+            properties:
+              risk_level: { type: string, enum: ["Critical", "High", "Medium", "Low"] }
+              category: { type: string, enum: ["Hallucination", "Logical Flaw", "Scope Creep", "Fragility", "Missed Opportunity"] }
+              description: { type: string, description: "A detailed explanation of the identified flaw." }
+        recommendation: { type: string, enum: ["Approve", "Needs Revision", "Reject"] }
+

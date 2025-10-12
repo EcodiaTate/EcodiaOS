@@ -6,7 +6,9 @@ from typing import Any
 from systems.axon.schemas import ActionResult, AxonIntent
 
 
-def _base_event(intent: AxonIntent, result: ActionResult, event_type: str, details: dict[str, Any]) -> dict[str, Any]:
+def _base_event(
+    intent: AxonIntent, result: ActionResult, event_type: str, details: dict[str, Any]
+) -> dict[str, Any]:
     return {
         "event": {
             "source": "axon",
@@ -22,8 +24,9 @@ def _base_event(intent: AxonIntent, result: ActionResult, event_type: str, detai
                 "driver_name": (getattr(result, "outputs", {}) or {}).get("driver_name"),
             },
             "raw": None,
-        }
+        },
     }
+
 
 def build_followups(intent: AxonIntent, result: ActionResult) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []

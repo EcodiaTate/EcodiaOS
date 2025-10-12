@@ -36,3 +36,4 @@ AGENT_ALIASES = {
 ALIAS_TO_SYSTEM = {alias: key for key, alias in AGENT_ALIASES.items()}
 
 AGENT_ALIAS_LIST = list(AGENT_ALIASES.values())
+AGENT_ALIAS_LIST = list(AGENT_ALIASES.values())

@@ -1,12 +1,14 @@
+# systems/synapse/genesis/tool_genesis_module.py
 from __future__ import annotations
 
 import asyncio
 import json
 import uuid
-from typing import Any
+from typing import Any, Dict
 
 from core.llm.bus import event_bus
-from core.prompting.orchestrator import PolicyHint, build_prompt
+from core.llm.utils import extract_json_block
+from core.prompting.orchestrator import build_prompt
 from core.prompting.validators import load_schema, validate_json
 from core.utils.neo.cypher_query import cypher_query
 from systems.qora.client import fetch_llm_tools  # Qora catalog (LLM-ready tool specs)
@@ -40,10 +42,11 @@ class ToolGenesisModule:
         loop = asyncio.get_running_loop()
         future: asyncio.Future = loop.create_future()
 
-        def on_response(response: dict):
+        def on_response(response: dict[str, Any]) -> None:
             if not future.done():
                 future.set_result(response)
 
+        # Subscribe for this specific LLM call's response
         event_bus.subscribe(response_event, on_response)
 
         # Pull live Qora catalog so model avoids duplicates and reuses affordances
@@ -52,32 +55,31 @@ class ToolGenesisModule:
         except Exception:
             tools_manifest = []
 
-        # Build prompt via PromptSpec (vars flow through orchestrator → runtime)
-        hint = PolicyHint(
+        prompt = await build_prompt(
             scope="synapse.genesis_tool_specification",
-            task_key=task_key,  # enables Synapse budget
             summary=f"Design a tool for persistent failure on task '{task_key}'",
             context={
-                "vars": {"task_key": task_key},  # template expects {{ task_key }}
-                "tools_manifest": tools_manifest,  # rendered by partials/tools_manifest.j2
+                # if your prompt partials expect {{ task_key }}, keep it here:
+                "vars": {"task_key": task_key},
+                # rendered by partials/tools_manifest.j2 when present
+                "tools_manifest": tools_manifest,
             },
         )
-        o = await build_prompt(hint)
 
-        llm_payload = {
-            "messages": o.messages,
-            "json_mode": bool(o.provider_overrides.get("json_mode", True)),
-            "max_tokens": int(o.provider_overrides.get("max_tokens", 700)),
-            # you can omit 'model' to let the LLM bus route provider selection
+        llm_payload: dict[str, Any] = {
+            "messages": prompt.messages,
+            "json_mode": bool(prompt.provider_overrides.get("json_mode", True)),
+            "max_tokens": int(prompt.provider_overrides.get("max_tokens", 700)),
+            # omit 'model' to allow LLM Bus routing
         }
-        temp = o.provider_overrides.get("temperature")
+        temp = prompt.provider_overrides.get("temperature")
         if temp is not None:
             llm_payload["temperature"] = float(temp)
 
         headers = {
-            "x-budget-ms": str(o.provenance.get("budget_ms", 2000)),
-            "x-spec-id": o.provenance.get("spec_id", ""),
-            "x-spec-version": o.provenance.get("spec_version", ""),
+            "x-budget-ms": str(prompt.provenance.get("budget_ms", 2000)),
+            "x-spec-id": prompt.provenance.get("spec_id", ""),
+            "x-spec-version": prompt.provenance.get("spec_version", ""),
         }
 
         # Publish request to the LLM Bus through the event bus
@@ -89,18 +91,23 @@ class ToolGenesisModule:
             extra_headers=headers,
         )
 
-        resp = await asyncio.wait_for(future, timeout=120.0)
+        # Wait for response
+        resp: dict[str, Any] = await asyncio.wait_for(future, timeout=120.0)
 
         # Normalize result into a dict
-        content = resp.get("json") or resp.get("content") or {}
+        content: Any = resp.get("json") or resp.get("content") or {}
         if not content and isinstance(resp.get("text"), str):
+            text = resp["text"]
+            # Prefer fenced/inline JSON block if present
+            block = extract_json_block(text)
             try:
-                content = json.loads(resp["text"])
+                content = json.loads(block if block else text)
             except Exception:
                 content = {}
+
         return content if isinstance(content, dict) else {}
 
-    async def run_genesis_cycle(self):
+    async def run_genesis_cycle(self) -> None:
         """
         One genesis pass: find a stubborn failure → request tool spec → validate → commission.
         """
@@ -131,7 +138,7 @@ class ToolGenesisModule:
             spec = await self._request_llm_spec(task_key)
         except TimeoutError:
             print(
-                f"[Genesis] ERROR: Timed out waiting for LLM spec response for task '{task_key}'.",
+                f"[Genesis] ERROR: Timed out waiting for LLM spec response for task '{task_key}'."
             )
             return
 
@@ -150,7 +157,7 @@ class ToolGenesisModule:
         await event_bus.publish(event_type="tool_commission_request", spec=spec)
 
 
-async def start_genesis_loop():
+async def start_genesis_loop() -> None:
     """
     Daemon runner for the Tool Genesis Module.
     """

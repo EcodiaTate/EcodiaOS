@@ -1,0 +1,16 @@
+- id: "voxis-utility-scorer-v1.0"
+  version: "1.0"
+  scope: "voxis.utility_scorer"
+
+  identity:
+    agent: "Voxis.UtilityScorer"
+    persona_partial: "persona_utility_scorer" # A new, simple persona
+
+  context_lenses: []
+
+  partials:
+    - "task_framing_utility_scorer"
+    - "output_format_utility_scorer" # Reinforces the JSON output
+
+  outputs:
+    parse_mode: "tolerant"

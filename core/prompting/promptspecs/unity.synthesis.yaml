@@ -3,11 +3,11 @@ version: 1.0.0
 scope: unity.synthesis
 identity:
   agent: "Unity"
-  persona_partial: "partials/identity.j2"
+  persona_partial: "identity"
 safety:
   partials:
-    - "partials/safety_min.j2"
-    - "partials/json_guard_strict.j2"
+    - "safety_min"
+    - "json_guard_strict"
 outputs:
   schema_ref: "core/prompting/schemas/unity_synthesis_output.json"
   parse_mode: "strict_json"
