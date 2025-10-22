@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check, X } from 'lucide-react'
 
@@ -15,56 +15,101 @@ interface ConsentToastProps {
   upsert: ProfileUpsert | null
   onAccept: (upsert: ProfileUpsert) => void
   onDecline: (upsert: ProfileUpsert) => void
+  /** Optional: where to dock the toast */
+  position?: 'bl' | 'br' | 'bc' // bottom-left / bottom-right / bottom-center
 }
 
-const formatProperty = (prop: string): string => {
-  return prop
+const formatProperty = (prop: string): string =>
+  prop
     .replace(/_/g, ' ')
     .replace(/([A-Z])/g, ' $1')
-    .replace(/^./, (str) => str.toUpperCase())
+    .replace(/^./, (s) => s.toUpperCase())
     .trim()
+
+/** subtle pointer parallax + shine */
+function useToastParallax() {
+  const ref = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const onMove = (e: MouseEvent) => {
+      const r = el.getBoundingClientRect()
+      const x = (e.clientX - r.left) / r.width - 0.5
+      const y = (e.clientY - r.top) / r.height - 0.5
+      el.style.setProperty('--tiltX', `${-(y * 1.2)}deg`)
+      el.style.setProperty('--tiltY', `${x * 1.2}deg`)
+      el.style.setProperty('--shineX', `${e.clientX - r.left}px`)
+      el.style.setProperty('--shineY', `${e.clientY - r.top}px`)
+    }
+    window.addEventListener('mousemove', onMove)
+    return () => window.removeEventListener('mousemove', onMove)
+  }, [])
+  return ref
 }
 
-export const ConsentToast: React.FC<ConsentToastProps> = ({ isVisible, upsert, onAccept, onDecline }) => {
+export const ConsentToast: React.FC<ConsentToastProps> = ({
+  isVisible,
+  upsert,
+  onAccept,
+  onDecline,
+  position = 'bl',
+}) => {
   if (!upsert) return null
 
   const displayProperty = formatProperty(upsert.property)
   const displayValue = String(upsert.value)
+  const ref = useToastParallax()
+
+  const posClass =
+    position === 'br'
+      ? 'right-4 bottom-6 sm:bottom-8'
+      : position === 'bc'
+      ? 'left-1/2 -translate-x-1/2 bottom-6 sm:bottom-8'
+      : 'left-4 bottom-6 sm:bottom-8' // 'bl' default
 
   return (
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          initial={{ opacity: 0, y: 50, scale: 0.9 }}
+          ref={ref}
+          initial={{ opacity: 0, y: 28, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 20, scale: 0.95 }}
-          transition={{ duration: 0.3, ease: 'easeOut' }}
-          // 👇 POSITIONING & SIZING CLASSES CHANGED HERE
-          className="fixed bottom-24 left-4 w-full max-w-sm p-3 rounded-xl shadow-2xl bg-[#0b0b0b]/80 backdrop-blur-lg border border-white/10 z-50 pointer-events-auto"
+          exit={{ opacity: 0, y: 16, scale: 0.98 }}
+          transition={{ duration: 0.28, ease: 'easeOut' }}
+          className={`fixed z-[9997] ${posClass} pointer-events-auto`}
         >
-          <div className="text-center">
-            {/* 👇 FONT SIZE REDUCED */}
-            <p className="text-xs text-white/80">Remember this?</p>
-            <p className="text-base font-medium text-[#F4D35E] my-1">
-              <span className="text-white/90">{displayProperty}:</span> {`"${displayValue}"`}
-            </p>
-          </div>
-          <div className="flex justify-center gap-3 mt-3">
-            {/* 👇 BUTTON & ICON SIZE REDUCED */}
-            <button
-              onClick={() => onDecline(upsert)}
-              className="flex items-center justify-center w-12 h-12 bg-red-900/40 text-red-300 rounded-full border border-red-500/50 hover:bg-red-900/70 transition-colors duration-200"
-              aria-label="Decline"
-            >
-              <X size={24} />
-            </button>
-            <button
-              onClick={() => onAccept(upsert)}
-              className="flex items-center justify-center w-12 h-12 bg-green-900/40 text-green-300 rounded-full border border-green-500/50 hover:bg-green-900/70 transition-colors duration-200"
-              aria-label="Accept"
-            >
-              <Check size={24} />
-            </button>
+          <div className="ec-toast">
+            {/* energy seam */}
+            <div className="ec-toast__border" aria-hidden="true" />
+            {/* pointer-follow shine */}
+            <div className="ec-toast__shine" aria-hidden="true" />
+
+            <div className="ec-toast__body">
+              <p className="ec-toast__eyebrow">Remember this?</p>
+              <p className="ec-toast__line">
+                <span className="ec-toast__label">{displayProperty}:</span>{' '}
+                <span className="ec-toast__value">“{displayValue}”</span>
+              </p>
+
+              <div className="ec-toast__actions" role="group" aria-label="Consent actions">
+                <button
+                  onClick={() => onDecline(upsert)}
+                  className="ec-toast__btn ec-toast__btn--decline"
+                  aria-label="Decline"
+                >
+                  <X size={18} aria-hidden />
+                </button>
+
+                <button
+                  onClick={() => onAccept(upsert)}
+                  className="ec-toast__btn ec-toast__btn--accept"
+                  aria-label="Accept"
+                  autoFocus
+                >
+                  <Check size={18} aria-hidden />
+                </button>
+              </div>
+            </div>
           </div>
         </motion.div>
       )}

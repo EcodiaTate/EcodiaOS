@@ -8,7 +8,7 @@ import { useSearchParams } from 'next/navigation'
 import { useModeStore } from '@/stores/useModeStore'
 import EcodiaOverlay from '@/components/EcodiaOverlay'
 
-const EcodiaStarCanvas = dynamic(() => import('@/components/EcodiaStarCanvas'), { ssr: false })
+const EcodiaCanvas = dynamic(() => import('@/components/EcodiaCanvas'), { ssr: false })
 
 export default function Page() {
   const searchParams = useSearchParams()
@@ -21,7 +21,7 @@ export default function Page() {
 
   return (
     <main className="fixed inset-0 w-dvw h-dvh bg-black overflow-hidden">
-      <EcodiaStarCanvas />
+      <EcodiaCanvas />
       <EcodiaOverlay />
     </main>
   )

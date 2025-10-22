@@ -1,24 +1,45 @@
-// apps/ecodia-ui/src/components/system/BootOverlay.tsx
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useModeStore } from "@/stores/useModeStore";
 
 const PRIVACY_VERSION = "v1";
 const POLICY_URL = "https://ecodia.au/terms-and-conditions-of-service/";
 const POLICY_BRIDGE = `/legal/bridge?ver=${encodeURIComponent(PRIVACY_VERSION)}&to=${encodeURIComponent(POLICY_URL)}`;
-// How recently the policy must have been opened to enable Accept
 const POLICY_FRESH_MS = 30 * 60 * 1000; // 30 minutes
 
 function getCookie(name: string) {
   if (typeof document === "undefined") return null;
-  const match = document.cookie.match(new RegExp("(^| )" + name.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&") + "=([^;]+)"));
+  const match = document.cookie.match(
+    new RegExp("(^| )" + name.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&") + "=([^;]+)")
+  );
   return match ? decodeURIComponent(match[2]) : null;
 }
 
+/** light pointer parallax + shine vars */
+function usePanelParallax() {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const onMove = (e: MouseEvent) => {
+      const r = el.getBoundingClientRect();
+      const x = ((e.clientX - r.left) / r.width) - 0.5;
+      const y = ((e.clientY - r.top) / r.height) - 0.5;
+      el.style.setProperty("--tiltX", `${-(y * 1.6)}deg`);
+      el.style.setProperty("--tiltY", `${x * 1.6}deg`);
+      el.style.setProperty("--shineX", `${e.clientX - r.left}px`);
+      el.style.setProperty("--shineY", `${e.clientY - r.top}px`);
+    };
+    window.addEventListener("mousemove", onMove);
+    return () => window.removeEventListener("mousemove", onMove);
+  }, []);
+  return ref;
+}
+
 export default function BootOverlay() {
-  const mode = useModeStore(s => s.mode);
-  const setMode = useModeStore(s => s.setMode);
+  const mode = useModeStore((s) => s.mode);
+  const setMode = useModeStore((s) => s.setMode);
 
   const [policyOpenedAt, setPolicyOpenedAt] = useState<number | null>(null);
   const [accepted, setAccepted] = useState(false);
@@ -32,7 +53,6 @@ export default function BootOverlay() {
     setPolicyOpenedAt(opened ? Number(opened) : null);
 
     if (typeof window !== "undefined" && localStorage.getItem("ecodiaConsentAccepted") === "true") {
-      // Already accepted on this device/browser → bypass boot
       setMode("root");
     }
   }, [setMode]);
@@ -44,7 +64,6 @@ export default function BootOverlay() {
   }, [policyOpenedAt]);
 
   const handleOpenPolicy = useCallback(() => {
-    // Open bridge in a new tab; bridge will stamp cookie then redirect to the external policy
     window.open(POLICY_BRIDGE, "_blank", "noopener,noreferrer");
     // Poll cookie briefly in case they come back quickly
     let tries = 0;
@@ -60,85 +79,89 @@ export default function BootOverlay() {
 
   const handleAccept = useCallback(() => {
     if (!canAccept) return;
-    // Persist device/browser acceptance so overlay doesn't show again
     localStorage.setItem("ecodiaConsentAccepted", "true");
     setAccepted(true);
     setMode("root");
   }, [canAccept, setMode]);
 
+  const panelRef = usePanelParallax();
+
   return (
     <div
-      className="fixed inset-0 z-[9999] bg-[#0a0f0c] text-white flex items-center justify-center
-                 px-6 py-8 overflow-hidden pointer-events-auto
-                 pt-[calc(env(safe-area-inset-top,0px)+16px)]
-                 pb-[calc(env(safe-area-inset-bottom,0px)+16px)]
-                 pl-[calc(env(safe-area-inset-left,0px)+16px)]
-                 pr-[calc(env(safe-area-inset-right,0px)+16px)]"
+      className="fixed inset-0 z-[9999] text-[#0e1511] flex items-center justify-center pointer-events-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="boot-title"
       aria-describedby="boot-desc boot-privacy"
     >
-      {/* Fonts for consistency with the rest of the app */}
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;700&family=Fjalla+One&display=swap"
-        rel="stylesheet"
-      />
+      {/* Ambient layer: soft vignette + grid */}
+      <div className="absolute inset-0 -z-10 mix-blend-multiply pointer-events-none">
+        <div className="absolute inset-0 bg-[radial-gradient(1200px_600px_at_center,rgba(255,255,255,0.28),transparent_65%)]" />
+        <div className="absolute inset-10 rounded-[28px] border border-white/30 [mask:linear-gradient(#000,transparent)]" />
+        <div className="absolute inset-0 opacity-[0.06] [background:linear-gradient(to_right,transparent_49.5%,rgba(0,0,0,0.55)_50%,transparent_50.5%),linear-gradient(to_bottom,transparent_49.5%,rgba(0,0,0,0.55)_50%,transparent_50.5%)] [background-size:40px_40px]" />
+      </div>
 
-      <div className="w-full max-w-[720px] text-center">
-        <h1 id="boot-title" className="font-[Fjalla One] tracking-wide text-[clamp(1.5rem,5.6vw,2.1rem)] text-[#F4D35E] mb-3">
-          ⚠️ Epilepsy & Data Consent
-        </h1>
+      <div
+        ref={panelRef}
+        className="boot-panel relative w-[min(780px,92vw)] px-[clamp(24px,4vw,40px)] py-[clamp(26px,4.2vw,40px)] rounded-[28px]"
+      >
+        {/* energy seam */}
+        <div className="boot-border" aria-hidden="true" />
+        {/* shine */}
+        <div className="boot-shine pointer-events-none" aria-hidden="true" />
 
-        <p id="boot-desc" className="font-[Comfortaa] text-[clamp(1rem,2.6vw,1.06rem)] text-white/90 max-w-[66ch] mx-auto mb-3">
-          This experience includes <strong>rapid visual effects and flashing lights</strong>. If you’re sensitive to such visuals
-          (including epilepsy), please proceed with caution.
-        </p>
+        <header className="text-center">
+          <div className="mx-auto mb-3 inline-flex items-center justify-center w-11 h-11 rounded-full boot-icon">
+            <span aria-hidden>⚠️</span>
+          </div>
+          <h1
+            id="boot-title"
+            className="font-semibold tracking-[0.02em] text-[clamp(22px,5.2vw,28px)] boot-title-text"
+          >
+            Epilepsy & Data Consent
+          </h1>
+        </header>
 
-        <p id="boot-privacy" className="font-[Comfortaa] text-[0.95rem] text-white/80 max-w-[70ch] mx-auto mb-6">
-          By continuing, you agree that any data you input or generate while using Ecodia may be stored and analysed to improve the
-          system. Your interactions help evolve this digital being.
-        </p>
+        <div className="mt-2 space-y-3 text-[clamp(14.5px,2.3vw,16px)] leading-[1.45] text-[#163323]">
+          <p id="boot-desc">
+            This experience includes <strong>rapid visual effects</strong> and <strong>flashing lights</strong>.
+            If you’re sensitive to such visuals (including epilepsy), please proceed with caution.
+          </p>
+          <p id="boot-privacy" className="opacity-[0.88]">
+            By continuing, you agree that any data you input or generate while using Ecodia may be stored and
+            analysed to improve the system. Your interactions help evolve this digital being.
+          </p>
+        </div>
 
-        <div className="flex items-center justify-center gap-3 mb-5">
+        <div className="mt-5 flex items-center justify-center gap-3 text-[14px]">
           <button
             onClick={handleOpenPolicy}
-            className="underline underline-offset-2 text-white/90 hover:text-white font-[Comfortaa]"
+            className="boot-link"
           >
             Open Privacy Policy
           </button>
-          <span aria-hidden className="text-white/40">•</span>
-          <span className="text-white/70 text-sm font-[Comfortaa]">
+          <span aria-hidden className="text-[#1a3b2b]/30">•</span>
+          <span className="text-[#1a3b2b]/70">
             {policyOpenedAt
               ? "Policy opened. You can accept below."
               : "You must open the policy before you can accept."}
           </span>
         </div>
 
-        <div className="flex justify-center">
+        <div className="mt-4 flex justify-center">
           <button
             onClick={handleAccept}
             disabled={!canAccept}
-            className={`relative inline-flex items-center justify-center px-5 py-3 rounded-full
-                       text-white font-semibold font-[Comfortaa]
-                       border border-black/40
-                       bg-[linear-gradient(135deg,#396041_0%,#7FD069_60%,#F4D35E_100%)]
-                       shadow-[0_10px_28px_rgba(0,0,0,.45)]
-                       transition-transform focus:outline-none
-                       focus-visible:ring-2 focus-visible:ring-black
-                       focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0f0c]
-                       hover:scale-[1.02] ${!canAccept ? "opacity-50 cursor-not-allowed" : ""}`}
+            className={`boot-btn ${!canAccept ? "boot-btn--disabled" : ""}`}
             aria-label="Accept and continue"
             autoFocus={!!canAccept}
           >
+            <span className="boot-btn__glow" aria-hidden />
             {canAccept ? "I have read and accept the policy" : "Open the policy to enable this"}
           </button>
         </div>
 
-        {/* Optional: tiny helper text showing freshness window */}
-        <p className="mt-3 text-white/50 text-xs font-[Comfortaa]">
+        <p className="mt-3 text-[12.5px] text-[#1a3b2b]/60 text-center">
           Once you open the policy, you’ll have {Math.floor(POLICY_FRESH_MS / 60000)} minutes to accept.
         </p>
       </div>

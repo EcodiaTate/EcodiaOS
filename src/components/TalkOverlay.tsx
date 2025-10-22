@@ -24,6 +24,27 @@ const TOP_SCROLL_THRESHOLD = 80
 const HISTORY_FETCH_TIMEOUT_MS = 12000
 const HISTORY_MIN_INTERVAL_MS = 500 // cooldown between loads
 
+/** subtle pointer parallax for input shell shine */
+function useParallaxRef() {
+  const ref = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const onMove = (e: MouseEvent) => {
+      const r = el.getBoundingClientRect()
+      const x = (e.clientX - r.left) / r.width - 0.5
+      const y = (e.clientY - r.top) / r.height - 0.5
+      el.style.setProperty('--tiltX', `${-(y * 1.2)}deg`)
+      el.style.setProperty('--tiltY', `${x * 1.2}deg`)
+      el.style.setProperty('--shineX', `${e.clientX - r.left}px`)
+      el.style.setProperty('--shineY', `${e.clientY - r.top}px`)
+    }
+    window.addEventListener('mousemove', onMove)
+    return () => window.removeEventListener('mousemove', onMove)
+  }, [])
+  return ref
+}
+
 export default function TalkOverlay() {
   const soulId = useSoulStore((s) => s.soulId)
   const userUuid = useSoulStore((s) => s.userUuid)
@@ -52,6 +73,8 @@ export default function TalkOverlay() {
   const ttsAbortRef = useRef<AbortController | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const chatScrollRef = useRef<HTMLDivElement | null>(null)
+
+  const inputShellRef = useParallaxRef()
 
   const MAX_TEXTAREA_PX = 5 * 20 + 12
 
@@ -529,7 +552,13 @@ export default function TalkOverlay() {
   // --- render ---------------------------------------------------------------
 
   return (
-    <div className="absolute inset-0 z-40 flex flex-col bg-transparent isolate font-[var(--font-primary)]" aria-live="polite">
+    <div className="talk-root absolute inset-0 z-40 flex flex-col bg-transparent isolate font-[var(--font-primary)]" aria-live="polite">
+      {/* Ambient: soft vignette + faint grid to match overlays */}
+      <div className="talk-ambient" aria-hidden="true">
+        <div className="talk-vignette" />
+        <div className="talk-grid" />
+      </div>
+
       <ConsentToast
         isVisible={!!consentRequest}
         upsert={consentRequest}
@@ -558,46 +587,51 @@ export default function TalkOverlay() {
         />
       </div>
 
-      {/* Jump-to-bottom button */}
+      {/* Jump-to-bottom chip */}
       {showJumpToBottom && (
         <button
           onClick={() => { scrollToBottom(); stickToBottomRef.current = true; setShowJumpToBottom(false) }}
-          className="absolute right-6 bottom-[88px] z-50 rounded-full px-3 py-2 text-xs bg-white/90 text-neutral-900 shadow hover:bg-white"
+          className="talk-jump pointer-events-auto"
           aria-label="Jump to latest"
           title="Jump to latest"
         >
+          <span className="talk-jump__glow" aria-hidden />
           ↓ New messages
         </button>
       )}
 
       {/* INPUT BAR */}
       <div className="w-full px-4 pt-0 pb-3 pointer-events-auto">
-        <div className="input-bar-wrap">
-          <InputBar
-            outputMode={outputMode}
-            setOutputMode={setOutputMode}
-            listening={listening}
-            browserSupportsSpeechRecognition={browserSupportsSpeechRecognition}
-            loading={loading}
-            textareaRef={textareaRef}
-            inputValue={input}
-            transcriptValue={transcript}
-            onChangeInput={(v) => {
-              setInput(v)
-              const ta = textareaRef.current
-              if (ta) {
-                ta.style.height = 'auto'
-                const newH = Math.min(ta.scrollHeight, MAX_TEXTAREA_PX)
-                ta.style.height = `${newH}px`
-                ta.style.overflowY = ta.scrollHeight > newH ? 'auto' : 'hidden'
-              }
-            }}
-            onSubmit={(text) => sendMessage(text)}
-            onStartListening={() => SpeechRecognition.startListening()}
-            onStopListening={() => SpeechRecognition.stopListening()}
-            onStopAll={stopPlaybackAndListening}
-            audioActive={!!audioRef.current}
-          />
+        <div ref={inputShellRef} className="talk-inputShell">
+          <div className="talk-inputShell__border" aria-hidden="true" />
+          <div className="talk-inputShell__shine" aria-hidden="true" />
+          <div className="input-bar-wrap">
+            <InputBar
+              outputMode={outputMode}
+              setOutputMode={setOutputMode}
+              listening={listening}
+              browserSupportsSpeechRecognition={browserSupportsSpeechRecognition}
+              loading={loading}
+              textareaRef={textareaRef}
+              inputValue={input}
+              transcriptValue={transcript}
+              onChangeInput={(v) => {
+                setInput(v)
+                const ta = textareaRef.current
+                if (ta) {
+                  ta.style.height = 'auto'
+                  const newH = Math.min(ta.scrollHeight, MAX_TEXTAREA_PX)
+                  ta.style.height = `${newH}px`
+                  ta.style.overflowY = ta.scrollHeight > newH ? 'auto' : 'hidden'
+                }
+              }}
+              onSubmit={(text) => sendMessage(text)}
+              onStartListening={() => SpeechRecognition.startListening()}
+              onStopListening={() => SpeechRecognition.stopListening()}
+              onStopAll={stopPlaybackAndListening}
+              audioActive={!!audioRef.current}
+            />
+          </div>
         </div>
       </div>
 
