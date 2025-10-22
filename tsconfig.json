@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "module": "esnext",
     "moduleResolution": "bundler",
     "jsx": "preserve",
@@ -16,26 +12,24 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "incremental": true,
+
     "baseUrl": ".",
-    "paths": {
-      "@/*": [
-        "src/*"
-      ]
-    },
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
-    "allowJs": true
+    "paths": { "@/*": ["src/*"] },
+
+    "plugins": [{ "name": "next" }],
+
+    "allowJs": true,
+
+    /* Highly recommended on Vercel/Linux */
+    "forceConsistentCasingInFileNames": true
+    /* Optional:
+    "types": ["node"] 
+    */
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts"
-  ],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "src/Backup/**",
+    "src/_backup_disabled/**"
   ]
 }
