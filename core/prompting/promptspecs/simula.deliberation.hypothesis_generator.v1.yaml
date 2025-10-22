@@ -1,0 +1,44 @@
+- id: "simula.deliberation.hypothesis_generator.v1"
+  version: "v1"
+  scope: "simula.deliberation.hypothesis_generator"
+
+  identity:
+    agent: "Simula.HypothesisGenerator"
+    persona_partial: "persona_simula_strategist"
+
+  context_lenses:
+    # CRITICAL FIX: This lens fetches the available tools and adds them to the context.
+    - "lens_get_tools"
+
+  partials:
+    # Use the more detailed partials that constrain the agent
+    - "persona_simula_strategist"
+    - "scl_planner_system_rules"       # Explicitly tells the agent to ONLY use allowed tools
+    - "scl_context_block"              # Now correctly displays file cards AND the allowed tools from the lens
+    - "scl_hypothesis_generator_instructions"
+    - "scl_hypothesis_generator_output_contract"
+
+  outputs:
+    parse_mode: "auto_repair"
+    schema:
+      type: object
+      required: ["hypotheses"]
+      properties:
+        hypotheses:
+          type: array
+          description: "A list of 2-3 distinct, competing plan objects."
+          minItems: 2
+          items:
+            type: object
+            required: ["interim_thought", "plan"]
+            properties:
+              interim_thought: { type: string }
+              plan:
+                type: array
+                items:
+                  type: object
+                  required: ["action_type", "tool_name", "parameters"]
+                  properties:
+                    action_type: { type: string, enum: ["tool_call"] }
+                    tool_name: { type: string }
+                    parameters: { type: object }

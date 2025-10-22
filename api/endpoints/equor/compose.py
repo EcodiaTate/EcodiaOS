@@ -162,5 +162,6 @@ async def compose_prompt_patch(
     except Exception as e:
         logger.exception("Unhandled error in /equor/compose")
         raise HTTPException(
-            status_code=500, detail=f"An internal server error occurred: {e}"
+            status_code=500,
+            detail=f"An internal server error occurred: {e}",
         ) from e

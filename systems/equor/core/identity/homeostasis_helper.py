@@ -68,7 +68,9 @@ class HomeostasisHelper:
                 key = f"equor:homeostasis:{episode_id}:{fp}"
                 if not await self.redis.setnx(key, now):
                     logger.debug(
-                        "Homeostasis: skip compose (redis idempotent) ep=%s fp=%s", episode_id, fp
+                        "Homeostasis: skip compose (redis idempotent) ep=%s fp=%s",
+                        episode_id,
+                        fp,
                     )
                     return False
                 await self.redis.expire(key, IDEMPOTENCY_TTL_SEC)
@@ -94,7 +96,9 @@ class HomeostasisHelper:
                 existed = bool(rows and rows[0].get("existed") is False)
                 if existed:
                     logger.debug(
-                        "Homeostasis: skip compose (neo idempotent) ep=%s fp=%s", episode_id, fp
+                        "Homeostasis: skip compose (neo idempotent) ep=%s fp=%s",
+                        episode_id,
+                        fp,
                     )
                     return False
             except Exception as e:
@@ -135,7 +139,10 @@ class HomeostasisHelper:
         }
 
         r = await post_internal(
-            ENDPOINTS.EQUOR_COMPOSE, json=payload, headers=headers, timeout=10.0
+            ENDPOINTS.EQUOR_COMPOSE,
+            json=payload,
+            headers=headers,
+            timeout=10.0,
         )
         try:
             return r.json()

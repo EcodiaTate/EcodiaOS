@@ -47,13 +47,13 @@ def format_dossier_for_llm(dossier: dict[str, Any]) -> str:
             return md
 
         chunks.append(
-            format_neighbor_list("Callers (Code that calls this)", struct.get("callers", []))
+            format_neighbor_list("Callers (Code that calls this)", struct.get("callers", [])),
         )
         chunks.append(
-            format_neighbor_list("Callees (Code that this calls)", struct.get("callees", []))
+            format_neighbor_list("Callees (Code that this calls)", struct.get("callees", [])),
         )
         chunks.append(
-            format_neighbor_list("Siblings (Defined in the same file)", struct.get("siblings", []))
+            format_neighbor_list("Siblings (Defined in the same file)", struct.get("siblings", [])),
         )
 
     # --- Semantic Neighbors ---
@@ -61,11 +61,11 @@ def format_dossier_for_llm(dossier: dict[str, Any]) -> str:
     if semantic:
         chunks.append("## Semantically Similar Code")
         chunks.append(
-            "The following code snippets from the repository have a similar purpose or meaning:"
+            "The following code snippets from the repository have a similar purpose or meaning:",
         )
         for n in semantic[:3]:  # Limit for brevity
             chunks.append(
-                f"- **`{n.get('fqn', n.get('name', 'N/A'))}`** (Similarity: {n.get('score', 0.0):.2f})\n  - {n.get('docstring', 'No docstring.')}"
+                f"- **`{n.get('fqn', n.get('name', 'N/A'))}`** (Similarity: {n.get('score', 0.0):.2f})\n  - {n.get('docstring', 'No docstring.')}",
             )
 
     # --- Test Coverage ---

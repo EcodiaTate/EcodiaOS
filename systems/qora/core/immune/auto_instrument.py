@@ -66,7 +66,10 @@ def _wrap_callable(fn, *, component: str, version: str | None, severity: str = "
                 if _IMMUNE_ACTIVE.get():
                     raise
                 await log_conflict(
-                    exc=e, component=component, version=version, context=context_payload
+                    exc=e,
+                    component=component,
+                    version=version,
+                    context=context_payload,
                 )
                 raise
     else:
@@ -81,14 +84,20 @@ def _wrap_callable(fn, *, component: str, version: str | None, severity: str = "
                     loop = asyncio.get_running_loop()
                     loop.create_task(
                         log_conflict(
-                            exc=e, component=component, version=version, context=context_payload
-                        )
+                            exc=e,
+                            component=component,
+                            version=version,
+                            context=context_payload,
+                        ),
                     )
                 except RuntimeError:
                     asyncio.run(
                         log_conflict(
-                            exc=e, component=component, version=version, context=context_payload
-                        )
+                            exc=e,
+                            component=component,
+                            version=version,
+                            context=context_payload,
+                        ),
                     )
                 raise
 
@@ -100,7 +109,11 @@ def _wrap_callable(fn, *, component: str, version: str | None, severity: str = "
 
 
 def _instrument_module(
-    mod: ModuleType, *, component: str, version: str | None, include_privates: bool
+    mod: ModuleType,
+    *,
+    component: str,
+    version: str | None,
+    include_privates: bool,
 ):
     for name, obj in list(vars(mod).items()):
         if not include_privates and name.startswith("_"):
@@ -115,12 +128,16 @@ def _instrument_module(
 
                     if isinstance(attr, staticmethod):
                         wrapped = _wrap_callable(
-                            attr.__func__, component=component, version=version
+                            attr.__func__,
+                            component=component,
+                            version=version,
                         )
                         setattr(obj, item_name, staticmethod(wrapped))
                     elif isinstance(attr, classmethod):
                         wrapped = _wrap_callable(
-                            attr.__func__, component=component, version=version
+                            attr.__func__,
+                            component=component,
+                            version=version,
                         )
                         setattr(obj, item_name, classmethod(wrapped))
                     elif inspect.isfunction(attr):
@@ -171,7 +188,7 @@ async def install_immune(
                     component="global",
                     version=version,
                     context={"where": "sys.excepthook"},
-                )
+                ),
             )
         old_excepthook(etype, value, tb)
 
@@ -187,7 +204,7 @@ async def install_immune(
                     component="thread",
                     version=version,
                     context={"thread": str(args.thread)},
-                )
+                ),
             )
         old_thread_hook(args)
 

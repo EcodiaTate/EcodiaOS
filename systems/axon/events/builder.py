@@ -7,7 +7,10 @@ from systems.axon.schemas import ActionResult, AxonIntent
 
 
 def _base_event(
-    intent: AxonIntent, result: ActionResult, event_type: str, details: dict[str, Any]
+    intent: AxonIntent,
+    result: ActionResult,
+    event_type: str,
+    details: dict[str, Any],
 ) -> dict[str, Any]:
     return {
         "event": {

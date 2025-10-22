@@ -224,10 +224,13 @@ async def _call_llm_provider(
                 raise ImportError("OpenAI SDK not installed.")
             proxy_url = os.getenv("HTTPS_PROXY") or os.getenv("HTTP_PROXY")
             async with httpx.AsyncClient(
-                proxy=proxy_url, timeout=OPENAI_TIMEOUT_SECONDS
+                proxy=proxy_url,
+                timeout=OPENAI_TIMEOUT_SECONDS,
             ) as http_client:
                 client = AsyncOpenAI(
-                    api_key=os.getenv("OPENAI_API_KEY"), max_retries=0, http_client=http_client
+                    api_key=os.getenv("OPENAI_API_KEY"),
+                    max_retries=0,
+                    http_client=http_client,
                 )
                 msgs = provider_payload.get("messages")
                 if not isinstance(msgs, list) or not msgs:
@@ -235,7 +238,7 @@ async def _call_llm_provider(
                     msgs = chat_msgs
                 msgs = _safe_messages(msgs)
                 print(
-                    f"[LLM] OpenAI outgoing messages: {len(msgs)} roles={[m['role'] for m in msgs[:3]]}"
+                    f"[LLM] OpenAI outgoing messages: {len(msgs)} roles={[m['role'] for m in msgs[:3]]}",
                 )
                 kwargs = _openai_build_kwargs(
                     model_name=model_name,
@@ -256,7 +259,7 @@ async def _call_llm_provider(
                             raise
                         delay = 0.0 if attempt == 1 else backoffs[attempt - 2]
                         print(
-                            f"[OpenAI] network retry #{attempt - 1} in {delay:.2f}s due to: {type(ne).__name__}"
+                            f"[OpenAI] network retry #{attempt - 1} in {delay:.2f}s due to: {type(ne).__name__}",
                         )
                         if delay:
                             await asyncio.sleep(delay)
@@ -272,7 +275,7 @@ async def _call_llm_provider(
             msgs = provider_payload.get("messages")
             if not isinstance(msgs, list) or not msgs:
                 print(
-                    "[LLM] formatter returned empty 'messages' for Anthropic; falling back to raw input."
+                    "[LLM] formatter returned empty 'messages' for Anthropic; falling back to raw input.",
                 )
                 msgs = chat_msgs
             msgs = _safe_messages(msgs)
@@ -284,7 +287,7 @@ async def _call_llm_provider(
                 max_tokens=max_tokens,
             )
             text = "".join(
-                [b.text for b in getattr(resp, "content", []) if getattr(b, "type", "") == "text"]
+                [b.text for b in getattr(resp, "content", []) if getattr(b, "type", "") == "text"],
             )
             usage = dict(resp.usage) if getattr(resp, "usage", None) else {}
             raw_response = resp.model_dump() if hasattr(resp, "model_dump") else str(resp)
@@ -311,7 +314,7 @@ async def _call_llm_provider(
             msgs = provider_payload.get("messages")
             if not isinstance(msgs, list) or not msgs:
                 print(
-                    "[LLM] formatter returned empty 'messages' for Gemini; falling back to raw input."
+                    "[LLM] formatter returned empty 'messages' for Gemini; falling back to raw input.",
                 )
                 msgs = chat_msgs
             msgs = _safe_messages(msgs)

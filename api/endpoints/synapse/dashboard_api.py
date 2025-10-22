@@ -204,7 +204,7 @@ async def get_outcomes_data():
                 "success": row["metrics"].get("success"),
                 "utility_score": row["metrics"].get("utility_score"),
                 "reasoning": row["metrics"].get("reasoning"),
-            }
+            },
         )
 
     return JSONResponse(content=results)

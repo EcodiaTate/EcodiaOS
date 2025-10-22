@@ -319,7 +319,7 @@ def _git_worktree_changes(repo_root: Path) -> list[tuple[str, Path | None, Path 
             "HEAD",
             "--",
             "*.py",
-        ]
+        ],
     )
     idx = _lines(
         [
@@ -332,7 +332,7 @@ def _git_worktree_changes(repo_root: Path) -> list[tuple[str, Path | None, Path 
             "HEAD",
             "--",
             "*.py",
-        ]
+        ],
     )
     new = _lines(["git", "ls-files", "--others", "--exclude-standard", "--", "*.py"])
 
@@ -846,7 +846,8 @@ async def _pass_one_create_nodes(
             emb = None
             try:
                 emb = await get_embedding(
-                    src + ("\n\n" + doc if doc else ""), dimensions=VECTOR_DIM
+                    src + ("\n\n" + doc if doc else ""),
+                    dimensions=VECTOR_DIM,
                 )
             except Exception:
                 emb = None

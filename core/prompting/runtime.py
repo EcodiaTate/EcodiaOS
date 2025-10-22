@@ -121,7 +121,7 @@ def _ensure_jinja_env(force_reload: bool = False) -> jinja2.Environment:
     templates_path = _locate_templates_yaml()
     if not templates_path:
         raise FileNotFoundError(
-            "Could not find templates.yaml. Set EOS_TEMPLATES_PATH or place it in core/prompting/"
+            "Could not find templates.yaml. Set EOS_TEMPLATES_PATH or place it in core/prompting/",
         )
 
     _TEMPLATES = _load_templates_yaml(templates_path)
@@ -260,7 +260,11 @@ async def render_prompt(
     """Renders the final messages[] using a spec and a context dictionary."""
     env = _ensure_jinja_env()
 
-    template_context = await _run_lenses(spec, context_dict)
+    # If the orchestrator already applied lenses, skip running them here.
+    if context_dict.get("_lenses_applied") is True:
+        template_context = dict(context_dict)
+    else:
+        template_context = await _run_lenses(spec, context_dict)
     template_context["task_summary"] = task_summary
     template_context["spec"] = spec
 
@@ -278,7 +282,7 @@ async def render_prompt(
     system_content_parts: list[str] = []
     if spec.identity.persona_partial:
         system_content_parts.append(
-            env.get_template(spec.identity.persona_partial).render(template_context)
+            env.get_template(spec.identity.persona_partial).render(template_context),
         )
     for partial in spec.safety.partials:
         system_content_parts.append(env.get_template(partial).render(template_context))
@@ -374,7 +378,8 @@ def extract_json_flex(text: str) -> str | None:
     import re
 
     fence_re = re.compile(
-        r"```(?:\s*json\s*)?\n(?P<payload>(?:\{.*?\}|\[.*?\]))\n```", re.DOTALL | re.IGNORECASE
+        r"```(?:\s*json\s*)?\n(?P<payload>(?:\{.*?\}|\[.*?\]))\n```",
+        re.DOTALL | re.IGNORECASE,
     )
     m = fence_re.search(t)
     if m:
@@ -519,7 +524,7 @@ async def _auto_repair(
         # Provider might return .json directly or .text with fenced content
         return data.get("json") or json.loads(
             extract_json_block(data.get("text", ""))
-            or (extract_json_flex(data.get("text", "")) or "{}")
+            or (extract_json_flex(data.get("text", "")) or "{}"),
         )
     except Exception:
         # On any failure, return the original (caller will decide fallback)

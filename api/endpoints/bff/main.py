@@ -33,7 +33,8 @@ async def get_client():
 class ApiProxyRequest(BaseModel):
     method: str = Field(..., description="HTTP method (e.g., 'GET', 'POST')")
     path: str = Field(
-        ..., description="Absolute URL or path (e.g., '/synapse/metrics/leaderboard')"
+        ...,
+        description="Absolute URL or path (e.g., '/synapse/metrics/leaderboard')",
     )
     data: dict | list | None = Field(None, description="Request body for POST/PUT/PATCH")
 
@@ -77,7 +78,8 @@ async def get_decision_journey(decision_id: str):
             client = await get_client()
             # Often decision_id == conflict_id in our flows
             res = await client.get(
-                f"{ENDPOINTS.EVO_CONFLICTS}/{decision_id}", headers=IMMUNE_HEADERS
+                f"{ENDPOINTS.EVO_CONFLICTS}/{decision_id}",
+                headers=IMMUNE_HEADERS,
             )
             if res.status_code == 200:
                 return res.json()
@@ -126,7 +128,8 @@ async def api_proxy(payload: ApiProxyRequest, original_request: Request):
         logger.exception("BFF API proxy failed for path: %s", payload.path)
         error_detail = getattr(getattr(e, "response", None), "text", str(e))
         raise HTTPException(
-            status_code=502, detail=f"API request to '{payload.path}' failed: {error_detail}"
+            status_code=502,
+            detail=f"API request to '{payload.path}' failed: {error_detail}",
         )
 
 
@@ -261,13 +264,17 @@ async def synapse_leaderboard(
 
 
 @synapse_bff.post(
-    "/registry/reload", status_code=202, summary="Trigger a hot-reload of the Synapse Arm Registry"
+    "/registry/reload",
+    status_code=202,
+    summary="Trigger a hot-reload of the Synapse Arm Registry",
 )
 async def synapse_reload_registry():
     try:
         client = await get_client()
         response = await client.post(
-            ENDPOINTS.SYNAPSE_REGISTRY_RELOAD, json={}, headers=IMMUNE_HEADERS
+            ENDPOINTS.SYNAPSE_REGISTRY_RELOAD,
+            json={},
+            headers=IMMUNE_HEADERS,
         )
         response.raise_for_status()
         return response.json()
@@ -320,13 +327,16 @@ governance_router = APIRouter(tags=["BFF Governance"])
 # Keep these for older UI calls that still hit /bff/governance/*
 @governance_router.get("/synapse/leaderboard", summary="(Compat) Synapse Leaderboard")
 async def get_synapse_leaderboard(
-    days: int = Query(7, ge=1, le=90), top_k: int = Query(12, ge=1, le=200)
+    days: int = Query(7, ge=1, le=90),
+    top_k: int = Query(12, ge=1, le=200),
 ):
     return await synapse_leaderboard(days=days, top_k=top_k)
 
 
 @governance_router.post(
-    "/synapse/reload_registry", status_code=202, summary="(Compat) Reload Arm Registry"
+    "/synapse/reload_registry",
+    status_code=202,
+    summary="(Compat) Reload Arm Registry",
 )
 async def reload_synapse_registry():
     return await synapse_reload_registry()
@@ -355,7 +365,9 @@ async def get_open_conflicts(limit: int | None = Query(default=50, ge=1, le=200)
     try:
         client = await get_client()
         response = await client.get(
-            f"{ENDPOINTS.EVO_CONFLICTS}", params={"limit": limit}, headers=IMMUNE_HEADERS
+            f"{ENDPOINTS.EVO_CONFLICTS}",
+            params={"limit": limit},
+            headers=IMMUNE_HEADERS,
         )
         response.raise_for_status()
         return response.json()
@@ -368,7 +380,8 @@ async def get_conflict_details(conflict_id: str = Path(...)):
     try:
         client = await get_client()
         conflict_res = await client.get(
-            f"{ENDPOINTS.EVO_CONFLICTS}/{conflict_id}", headers=IMMUNE_HEADERS
+            f"{ENDPOINTS.EVO_CONFLICTS}/{conflict_id}",
+            headers=IMMUNE_HEADERS,
         )
         conflict_res.raise_for_status()
         return {"conflict": conflict_res.json()}
@@ -409,7 +422,8 @@ async def list_unity_deliberations(limit: int = Query(20, ge=1, le=100)):
 
 
 @operations_router.get(
-    "/unity/deliberation/{session_id}", summary="Get a full Unity deliberation transcript"
+    "/unity/deliberation/{session_id}",
+    summary="Get a full Unity deliberation transcript",
 )
 async def get_unity_deliberation(session_id: str):
     try:

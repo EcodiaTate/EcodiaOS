@@ -114,7 +114,9 @@ async def log_outcome(req: LogOutcomeRequest) -> LogOutcomeResponse:
             # opportunistic in-memory registration
             try:
                 reg = getattr(arm_registry, "register_dynamic", None) or getattr(
-                    arm_registry, "add_dynamic", None
+                    arm_registry,
+                    "add_dynamic",
+                    None,
                 )
                 if reg:
                     maybe = (
@@ -127,7 +129,7 @@ async def log_outcome(req: LogOutcomeRequest) -> LogOutcomeResponse:
                     arm = arm_registry.get_arm(arm_id)
             except Exception as e:
                 logger.warning(
-                    f"[API] Failed to opportunistically register dynamic arm '{arm_id}': {e}"
+                    f"[API] Failed to opportunistically register dynamic arm '{arm_id}': {e}",
                 )
 
     # --- This local file logging remains correct ---
@@ -140,7 +142,7 @@ async def log_outcome(req: LogOutcomeRequest) -> LogOutcomeResponse:
             "scalar_reward": scalar_reward,
             "reward_vector": reward_vector,
             "metrics": req.metrics,
-        }
+        },
     )
 
     if scalar_reward > 0.0:
@@ -179,6 +181,7 @@ async def ingest_preference(req: PreferenceIngest) -> dict[str, Any]:
         logger.error(f"[API] Failed to persist preference to graph: {e}")
         raise HTTPException(status_code=500, detail="Failed to record preference.")
     await _event_publish_compat(
-        "synapse.preference.ingested", {"winner": req.winner, "loser": req.loser}
+        "synapse.preference.ingested",
+        {"winner": req.winner, "loser": req.loser},
     )
     return {"status": "accepted"}

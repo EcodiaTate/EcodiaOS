@@ -71,7 +71,7 @@ class ParticipantRegistry:
                         "name": name,
                         "description": data.get("description"),
                         "specialties": data.get("specialties", []),
-                    }
+                    },
                 )
         return critics
 

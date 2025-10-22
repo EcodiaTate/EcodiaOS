@@ -180,7 +180,7 @@ async def log_conflict(
     if _IN_CONFLICT.get():
         if _record_recursion(comp):
             print(
-                f"!!! RECURSION DETECTED in ConflictSDK. Suppressing follow-up error from '{comp}'."
+                f"!!! RECURSION DETECTED in ConflictSDK. Suppressing follow-up error from '{comp}'.",
             )
         return
 
@@ -219,7 +219,7 @@ async def log_conflict(
         last = _LAST_PUBLISH_ERR_LOG.get()
         if now - last >= _PUBLISH_ERR_TTL_SEC:
             print(
-                f"!!! ConflictSDK: failed to publish conflict ({type(pub_err).__name__}): {pub_err}"
+                f"!!! ConflictSDK: failed to publish conflict ({type(pub_err).__name__}): {pub_err}",
             )
             _LAST_PUBLISH_ERR_LOG.set(now)
     finally:

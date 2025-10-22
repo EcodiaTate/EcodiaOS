@@ -171,7 +171,10 @@ async def execute_intent(intent: AxonIntent, *, decision_id: str | None = None) 
         # -------- learning feedback (predicted vs actual) --------
         try:
             await ingest_action_outcome(
-                intent=intent, predicted_result=twin, actual_result=result, decision_id=decision_id
+                intent=intent,
+                predicted_result=twin,
+                actual_result=result,
+                decision_id=decision_id,
             )
         except Exception:
             pass
@@ -194,7 +197,10 @@ async def execute_intent(intent: AxonIntent, *, decision_id: str | None = None) 
         # still emit a feedback record for learning
         try:
             await ingest_action_outcome(
-                intent=intent, predicted_result=twin, actual_result=res, decision_id=decision_id
+                intent=intent,
+                predicted_result=twin,
+                actual_result=res,
+                decision_id=decision_id,
             )
         except Exception:
             pass

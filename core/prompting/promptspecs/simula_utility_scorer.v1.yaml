@@ -1,16 +1,18 @@
-id: "simula-utility-scorer-v1.0"
-version: "1.0"
-scope: "simula.utility_scorer"
+# core/prompting/promptspecs/simula_utility_scorer.v1.yaml
+- id: "simula-utility-scorer-v1.0"
+  version: "1.0"
+  scope: "simula.utility_scorer"
 
-identity:
-  agent: "Simula.UtilityScorer"
-  persona_partial: "persona_utility_scorer"
+  identity:
+    agent: "Simula.UtilityScorer"
+    persona_partial: "persona_utility_scorer"
 
-context_lenses: []
+  context_lenses: []
 
-partials:
-  - "task_framing_simula_utility_scorer"
-  - "output_format_simula_utility_scorer"
+  partials:
+    - "task_framing_simula_utility_scorer"
+    - "output_format_simula_utility_scorer"
 
-outputs:
-  parse_mode: "tolerant"
+  # Keep tolerant parsing—score JSON can be short and occasionally sparse
+  outputs:
+    parse_mode: "tolerant"

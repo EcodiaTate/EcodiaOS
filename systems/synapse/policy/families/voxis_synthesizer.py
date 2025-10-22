@@ -65,7 +65,7 @@ async def _ensure_variant_grid() -> None:
 async def ensure_voxis_synthesizer_family_schema() -> None:
     """Ensures the Synthesizer family, its variant grid, and all stylistic strategies exist in Neo4j."""
     logger.info(
-        "[VoxisSynthesizer] Ensuring family schema (family + grid + strategies) in Neo4j..."
+        "[VoxisSynthesizer] Ensuring family schema (family + grid + strategies) in Neo4j...",
     )
 
     # Family
@@ -142,7 +142,9 @@ def build_synthesizer_policy_graph(arm_id: str, variant: ArmVariant) -> PolicyGr
     """
     effects = [
         LLMParamsEffect(
-            model=variant.model, temperature=variant.temperature, max_tokens=variant.max_tokens
+            model=variant.model,
+            temperature=variant.temperature,
+            max_tokens=variant.max_tokens,
         ),
         TagBiasEffect(tags=variant.tags),
     ]

@@ -10,7 +10,8 @@ from systems.axon.schemas import AxonEvent
 
 # --- Configuration ---
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger("Axon.Bridge")
 
@@ -26,7 +27,7 @@ async def forward_event_to_atune(event_payload: dict) -> None:
         # The bus payload is the full AxonEvent object
         axon_event = AxonEvent.model_validate(event_payload)
         logger.info(
-            f"[Bridge] Forwarding event {axon_event.event_id} from source '{axon_event.source}' to Atune."
+            f"[Bridge] Forwarding event {axon_event.event_id} from source '{axon_event.source}' to Atune.",
         )
 
         client = await get_http_client()
@@ -38,7 +39,7 @@ async def forward_event_to_atune(event_payload: dict) -> None:
         )
         response.raise_for_status()
         logger.info(
-            f"[Bridge] Successfully forwarded event {axon_event.event_id}. Atune response: {response.status_code}"
+            f"[Bridge] Successfully forwarded event {axon_event.event_id}. Atune response: {response.status_code}",
         )
 
     except Exception as e:
@@ -66,7 +67,7 @@ if __name__ == "__main__":
         print("--- Running Axon Event Bridge in standalone mode ---")
         print(f"--- Listening for events on topic: '{AXON_EVENT_TOPIC}' ---")
         print(
-            "--- This service will forward any published Axon events to Atune. Press Ctrl+C to exit. ---"
+            "--- This service will forward any published Axon events to Atune. Press Ctrl+C to exit. ---",
         )
 
         await run_bridge_service()

@@ -46,7 +46,8 @@ async def run_in_twin(intent: AxonIntent) -> ActionResult:
     # Normalize minimal shape expected by callers
     counterfactual = data.get("counterfactual_metrics") or {}
     counterfactual.setdefault(
-        "predicted_utility", float(counterfactual.get("predicted_utility", 0.0))
+        "predicted_utility",
+        float(counterfactual.get("predicted_utility", 0.0)),
     )
     counterfactual["twin_latency_ms"] = dur_ms
 

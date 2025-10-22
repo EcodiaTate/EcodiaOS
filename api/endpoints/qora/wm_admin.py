@@ -5,6 +5,7 @@ import asyncio
 import hashlib
 import logging
 import os
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Any, Optional
@@ -48,11 +49,27 @@ class ReindexReq(BaseModel):
     # push: bool = Field(default=False, description="If true, push after commit")
 
 
+# ------------------------------ small proc helpers ------------------------------
+def _run(cmd: list[str], cwd: str | Path | None = None, timeout: int = 1200) -> tuple[int, str, str]:
+    """Run a command; return (rc, stdout, stderr). Never raises."""
+    try:
+        p = subprocess.run(
+            cmd,
+            cwd=str(cwd) if cwd else None,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+        return p.returncode, (p.stdout or "").strip(), (p.stderr or "").strip()
+    except Exception as e:
+        return 997, "", f"{type(e).__name__}: {e}"
+
+
 # ------------------------------ git helpers ------------------------------
 def _git(args: list[str], cwd: str | Path) -> tuple[int, str, str]:
     """Run git with args (no leading 'git'). Returns (rc, stdout, stderr)."""
-    p = subprocess.run(["git", *args], cwd=str(cwd), capture_output=True, text=True, check=False)
-    return p.returncode, p.stdout.strip(), p.stderr.strip()
+    return _run(["git", *args], cwd=cwd)
 
 
 def _ensure_git_env(root: Path) -> None:
@@ -168,6 +185,73 @@ def _git_autopush(root: Path, remote: str, branch: str) -> bool:
     return True
 
 
+# ------------------------------ Ruff formatting helpers ------------------------------
+def _ruff_enabled() -> bool:
+    """
+    Controlled by env QORA_RUFF_ENABLE (default: 1/true).
+    """
+    val = os.getenv("QORA_RUFF_ENABLE", "1").lower()
+    return val in ("1", "true", "yes", "on")
+
+
+def _ruff_available() -> bool:
+    return shutil.which("ruff") is not None
+
+
+def _format_repo_with_ruff(repo_root: Path) -> dict[str, Any]:
+    """
+    Run Ruff check --fix and Ruff format at repo_root.
+    - Respects .gitignore to avoid vendor/build dirs.
+    - Skips if Ruff is not installed or disabled.
+    Returns small diagnostics dict for logs/inspection.
+    """
+    diag: dict[str, Any] = {
+        "enabled": _ruff_enabled(),
+        "available": _ruff_available(),
+        "ran": False,
+        "check_rc": None,
+        "format_rc": None,
+        "check_err": "",
+        "format_err": "",
+    }
+
+    if not diag["enabled"]:
+        return diag
+    if not diag["available"]:
+        logger.info("[WM Admin] Ruff not found; skipping auto-format.")
+        return diag
+
+    # Allow extra args via env if you want (e.g., "--unsafe-fixes"—not recommended by default)
+    extra = os.getenv("QORA_RUFF_EXTRA", "").strip().split()
+    # Lint+fix across repo, honoring .gitignore
+    rc1, out1, err1 = _run(["ruff", "check", ".", "--fix", "--respect-gitignore", *extra], cwd=repo_root)
+    # Formatter pass
+    rc2, out2, err2 = _run(["ruff", "format", ".", "--respect-gitignore"], cwd=repo_root)
+
+    diag.update(
+        {
+            "ran": True,
+            "check_rc": rc1,
+            "format_rc": rc2,
+            "check_err": err1,
+            "format_err": err2,
+        },
+    )
+
+    if rc1 != 0:
+        logger.warning("[WM Admin] Ruff check returned rc=%s (non-fatal). stderr: %s", rc1, err1)
+    if rc2 != 0:
+        logger.warning("[WM Admin] Ruff format returned rc=%s (non-fatal). stderr: %s", rc2, err2)
+
+    # Be chatty only when useful
+    if out1:
+        logger.debug("[WM Admin] Ruff check output:\n%s", out1)
+    if out2:
+        logger.debug("[WM Admin] Ruff format output:\n%s", out2)
+
+    return diag
+
+
 # ------------------------------ orchestration ------------------------------
 _singleflight_lock: asyncio.Lock | None = None
 
@@ -215,7 +299,8 @@ async def _run_reindex(req: ReindexReq) -> dict[str, Any]:
         already_done = await check_and_mark_processed(commit_key, STATE_ID)
         if already_done:
             logger.info(
-                "[WM Admin] reindex NOOP: key %s already processed by another worker", commit_key
+                "[WM Admin] reindex NOOP: key %s already processed by another worker",
+                commit_key,
             )
             return {
                 "ok": True,
@@ -239,6 +324,7 @@ async def _run_reindex(req: ReindexReq) -> dict[str, Any]:
         commit_key,
     )
 
+    # 1) Ingest (may create/modify files)
     result = await patrol_and_ingest(
         root_dir=str(repo_root),
         force=(not changed_only),
@@ -246,6 +332,16 @@ async def _run_reindex(req: ReindexReq) -> dict[str, Any]:
         changed_only=changed_only,
         state_id=STATE_ID,
     )
+
+    # 2) Auto-format with Ruff (only if not dry-run)
+    if not req.dry_run:
+        diag = _format_repo_with_ruff(repo_root)
+        if diag.get("ran"):
+            logger.info(
+                "[WM Admin] Ruff format: check_rc=%s format_rc=%s",
+                diag.get("check_rc"),
+                diag.get("format_rc"),
+            )
 
     # --- Optional auto-commit/push after ingest ---
     do_commit = os.getenv("QORA_REINDEX_AUTOCOMMIT", "0").lower() in ("1", "true", "yes")
@@ -255,7 +351,7 @@ async def _run_reindex(req: ReindexReq) -> dict[str, Any]:
     current_branch = None
 
     if ctx["is_repo"] and not req.dry_run:
-        # re-check dirtiness after ingest
+        # re-check dirtiness after ingest + formatting
         tree_dirty = _git_status_dirty(repo_root)
         if do_commit and tree_dirty:
             current_branch = _git_current_branch(repo_root)  # may be None in detached HEAD
@@ -274,10 +370,13 @@ async def _run_reindex(req: ReindexReq) -> dict[str, Any]:
                     remote = os.getenv("QORA_REINDEX_REMOTE", "origin")
                     if _git_autopush(repo_root, remote, push_branch):
                         logger.info(
-                            "[WM Admin] auto-pushed %s to %s/%s", new_head, remote, push_branch
+                            "[WM Admin] auto-pushed %s to %s/%s",
+                            new_head,
+                            remote,
+                            push_branch,
                         )
             else:
-                logger.info("[WM Admin] nothing to commit after ingest or commit failed.")
+                logger.info("[WM Admin] nothing to commit after ingest/format or commit failed.")
 
     # Persist last_commit:
     # - if we auto-committed, record the new HEAD

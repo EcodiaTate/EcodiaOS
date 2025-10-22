@@ -20,7 +20,10 @@ class _Spec(BaseModel):
 
 class _Args(BaseModel):
     country_code: str = Field(
-        ..., min_length=2, max_length=2, description="ISO-3166-1 alpha-2 (e.g., AU, US)"
+        ...,
+        min_length=2,
+        max_length=2,
+        description="ISO-3166-1 alpha-2 (e.g., AU, US)",
     )
     year: int = Field(..., ge=1900, le=2100)
 

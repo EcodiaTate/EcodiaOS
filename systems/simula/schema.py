@@ -121,7 +121,8 @@ class SimulaCodegenTarget(BaseModel):
     model_config = ConfigDict(extra="ignore")
     path: str = Field(..., description="Repo-relative path")
     signature: str | None = Field(
-        default=None, description="Optional symbol within the file (e.g., ClassName or func_name)"
+        default=None,
+        description="Optional symbol within the file (e.g., ClassName or func_name)",
     )
 
 

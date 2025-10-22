@@ -7,12 +7,14 @@
     agent: "Simula.RedTeam"
     persona_partial: "persona_simula_guardrails"
 
+  # Let Red-Team see both advice and the active tool surface to flag disallowed tools
   context_lenses:
+    - "lens_get_tools"
     - "lens_simula_advice_preplan"
-    
+
   partials:
     - "persona_simula_guardrails"
-    - "advice_injection_guardrails"    # let the red-team see prior pitfalls
+    - "advice_injection_guardrails"
     - "scl_red_team_system_rules"
     - "scl_red_team_context_block"
     - "scl_output_contract_critique"
@@ -38,4 +40,3 @@
               category: { type: string, enum: ["Hallucination", "Logical Flaw", "Scope Creep", "Fragility", "Missed Opportunity"] }
               description: { type: string, description: "A detailed explanation of the identified flaw." }
         recommendation: { type: string, enum: ["Approve", "Needs Revision", "Reject"] }
-

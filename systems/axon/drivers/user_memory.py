@@ -72,13 +72,17 @@ class MemoryDriver(DriverInterface):
 
             # Query user's past inputs
             input_hits = await _first_working_vector_query(
-                SOULINPUT_INDEX_CANDIDATES, k=args.limit, vec=embed
+                SOULINPUT_INDEX_CANDIDATES,
+                k=args.limit,
+                vec=embed,
             )
             input_ids = [r.get("id") for r in (input_hits or []) if r.get("id")]
 
             # Query user's past responses
             resp_hits = await _first_working_vector_query(
-                SOULRESPONSE_INDEX_CANDIDATES, k=args.limit, vec=embed
+                SOULRESPONSE_INDEX_CANDIDATES,
+                k=args.limit,
+                vec=embed,
             )
             resp_ids = [r.get("id") for r in (resp_hits or []) if r.get("id")]
 
@@ -113,7 +117,7 @@ class MemoryDriver(DriverInterface):
 
                 if u and a:
                     memories.append(
-                        {"role": "context", "content": f"User said: '{u}'\nI responded: '{a}'"}
+                        {"role": "context", "content": f"User said: '{u}'\nI responded: '{a}'"},
                     )
                 elif u:
                     memories.append({"role": "user", "content": u})
@@ -144,7 +148,7 @@ class MemoryDriver(DriverInterface):
 
             if not (set(SOULINPUT_INDEX_CANDIDATES) & index_names):
                 raise RuntimeError(
-                    f"Required vector index for SoulInput not found. Searched for: {SOULINPUT_INDEX_CANDIDATES}"
+                    f"Required vector index for SoulInput not found. Searched for: {SOULINPUT_INDEX_CANDIDATES}",
                 )
 
             return {

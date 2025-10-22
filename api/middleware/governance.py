@@ -46,7 +46,10 @@ async def _submit_attestation_task(attestation: Attestation) -> None:
             DECISION_HEADER: attestation.episode_id or f"auto-{uuid.uuid4().hex[:8]}",
         }
         resp = await post_internal(
-            ENDPOINTS.EQUOR_ATTEST, json=payload, headers=headers, timeout=10.0
+            ENDPOINTS.EQUOR_ATTEST,
+            json=payload,
+            headers=headers,
+            timeout=10.0,
         )
         resp.raise_for_status()
         logger.info("Attestation submitted for episode: %s", attestation.episode_id)
@@ -128,7 +131,10 @@ async def constitutional_preamble(request: Request) -> None:
         }
         headers = {IMMUNE_HEADER: "1", DECISION_HEADER: decision_id}
         r = await post_internal(
-            ENDPOINTS.EQUOR_COMPOSE, json=compose_request, headers=headers, timeout=10.0
+            ENDPOINTS.EQUOR_COMPOSE,
+            json=compose_request,
+            headers=headers,
+            timeout=10.0,
         )
 
         # No profile configured yet → treat as "no patch"
@@ -188,7 +194,9 @@ class AttestationMiddleware(BaseHTTPMiddleware):
         patch: ComposeResponse | None = getattr(request.state, "constitutional_patch", None)
         agent: str | None = getattr(request.state, "agent", None)
         decision_id: str | None = getattr(
-            request.state, "decision_id", None
+            request.state,
+            "decision_id",
+            None,
         ) or request.headers.get(DECISION_HEADER)
 
         # Mirror decision id onto the response for traceability

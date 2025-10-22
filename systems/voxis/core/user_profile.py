@@ -118,7 +118,8 @@ async def _first_working_vector_query(
 
 
 def _clip_messages(
-    messages: list[dict[str, str]], hard_limit: int = MAX_CONTEXT_MESSAGES
+    messages: list[dict[str, str]],
+    hard_limit: int = MAX_CONTEXT_MESSAGES,
 ) -> list[dict[str, str]]:
     if len(messages) <= hard_limit:
         return messages
@@ -171,7 +172,8 @@ async def get_dynamic_user_context(
     """
     try:
         rows = await cypher_query(
-            RECENCY_QUERY, {"session_id": session_id, "lim": recency_limit * 2}
+            RECENCY_QUERY,
+            {"session_id": session_id, "lim": recency_limit * 2},
         )
         # *** MODIFICATION: Preserve the timestamp for each message ***
         msgs = [
@@ -311,7 +313,8 @@ async def upsert_soul_profile_properties(
     try:
         kv = [{"k": k, "v": v} for k, v in props.items()]
         await cypher_query(
-            facts_q, {"uid": user_id, "kv": kv, "src": source, "conf": float(confidence)}
+            facts_q,
+            {"uid": user_id, "kv": kv, "src": source, "conf": float(confidence)},
         )
         facts_appended = len(kv)
     except Exception as e:

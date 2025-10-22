@@ -1,0 +1,36 @@
+- id: "simula.deliberation.synthesizer.v1"
+  version: "v1"
+  scope: "simula.deliberation.synthesizer"
+
+  identity:
+    agent: "Simula.Synthesizer"
+    persona_partial: "persona_simula_synthesizer"
+
+  context_lenses:
+    # CRITICAL FIX: Also give the synthesizer access to the real tools.
+    - "lens_get_tools"
+
+  partials:
+    - "persona_simula_synthesizer"
+    - "scl_planner_system_rules"      # Reuse the strong constraints
+    - "scl_context_block"             # Show the synthesizer the main goal and available tools
+    - "scl_synthesis_inputs_block"
+    - "scl_synthesizer_instructions"
+    - "scl_plan_output_contract"
+
+  outputs:
+    parse_mode: "auto_repair"
+    schema:
+      type: object
+      required: ["interim_thought", "plan"]
+      properties:
+        interim_thought: { type: string }
+        plan:
+          type: array
+          items:
+            type: object
+            required: ["action_type", "tool_name", "parameters"]
+            properties:
+              action_type: { type: string, enum: ["tool_call"] }
+              tool_name: { type: string }
+              parameters: { type: object }

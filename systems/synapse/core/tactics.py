@@ -117,7 +117,10 @@ class TacticalManager:
         # 3) Deterministic exploration
         remaining = [a for a in all_arms_in_mode if a.id not in chosen]
         seed = _stable_seed_from_ctx(
-            req.task_ctx.task_key, mode, req.task_ctx.goal, req.task_ctx.risk_level
+            req.task_ctx.task_key,
+            mode,
+            req.task_ctx.goal,
+            req.task_ctx.risk_level,
         )
         rnd = random.Random(seed)
         explore_n = min(explore_cap, len(remaining))
@@ -140,7 +143,9 @@ class TacticalManager:
         return union if union else all_arms_in_mode
 
     def _score_candidates(
-        self, candidates: Iterable[PolicyArm], x_vec: np.ndarray
+        self,
+        candidates: Iterable[PolicyArm],
+        x_vec: np.ndarray,
     ) -> dict[str, float]:
         """Score each candidate via its Neural-Linear head; skip NaN/inf safely."""
         scores: dict[str, float] = {}
@@ -158,7 +163,9 @@ class TacticalManager:
     # ---------------- public API ----------------
 
     async def select_arm(
-        self, request: SelectArmRequest, mode: str
+        self,
+        request: SelectArmRequest,
+        mode: str,
     ) -> tuple[PolicyArm, dict[str, float]]:
         """
         Returns (best_arm, scores_dict_for_candidates).
@@ -184,7 +191,9 @@ class TacticalManager:
             x = neural_linear_manager.encode(request.task_ctx.model_dump())
         except Exception as e:
             log.error(
-                "[Tactics-%s] Failed to encode context: %s. Using zero vector.", final_mode, e
+                "[Tactics-%s] Failed to encode context: %s. Using zero vector.",
+                final_mode,
+                e,
             )
             x = np.zeros((getattr(neural_linear_manager, "dimensions", 64),), dtype=float)
 
@@ -193,7 +202,8 @@ class TacticalManager:
         candidates = self._build_candidate_set(all_arms, x, request, final_mode)
         if not candidates:
             log.warning(
-                "[Tactics-%s] Candidate building returned empty. Using safe fallback.", final_mode
+                "[Tactics-%s] Candidate building returned empty. Using safe fallback.",
+                final_mode,
             )
             safe = await arm_registry.get_safe_fallback_arm(final_mode)
             # record scratch (without holding a lock during await)
@@ -205,7 +215,8 @@ class TacticalManager:
         scores = self._score_candidates(candidates, x)
         if not scores:
             log.warning(
-                "[Tactics-%s] No candidates could be scored. Using safe fallback.", final_mode
+                "[Tactics-%s] No candidates could be scored. Using safe fallback.",
+                final_mode,
             )
             safe = await arm_registry.get_safe_fallback_arm(final_mode)
             with self._lock:
@@ -226,7 +237,9 @@ class TacticalManager:
 
         if not isinstance(best_arm, PolicyArm):
             log.error(
-                "[Tactics-%s] Registry miss for '%s'. Using safe fallback.", final_mode, best_id
+                "[Tactics-%s] Registry miss for '%s'. Using safe fallback.",
+                final_mode,
+                best_id,
             )
             safe = await arm_registry.get_safe_fallback_arm(final_mode)
             with self._lock:
@@ -240,7 +253,10 @@ class TacticalManager:
             self._last_scores[best_arm.id] = dict(scores)
 
         log.info(
-            "[Tactics-%s] Chose arm: %s (score: %.4f)", final_mode, best_arm.id, scores[best_id]
+            "[Tactics-%s] Chose arm: %s (score: %.4f)",
+            final_mode,
+            best_arm.id,
+            scores[best_id],
         )
         return best_arm, scores
 

@@ -1,0 +1,36 @@
+- id: "simula.deliberation.moderator.v1"
+  version: "v1"
+  scope: "simula.deliberation.moderator"
+
+  identity:
+    agent: "Simula.Moderator"
+    persona_partial: "persona_simula_moderator"
+
+  context_lenses: []
+
+  partials:
+    - "persona_simula_moderator"
+    - "scl_blackboard_state"
+    - "scl_moderator_instructions"
+    - "scl_moderator_output_contract"
+
+  outputs:
+    parse_mode: "auto_repair"
+    schema:
+      type: object
+      required: ["action", "reasoning"]
+      properties:
+        action:
+          type: string
+          enum: ["approve", "synthesize", "continue", "terminate"]
+        reasoning: { type: string }
+        winning_hypothesis_id:
+          type: string
+          description: "Required if action is 'approve'."
+        synthesis_inputs:
+          type: object
+          description: "Required if action is 'synthesize'."
+          properties:
+            parent_hypotheses:
+              type: array
+              items: { type: string }

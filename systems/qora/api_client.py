@@ -62,11 +62,19 @@ async def _api_call(
 
         if method.upper() == "POST":
             response = await http.post(
-                url, json=payload or {}, headers=headers, timeout=timeout, **kwargs
+                url,
+                json=payload or {},
+                headers=headers,
+                timeout=timeout,
+                **kwargs,
             )
         elif method.upper() == "GET":
             response = await http.get(
-                url, params=payload or {}, headers=headers, timeout=timeout, **kwargs
+                url,
+                params=payload or {},
+                headers=headers,
+                timeout=timeout,
+                **kwargs,
             )
         else:
             raise ValueError(f"Unsupported HTTP method: {method}")

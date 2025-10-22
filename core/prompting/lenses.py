@@ -9,20 +9,10 @@ from typing import Any, Dict, List, Optional
 
 from core.llm.embeddings_gemini import get_embedding
 
-# logger
 _log = logging.getLogger("ecodia.lenses")
 
-# Optional imports (safe fallbacks if unavailable)
-try:
-    from core.utils.neo.cypher_query import cypher_query  # async graph access
-except Exception:
-    cypher_query = None  # type: ignore
-
-try:
-    from systems.synk.core.tools.neo import semantic_graph_search  # semantic retrieval
-except Exception:
-    semantic_graph_search = None  # type: ignore
-
+from core.utils.neo.cypher_query import cypher_query  # async graph access
+from systems.synk.core.tools.neo import semantic_graph_search  # semantic retrieval
 
 # ---------------------------------------------------------------------------
 # == NEW: IDENTITY FACET LENSES
@@ -261,7 +251,6 @@ async def lens_tools_catalog(input_obj: Any) -> dict[str, Any]:
     """
     query_text = ""
     if isinstance(input_obj, dict):
-        # +++ BEST PRACTICE: Prioritize the explicit 'retrieval_query' key. +++
         query_text = (
             input_obj.get("retrieval_query")
             or input_obj.get("goal")
@@ -325,23 +314,36 @@ async def lens_tools_catalog(input_obj: Any) -> dict[str, Any]:
                         "defaults": _defaults,
                         "score": float(r.get("score") or 0.0),
                     },
-                }
+                },
             )
 
-        _log.info(f"[lens.tools_catalog] Cypher query found {len(out)} tools.")
         return {"tools_catalog": {"candidates": out}}
-    except Exception as e:
-        _log.exception(f"[lens.tools_catalog] Cypher query for tools failed: {e}")
+    except Exception:
         return {"tools_catalog": {"candidates": []}}
 
 
-import json
-from typing import Any, Dict
+# --- Simula lenses ------------------------------------------------------------
+
+# Logger
+_log = logging.getLogger(__name__)
+
+# Optional imports (degrade gracefully in unit tests / offline)
+try:
+    from core.llm.embeddings_gemini import get_embedding
+except Exception:  # pragma: no cover
+
+    async def get_embedding(_: str, task_type: str = "RETRIEVAL_QUERY") -> list[float]:
+        _log.warning("[lenses] get_embedding unavailable; returning zero vector.")
+        return [0.0] * 768  # safe default
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Tool Catalog (lens_get_tools)
+# ──────────────────────────────────────────────────────────────────────────────
 
 
 def _row_to_candidate(r: dict[str, Any]) -> dict[str, Any]:
-    """Transforms a Cypher query result row into a tool catalog candidate."""
-    # Parse policy_graph_meta if present
+    """Transforms a Cypher row into a tools-catalog candidate."""
     pgm = r.get("pgm_raw")
     if isinstance(pgm, str):
         try:
@@ -351,7 +353,6 @@ def _row_to_candidate(r: dict[str, Any]) -> dict[str, Any]:
     elif not isinstance(pgm, dict):
         pgm = {}
 
-    # Pull fields from pgm or fallbacks
     tool_name = pgm.get("tool_name") or r.get("name") or r.get("arm_id") or "unknown_tool"
 
     description = r.get("description")
@@ -405,7 +406,7 @@ async def _lens_get_tools_impl(
 
     try:
         if query_text:
-            _log.info(f"[lens_get_tools] KNN + mode filter q='{query_text[:100]}...'")
+            _log.info("[lens_get_tools] KNN + mode filter q='%s...'", (query_text or "")[:100])
             emb = await get_embedding(query_text, task_type="RETRIEVAL_QUERY")
             params["embedding"] = emb
 
@@ -420,10 +421,10 @@ YIELD node AS a, score
 {match_clause}
 WHERE {' AND '.join(where_clauses)}
 RETURN
-  a.id                         AS arm_id,
-  a.description                AS description,
-  coalesce(a.tags, [])         AS tool_modes,   // pass through; python narrows actual modes
-  a.policy_graph_meta          AS pgm_raw,
+  a.id                  AS arm_id,
+  a.description         AS description,
+  coalesce(a.tags, [])  AS tool_modes,
+  a.policy_graph_meta   AS pgm_raw,
   score
 ORDER BY score DESC
 LIMIT $k
@@ -434,7 +435,7 @@ LIMIT $k
             score_with = f"WITH a, {default_score} AS score"
 
             if modes:
-                _log.info(f"[lens_get_tools] mode-only filter: {modes}")
+                _log.info("[lens_get_tools] mode-only filter: %s", modes)
                 where_clauses.append("size([t IN coalesce(a.tags, []) WHERE t IN $mode_tags]) > 0")
             else:
                 _log.info("[lens_get_tools] fallback to general tools")
@@ -445,26 +446,25 @@ LIMIT $k
 WHERE {' AND '.join(where_clauses)}
 {score_with}
 RETURN
-  a.id                         AS arm_id,
-  a.description                AS description,
-  coalesce(a.tags, [])         AS tool_modes,
-  a.policy_graph_meta          AS pgm_raw,
+  a.id                  AS arm_id,
+  a.description         AS description,
+  coalesce(a.tags, [])  AS tool_modes,
+  a.policy_graph_meta   AS pgm_raw,
   score
 ORDER BY score DESC
 LIMIT $k
 """
 
         rows = await cypher_query(final_query, params)
-        # Optionally drop rows that still don't produce a tool name after parsing
-        parsed = []
+        parsed: list[dict[str, Any]] = []
         for r in rows or []:
             c = _row_to_candidate(r)
             if c["function"]["name"] and c["function"]["name"] != "unknown_tool":
                 parsed.append(c)
-        _log.info(f"[lens_get_tools] candidates={len(parsed)}")
+        _log.info("[lens_get_tools] candidates=%d", len(parsed))
         return {"tools_catalog": {"candidates": parsed}}
     except Exception as e:
-        _log.exception(f"[lens_get_tools] failed: {e}")
+        _log.exception("[lens_get_tools] failed: %r", e)
         return {"tools_catalog": {"candidates": []}}
 
 
@@ -473,14 +473,11 @@ async def lens_get_tools(ctx: Any) -> dict[str, Any]:
     PUBLIC lens called by build_prompt() with a single positional context.
     Extracts query text / modes / k from the context and delegates to _lens_get_tools_impl.
     """
-    # defaults
     query_text: str | None = None
     modes: list[str] = []
     top_k: int = 15
 
-    # ctx can be dict or string
     if isinstance(ctx, dict):
-        # Prefer explicit retrieval query; fall back to goal/text.
         query_text = (
             ctx.get("retrieval_query")
             or ctx.get("goal")
@@ -488,13 +485,10 @@ async def lens_get_tools(ctx: Any) -> dict[str, Any]:
             or ctx.get("text")
             or None
         )
-        # Modes can be provided by prompt context (e.g., from champion arm)
-        # Accept either a scalar "mode" or a list "allowed_modes"
         if "allowed_modes" in ctx and isinstance(ctx["allowed_modes"], list):
             modes = [str(m) for m in ctx["allowed_modes"] if m]
         elif "mode" in ctx and isinstance(ctx["mode"], str):
             modes = [ctx["mode"]]
-        # Optional k
         try:
             top_k = int(ctx.get("k", top_k))
         except Exception:
@@ -505,15 +499,15 @@ async def lens_get_tools(ctx: Any) -> dict[str, Any]:
     return await _lens_get_tools_impl(query_text=query_text, modes=modes or None, top_k=top_k)
 
 
-# ─────────────────────────────────────────
-# Advice retrieval (multi-query, task-aware)
-# ─────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────
+# Advice retrieval (pre/post plan)
+# ──────────────────────────────────────────────────────────────────────────────
 
-# Tunables (safe defaults)
-_ADVICE_TOPK_QUERY = 24  # pull more from KNN, then filter/quote down
+# Tunables
+_ADVICE_TOPK_QUERY = 24  # pull more from KNN, then filter down
 _ADVICE_MAX_INJECT = 6  # hard cap injected items
 _ADVICE_QUOTAS = {3: 2, 2: 3, 1: 1}  # per-level caps: T3, T2, T1
-_ADVICE_TOKEN_BUDGET = 1200  # soft token cap for rendered block (caller can enforce)
+_ADVICE_TOKEN_BUDGET = 1200  # soft token cap for rendered block
 
 
 async def _embed_query_vec(q: str | Sequence[str]) -> list[float]:
@@ -537,7 +531,7 @@ async def _embed_query_vec(q: str | Sequence[str]) -> list[float]:
     for v in vecs:
         if len(v) != dim:
             raise RuntimeError(
-                f"[lens_simula_advice] query embedding dims mismatch: {len(v)} != {dim}"
+                f"[lens_simula_advice] query embedding dims mismatch: {len(v)} != {dim}",
             )
         for i in range(dim):
             acc[i] += v[i]
@@ -546,7 +540,7 @@ async def _embed_query_vec(q: str | Sequence[str]) -> list[float]:
 
 
 def _advice_proximity(scope: list[str], target_fqname: str | None) -> float:
-    """Boosts items that touch the exact symbol/module."""
+    """Boost items that touch the exact symbol/module."""
     if not scope:
         return 1.0
     tf = (target_fqname or "").strip()
@@ -605,18 +599,19 @@ async def _knn_advice(qtext_or_hints: str | Sequence[str], k: int) -> list[dict[
             """
             CALL db.index.vector.queryNodes('advice_embedding_idx', $k, $emb)
             YIELD node, score
+            WITH node, score, keys(node) AS ks
             RETURN
-              node.id                          AS id,
-              coalesce(node['level'], 1)       AS level,
-              coalesce(node['text'], '')       AS text,
-              coalesce(node['checklist'], [])  AS checklist,
-              coalesce(node['donts'], [])      AS donts,
-              coalesce(node['validation'], []) AS validation,
-              coalesce(node['scope'], [])      AS scope,
-              coalesce(node['weight'], 1.0)    AS weight,
-              coalesce(node['sim_threshold'], 0.0) AS thr,
-              node['last_seen']                AS last_seen,
-              score                             AS score
+              node.id AS id,
+              CASE WHEN 'level'         IN ks THEN node['level']         ELSE 1 END      AS level,
+              CASE WHEN 'text'          IN ks THEN node['text']          ELSE '' END     AS text,
+              CASE WHEN 'checklist'     IN ks THEN node['checklist']     ELSE [] END     AS checklist,
+              CASE WHEN 'donts'         IN ks THEN node['donts']         ELSE [] END     AS donts,
+              CASE WHEN 'validation'    IN ks THEN node['validation']    ELSE [] END     AS validation,
+              CASE WHEN 'scope'         IN ks THEN node['scope']         ELSE [] END     AS scope,
+              CASE WHEN 'weight'        IN ks THEN node['weight']        ELSE 1.0 END    AS weight,
+              CASE WHEN 'sim_threshold' IN ks THEN node['sim_threshold'] ELSE 0.0 END    AS thr,
+              CASE WHEN 'last_seen'     IN ks THEN node['last_seen']     ELSE null END   AS last_seen,
+              score AS score
             ORDER BY score DESC
             LIMIT $k
             """,
@@ -624,7 +619,7 @@ async def _knn_advice(qtext_or_hints: str | Sequence[str], k: int) -> list[dict[
         )
         return [_sanitize_advice_item(r) for r in (rows or [])]
     except Exception as e:
-        _log.warning(f"[lens_simula_advice] KNN failed: {e}")
+        _log.warning("[lens_simula_advice] KNN failed: %r", e)
         return []
 
 
@@ -635,7 +630,7 @@ def _blend_and_select(
     max_total: int,
     quotas: dict[int, int],
 ) -> list[dict[str, Any]]:
-    """Blend score and enforce per-level quotas + de-dup + token-ish budget."""
+    """Blend score and enforce per-level quotas + de-dup."""
     scored = []
     for it in items:
         prox = _advice_proximity(it.get("scope"), target_fqname)
@@ -693,7 +688,6 @@ def _build_query_from_input(input_obj: Any, *, mode: str) -> tuple[str, str | No
                 plan_text = ""
         elif isinstance(plan, str):
             plan_text = plan
-        # optional extra hints supplied by caller
         raw_hints = input_obj.get("advice_query_hints")
         if isinstance(raw_hints, list):
             hints = [str(h).strip() for h in raw_hints if h]
@@ -725,15 +719,15 @@ async def lens_simula_advice_preplan(input_obj: Any) -> dict[str, Any]:
     except Exception:
         topk = _ADVICE_TOPK_QUERY
 
-    # multi-query: primary + hints
     q_input: str | list[str] = [q] + hints if hints else q
-    _log.info(
-        f"[lens_simula_advice_preplan] q='{(q if isinstance(q, str) else str(q))[:160]}...' hints={len(hints)} k={topk}"
-    )
+    _log.info("[lens_simula_advice_preplan] hints=%d k=%d", len(hints), topk)
 
     items = await _knn_advice(q_input, topk)
     selected = _blend_and_select(
-        items, target_fqname=target, max_total=_ADVICE_MAX_INJECT, quotas=_ADVICE_QUOTAS
+        items,
+        target_fqname=target,
+        max_total=_ADVICE_MAX_INJECT,
+        quotas=_ADVICE_QUOTAS,
     )
     meta = {
         "queried": len(items),
@@ -763,13 +757,14 @@ async def lens_simula_advice_postplan(input_obj: Any) -> dict[str, Any]:
         topk = _ADVICE_TOPK_QUERY
 
     q_input: str | list[str] = [q] + hints if hints else q
-    _log.info(
-        f"[lens_simula_advice_postplan] q='{(q if isinstance(q, str) else str(q))[:160]}...' hints={len(hints)} k={topk}"
-    )
+    _log.info("[lens_simula_advice_postplan] hints=%d k=%d", len(hints), topk)
 
     items = await _knn_advice(q_input, topk)
     selected = _blend_and_select(
-        items, target_fqname=target, max_total=_ADVICE_MAX_INJECT, quotas=_ADVICE_QUOTAS
+        items,
+        target_fqname=target,
+        max_total=_ADVICE_MAX_INJECT,
+        quotas=_ADVICE_QUOTAS,
     )
     meta = {
         "queried": len(items),

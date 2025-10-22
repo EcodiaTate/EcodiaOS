@@ -66,7 +66,7 @@ class AutoRoller:
                     live_after=live_after,
                     meta=meta,
                     ts=time.time(),
-                )
+                ),
             )
         except Exception:
             pass

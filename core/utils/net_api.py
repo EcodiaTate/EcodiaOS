@@ -77,7 +77,7 @@ class LiveEndpointRegistry:
                     self._etag = resp.headers.get("ETag")
                     self._ts = now
                     print(
-                        f"[net_api] Refreshed Endpoints overlay: {len(self._aliases)} aliases found."
+                        f"[net_api] Refreshed Endpoints overlay: {len(self._aliases)} aliases found.",
                     )
                     return  # Success, exit the retry loop
 
@@ -89,7 +89,7 @@ class LiveEndpointRegistry:
             # If all retries fail, log the final error
             self._ts = now
             print(
-                f"[net_api] WARNING: Could not refresh endpoint registry after multiple attempts. Using stale data. Error: {last_exception}"
+                f"[net_api] WARNING: Could not refresh endpoint registry after multiple attempts. Using stale data. Error: {last_exception}",
             )
             # highlight-end
 

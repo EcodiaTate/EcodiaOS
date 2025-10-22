@@ -87,7 +87,7 @@ class TraceDBClient:
         score = result[0]["score"]
 
         log.info(
-            f"[TraceDB-Neo4j] Found matching trace {node_data.get('trace_id')} with similarity {score:.4f}"
+            f"[TraceDB-Neo4j] Found matching trace {node_data.get('trace_id')} with similarity {score:.4f}",
         )
 
         # Reconstruct the Pydantic model from the raw graph data.

@@ -32,7 +32,10 @@ class ControlModulations(BaseModel):
 
     # 🔽 NEW MODULATIONS 🔽
     reflection_threshold_delta: float = Field(
-        ..., ge=-0.5, le=0.5, description="Value to subtract from the base reflection threshold."
+        ...,
+        ge=-0.5,
+        le=0.5,
+        description="Value to subtract from the base reflection threshold.",
     )
     valence: float = Field(..., ge=0.0, le=1.0, description="Direct pass-through for MAG context.")
     arousal: float = Field(..., ge=0.0, le=1.0, description="Direct pass-through for MAG context.")

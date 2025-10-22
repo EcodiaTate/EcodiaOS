@@ -58,7 +58,7 @@ logger = logging.getLogger(__name__)
 MAX_PLANS = 2
 IT_BAD_PREFIXES = ("hey", "hi", "hello", "thanks for your patience", "hang tight", "got it", "okay")
 IT_BAD_EMOJI_CHARS = set(
-    "🙂😀😁😂🤣😊😍🥰😘😎😉😄😅🙃🤗🤔🙏👍👌✨⭐️🎉🔥💪😌😇🙌😭🥳😜😏😉😴😬😑😤😮😃😆"
+    "🙂😀😁😂🤣😊😍🥰😘😎😉😄😅🙃🤗🤔🙏👍👌✨⭐️🎉🔥💪😌😇🙌😭🥳😜😏😉😴😬😑😤😮😃😆",
 )
 TTS_ENDPOINT_URL = "http://127.0.0.1:8000/voxis/tts/synthesize"  # TTS endpoint
 
@@ -267,7 +267,9 @@ class VoxisPipeline:
     # ------------- PLANNING --------------
 
     async def _run_unified_llm_planner(
-        self, task_ctx: SynapseTaskContext, champion_arm: ArmScore
+        self,
+        task_ctx: SynapseTaskContext,
+        champion_arm: ArmScore,
     ) -> EosPlan:
         logger.info(
             f"[Pipeline] Running unified planner, guided by arm '{champion_arm.arm_id}'.",
@@ -283,7 +285,7 @@ class VoxisPipeline:
                 episode_id=(task_ctx.metadata or {}).get("episode_id", "fallback-episode"),
                 champion_arm_id=champion_arm.arm_id,
                 interim_thought=_normalize_interim_thought(
-                    "Drafting a direct reply based on your last message…"
+                    "Drafting a direct reply based on your last message…",
                 ),
                 scratchpad="Conversational arm selected; skipping tool usage.",
                 plan=[{"action_type": "respond", "tool_name": None, "parameters": {}}],
@@ -299,7 +301,8 @@ class VoxisPipeline:
             planner_context.update(task_ctx.metadata)
         planner_context["goal"] = task_ctx.goal
         planner_context["episode_id"] = (task_ctx.metadata or {}).get(
-            "episode_id", "unknown-episode"
+            "episode_id",
+            "unknown-episode",
         )
         planner_context["selected_policy_hints"] = champion_arm.policy_graph_meta or {}
         planner_context["selected_arm_id"] = champion_arm.arm_id
@@ -316,7 +319,7 @@ class VoxisPipeline:
                 scope="voxis.main.planning",
             )
             plan_json = extract_json_flex(
-                getattr(llm_response, "text", "") or getattr(llm_response, "content", "")
+                getattr(llm_response, "text", "") or getattr(llm_response, "content", ""),
             )
             if not isinstance(plan_json, dict):
                 raise ValueError("LLM Planner did not return a valid JSON object.")
@@ -336,11 +339,14 @@ class VoxisPipeline:
             return EosPlan.model_validate(plan_json)
         except TimeoutError:
             logger.warning(
-                "[Pipeline] Planner timed out; using minimal fallback.", extra=self.log_extra
+                "[Pipeline] Planner timed out; using minimal fallback.",
+                extra=self.log_extra,
             )
         except Exception as e:
             logger.error(
-                f"[Pipeline] Unified LLM Planner FAILED: {e}", exc_info=True, extra=self.log_extra
+                f"[Pipeline] Unified LLM Planner FAILED: {e}",
+                exc_info=True,
+                extra=self.log_extra,
             )
 
         # minimal fallback
@@ -382,7 +388,7 @@ class VoxisPipeline:
                     "function": {
                         "name": "conversational_response",
                         "description": "Engage without tools.",
-                    }
+                    },
                 },
             ),
         )
@@ -409,7 +415,8 @@ class VoxisPipeline:
             champion = selection.champion_arm
         except (TimeoutError, Exception) as e:
             logger.warning(
-                f"[Pipeline] select_or_plan failed ({e}); using fallback arm.", extra=self.log_extra
+                f"[Pipeline] select_or_plan failed ({e}); using fallback arm.",
+                extra=self.log_extra,
             )
             selection = None
 
@@ -437,7 +444,8 @@ class VoxisPipeline:
             # coerce steps
             direct_plan_dict["plan"] = _coerce_plan_steps(direct_plan_dict.get("plan"))
             direct_plan_dict.setdefault(
-                "episode_id", getattr(selection, "episode_id", None) or "fallback-episode"
+                "episode_id",
+                getattr(selection, "episode_id", None) or "fallback-episode",
             )
             direct_plan_dict.setdefault("champion_arm_id", getattr(champion, "arm_id", "fallback"))
             plan = EosPlan.model_validate(direct_plan_dict)
@@ -447,7 +455,9 @@ class VoxisPipeline:
         # surface interim_thought fast
         if plan.interim_thought:
             await self.result_store.update_field(
-                self.decision_id, "interim_thought", plan.interim_thought
+                self.decision_id,
+                "interim_thought",
+                plan.interim_thought,
             )
 
         # increment planner count here (successful plan produced)
@@ -519,7 +529,9 @@ class VoxisPipeline:
     # ------------- CRITICS --------------
 
     async def _run_fact_critic(
-        self, plan: EosPlan, execution_results: dict[str, Any]
+        self,
+        plan: EosPlan,
+        execution_results: dict[str, Any],
     ) -> dict[str, Any]:
         """Critiques the execution results for factual sufficiency to answer the user's request."""
         logger.info(
@@ -593,7 +605,9 @@ class VoxisPipeline:
             return {"is_sufficient": False, "summary_of_facts": "Fact Critic timed out."}
         except Exception as e:
             logger.error(
-                f"[Pipeline] Fact Critic step FAILED: {e}", exc_info=True, extra=self.log_extra
+                f"[Pipeline] Fact Critic step FAILED: {e}",
+                exc_info=True,
+                extra=self.log_extra,
             )
             return {
                 "is_sufficient": False,
@@ -678,7 +692,9 @@ class VoxisPipeline:
             return {"utility_score": 0.5, "reasoning": "Utility Scorer returned invalid format."}
         except Exception as e:
             logger.error(
-                f"[Pipeline] Utility Scorer FAILED: {e}", exc_info=True, extra=self.log_extra
+                f"[Pipeline] Utility Scorer FAILED: {e}",
+                exc_info=True,
+                extra=self.log_extra,
             )
             return {"utility_score": 0.5, "reasoning": f"Utility Scorer failed with exception: {e}"}
 
@@ -695,7 +711,10 @@ class VoxisPipeline:
         plan: EosPlan,
     ):
         utility_metrics = await self._run_utility_scorer(
-            expressive_text, execution_results, fact_critic_verdict, plan
+            expressive_text,
+            execution_results,
+            fact_critic_verdict,
+            plan,
         )
         final_metrics = {
             "chosen_arm_id": chosen_arm_id,
@@ -732,7 +751,8 @@ class VoxisPipeline:
                     plan,
                 )
                 logger.info(
-                    "[Pipeline] Logged comprehensive outcome to Synapse.", extra=self.log_extra
+                    "[Pipeline] Logged comprehensive outcome to Synapse.",
+                    extra=self.log_extra,
                 )
                 return
             except Exception as e:
@@ -760,7 +780,7 @@ class VoxisPipeline:
             text=self.request.user_input or "",
         )
         allow_profile_writes = bool(
-            self.request.user_id and self.request.user_id not in ("user_anon", "unknown")
+            self.request.user_id and self.request.user_id not in ("user_anon", "unknown"),
         )
         if allow_profile_writes:
             await ensure_soul_profile(self.request.user_id)
@@ -783,7 +803,8 @@ class VoxisPipeline:
         # optional replan (bounded by MAX_PLANS)
         if not critic_verdict.get("is_sufficient") and self._planned_count < MAX_PLANS:
             failure_summary = critic_verdict.get(
-                "summary_of_facts", "Fact Critic deemed results insufficient."
+                "summary_of_facts",
+                "Fact Critic deemed results insufficient.",
             )
             logger.warning(
                 f"[Pipeline] Attempt {self._planned_count} INSUFFICIENT: {failure_summary}. Re-planning.",
@@ -812,7 +833,8 @@ class VoxisPipeline:
         if final_plan and final_plan.profile_upserts and allow_profile_writes:
             try:
                 merged_updates = normalize_profile_upsert_from_llm(
-                    final_plan.model_dump(), user_id=self.request.user_id
+                    final_plan.model_dump(),
+                    user_id=self.request.user_id,
                 )
                 if merged_updates:
                     await upsert_soul_profile_properties(
@@ -823,7 +845,8 @@ class VoxisPipeline:
                     logger.info("[Pipeline] Profile upsert applied.", extra=self.log_extra)
             except Exception as e:
                 logger.warning(
-                    f"[Pipeline] Profile upsert handling failed: {e}", extra=self.log_extra
+                    f"[Pipeline] Profile upsert handling failed: {e}",
+                    extra=self.log_extra,
                 )
 
         # pick ids
@@ -867,7 +890,8 @@ class VoxisPipeline:
                 extra=self.log_extra,
             )
             tts_result = await _trigger_synthesis_job(
-                main_text=expressive_text, interim_text=final_plan.interim_thought
+                main_text=expressive_text,
+                interim_text=final_plan.interim_thought,
             )
             final_output = {
                 "mode": "voice",

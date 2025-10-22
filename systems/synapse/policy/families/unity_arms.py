@@ -23,7 +23,9 @@ def build_simple_policy_graph(arm_id: str, variant: ArmVariant) -> PolicyGraph:
         nodes=[PolicyNode(id="prompt_main", type="prompt", model=variant.model)],
         effects=[
             LLMParamsEffect(
-                model=variant.model, temperature=variant.temperature, max_tokens=variant.max_tokens
+                model=variant.model,
+                temperature=variant.temperature,
+                max_tokens=variant.max_tokens,
             ),
             TagBiasEffect(tags=variant.tags),
         ],
@@ -65,7 +67,10 @@ async def _ensure_family_schema(family_id: str, mode: str, base_tags: list[str])
     await cypher_query(
         """
         MERGE (f:ArmFamily {family_id: $fid})
-        MERGE (f)-[:HAS_STRATEGY]->(s:StrategyTemplate {name: "_singleton_"})
+WITH f
+MATCH (s:StrategyTemplate {name: "_singleton_"})
+MERGE (f)-[:HAS_STRATEGY]->(s)
+
         """,
         {"fid": family_id},
     )

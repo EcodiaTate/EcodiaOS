@@ -39,7 +39,8 @@ class StyleInjectionEffect(BaseModel):
 
     type: Literal["style_injection"] = "style_injection"
     style_dict: dict[str, Any] = Field(
-        ..., description="The dictionary to be merged into the rendering context."
+        ...,
+        description="The dictionary to be merged into the rendering context.",
     )
 
 
@@ -82,7 +83,8 @@ class PolicyNode(_BaseModel):
     model: str | None = Field(None, description="For 'prompt' nodes, the LLM to use.")
     params: dict[str, Any] = Field(default_factory=dict)
     effects: list[str] = Field(
-        default_factory=list, description="Legacy side-effects field (e.g., ['read', 'write'])."
+        default_factory=list,
+        description="Legacy side-effects field (e.g., ['read', 'write']).",
     )
 
 

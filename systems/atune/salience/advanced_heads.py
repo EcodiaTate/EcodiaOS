@@ -116,7 +116,9 @@ class CausalImpactHead(SalienceHead):
             )
         except Exception as e:
             return SalienceScore(
-                head_name=self.name, score=0.0, details={"error": f"KG query failed: {e}"}
+                head_name=self.name,
+                score=0.0,
+                details={"error": f"KG query failed: {e}"},
             )
 
 
@@ -130,7 +132,9 @@ class EmotionalValenceHead(SalienceHead):
 
         if not main_text or len(main_text) < 15:
             return SalienceScore(
-                head_name=self.name, score=0.0, details={"reason": "insufficient text"}
+                head_name=self.name,
+                score=0.0,
+                details={"reason": "insufficient text"},
             )
 
         try:

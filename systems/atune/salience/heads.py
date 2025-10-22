@@ -136,7 +136,7 @@ class IdentityRelevanceHead(SalienceHead):
             # Don’t spam logs on every event; only warn on refresh attempts.
             print(
                 f"WARNING: IdentityRelevanceHead: profile not found "
-                f"(agent='{self._agent}', profile='{self._profile}'): {e}"
+                f"(agent='{self._agent}', profile='{self._profile}'): {e}",
             )
             self._facet_cache = []
             self._facet_embeddings = None

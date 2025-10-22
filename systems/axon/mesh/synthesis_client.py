@@ -19,7 +19,9 @@ async def request_driver_synthesis(
     """
     client = await get_http_client()
     path = getattr(ENDPOINTS, "SIMULA_DRIVER_SYNTH", None) or getattr(
-        ENDPOINTS, "SIMULA_CODEGEN", "/simula/driver/synth"
+        ENDPOINTS,
+        "SIMULA_CODEGEN",
+        "/simula/driver/synth",
     )
     payload = {
         "driver_name": driver_name,

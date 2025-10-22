@@ -80,7 +80,9 @@ async def flush_now(batch_size: int = 128) -> None:
 
 # --- CHANGED: This function is now a thread-safe scheduler ---
 def start_background_flusher(
-    loop: asyncio.AbstractEventLoop, interval_sec: float = 30.0, batch_size: int = 128
+    loop: asyncio.AbstractEventLoop,
+    interval_sec: float = 30.0,
+    batch_size: int = 128,
 ) -> None:
     """Starts the background snapshotter task in a thread-safe way."""
     global _flush_task

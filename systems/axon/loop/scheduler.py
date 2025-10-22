@@ -116,7 +116,7 @@ async def run_sense_forever(period_sec: float = 300.0) -> None:
             produced = await _poll_once_with_tap(loop, _axon_tap)
             if _should_debug():
                 print(
-                    f"[SenseLoop] produced={produced if produced is not None else 'unknown'} (immediate)"
+                    f"[SenseLoop] produced={produced if produced is not None else 'unknown'} (immediate)",
                 )
         except Exception as e:
             if _should_debug():

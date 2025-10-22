@@ -34,7 +34,7 @@ def apply_policy_to_plan(base_plan: dict[str, Any], policy_graph: PolicyGraph) -
             base_plan["llm_config"]["temperature"] = effect.temperature
             base_plan["llm_config"]["max_tokens"] = effect.max_tokens
             logger.debug(
-                f"  > Applied LLMParamsEffect: model={effect.model}, temp={effect.temperature}"
+                f"  > Applied LLMParamsEffect: model={effect.model}, temp={effect.temperature}",
             )
 
         elif isinstance(effect, ToolBiasEffect):

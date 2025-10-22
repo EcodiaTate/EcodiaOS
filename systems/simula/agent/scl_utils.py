@@ -69,7 +69,7 @@ def _coerce_plan_steps(raw_plan: Any) -> list[dict[str, Any]]:
                     "parameters": s.get("parameters")
                     if isinstance(s.get("parameters"), dict)
                     else {},
-                }
+                },
             )
         elif kind == "respond":
             # keep simple response payload if provided
@@ -79,13 +79,16 @@ def _coerce_plan_steps(raw_plan: Any) -> list[dict[str, Any]]:
                     "parameters": {
                         "content": s.get("content") or s.get("message") or s.get("text") or "",
                     },
-                }
+                },
             )
     return steps
 
 
 def _inject_target_defaults(
-    params: dict[str, Any], *, tool_name: str, target_fqname: str | None
+    params: dict[str, Any],
+    *,
+    tool_name: str,
+    target_fqname: str | None,
 ) -> dict[str, Any]:
     if not target_fqname:
         return params

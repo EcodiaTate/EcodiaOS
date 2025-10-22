@@ -16,14 +16,20 @@ ESC_TTL_SEC = 300  # tune
 
 
 def _fp(
-    agent: str, episode_id: str | None, patch_id: str | None, breaches: Iterable[str] | None
+    agent: str,
+    episode_id: str | None,
+    patch_id: str | None,
+    breaches: Iterable[str] | None,
 ) -> str:
     key = f"{agent}|{episode_id or ''}|{patch_id or ''}|{','.join(sorted(breaches or []))}"
     return sha256(key.encode("utf-8")).hexdigest()[:32]
 
 
 async def escalate(
-    agent: str, episode_id: str | None, patch_id: str | None, breaches: list[str] | None
+    agent: str,
+    episode_id: str | None,
+    patch_id: str | None,
+    breaches: list[str] | None,
 ):
     fp = _fp(agent, episode_id, patch_id, breaches)
 

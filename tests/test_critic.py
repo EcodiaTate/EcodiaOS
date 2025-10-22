@@ -41,7 +41,9 @@ def setup_critic_spec():
 @patch("core.utils.llm_gateway_client.call_llm_service", new_callable=AsyncMock)
 @patch("core.prompting.lenses.cypher_query", new_callable=AsyncMock)
 async def test_generate_critiques_injects_safety_facets(
-    mock_cypher_query, mock_llm_call, setup_critic_spec
+    mock_cypher_query,
+    mock_llm_call,
+    setup_critic_spec,
 ):
     """
     Verify that when `generate_critiques` is called for the SafetyCritic,

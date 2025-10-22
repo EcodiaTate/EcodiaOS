@@ -27,12 +27,14 @@ def _stable_id(*parts: str) -> str:
 
 
 _A_TAG_RE = re.compile(
-    r'<a\b[^>]*href=[\'"]([^\'"]+)[\'"][^>]*>(.*?)</a>', re.IGNORECASE | re.DOTALL
+    r'<a\b[^>]*href=[\'"]([^\'"]+)[\'"][^>]*>(.*?)</a>',
+    re.IGNORECASE | re.DOTALL,
 )
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
 _WS_RE = re.compile(r"[ \t\r\f\v]+")
 _BOILERPLATE_POST_RE = re.compile(
-    r"\bThe post\b.*?\bappeared first on\b.*?$", re.IGNORECASE | re.DOTALL
+    r"\bThe post\b.*?\bappeared first on\b.*?$",
+    re.IGNORECASE | re.DOTALL,
 )
 
 TRACKING_KEYS = {
@@ -226,7 +228,11 @@ def _canonize_text_or_json(q: Quarantine, body: Any) -> tuple[CanonicalizedPaylo
 
 
 def _postprocess_parsed(
-    parsed: dict[str, Any], *, registry_id: str | None, raw_text: str, anchors: list[str]
+    parsed: dict[str, Any],
+    *,
+    registry_id: str | None,
+    raw_text: str,
+    anchors: list[str],
 ) -> dict[str, Any]:
     """
     Apply feed-specific cleanup/enrichment.

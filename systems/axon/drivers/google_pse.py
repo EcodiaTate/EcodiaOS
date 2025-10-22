@@ -63,7 +63,7 @@ class GooglePse(DriverInterface):
                     "link": it.get("link"),
                     "snippet": it.get("snippet"),
                     "displayLink": it.get("displayLink"),
-                }
+                },
             )
         return {"query": q, "results": out}
 

@@ -414,7 +414,7 @@ class RssDriver(DriverInterface):
         urls = self._resolve_feed_list(params)
         if not urls:
             raise ValueError(
-                "No RSS feeds configured (params.urls / AXON_RSS_URLS / OPML / defaults)."
+                "No RSS feeds configured (params.urls / AXON_RSS_URLS / OPML / defaults).",
             )
 
         http_timeout = float(params.get("timeout") or os.getenv("AXON_RSS_TIMEOUT", "10.0"))
@@ -456,7 +456,7 @@ class RssDriver(DriverInterface):
                     if len(content_bytes) > max_bytes:
                         if DEBUG:
                             print(
-                                f"[RssDriver] too large: {len(content_bytes)} > {max_bytes} bytes; {feed_url}"
+                                f"[RssDriver] too large: {len(content_bytes)} > {max_bytes} bytes; {feed_url}",
                             )
                         return []
                     raw_content = content_bytes.decode(enc, errors="replace")
@@ -504,7 +504,7 @@ class RssDriver(DriverInterface):
 
         if DEBUG:
             print(
-                f"[RssDriver] urls={len(urls)} yielded_total={total} watermark={'none' if watermark is None else int(watermark)}"
+                f"[RssDriver] urls={len(urls)} yielded_total={total} watermark={'none' if watermark is None else int(watermark)}",
             )
 
         self._first_pull = False

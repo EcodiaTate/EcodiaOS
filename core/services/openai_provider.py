@@ -80,7 +80,8 @@ async def close_openai_client() -> None:
 
 
 def _merge_headers(
-    decision_id: str | None, kw: dict[str, Any]
+    decision_id: str | None,
+    kw: dict[str, Any],
 ) -> tuple[dict[str, str], dict[str, Any]]:
     """Non-destructively merge extra_headers; omit None decision_id."""
     extra_headers = dict(kw.pop("extra_headers", {}) or {})

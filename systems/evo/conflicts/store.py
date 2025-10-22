@@ -62,7 +62,7 @@ async def create_conflict_node(
         await post_internal(ENDPOINTS.EVO_ESCALATE, json=evo_payload, headers=headers, timeout=10.0)
     except Exception as e:
         print(
-            f"[ConflictStore] WARNING: Failed to notify Evo patrol for {conflict_cid}. Error: {e}"
+            f"[ConflictStore] WARNING: Failed to notify Evo patrol for {conflict_cid}. Error: {e}",
         )
 
     return conflict_node
@@ -86,7 +86,7 @@ class ConflictsService:
                 node.source_system,
                 node.kind,
                 (node.description or "")[:128],
-            ]
+            ],
         )
         return sha256(key.encode("utf-8")).hexdigest()
 

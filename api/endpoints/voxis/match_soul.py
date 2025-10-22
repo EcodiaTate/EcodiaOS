@@ -58,7 +58,8 @@ async def match_soul(request: Request):
     except Exception as e:
         print(f"[match_soul] Error: {e}")
         return JSONResponse(
-            {"error": "An unexpected error occurred during matching."}, status_code=500
+            {"error": "An unexpected error occurred during matching."},
+            status_code=500,
         )
 
 

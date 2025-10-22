@@ -33,7 +33,7 @@ def _coerce_policy_graph_to_dict(pg_like: dict[str, Any] | str | PolicyGraph) ->
 def _fingerprint_dict(data: dict[str, Any]) -> str:
     """Stable SHA256 hash of JSON-serialized data."""
     return hashlib.sha256(
-        json.dumps(data, sort_keys=True, separators=(",", ":")).encode()
+        json.dumps(data, sort_keys=True, separators=(",", ":")).encode(),
     ).hexdigest()
 
 

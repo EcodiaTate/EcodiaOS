@@ -30,7 +30,9 @@ class UpliftReport(BaseModel):
 
 
 def _calculate_diff(
-    d1: dict[str, Any] | None, d2: dict[str, Any] | None, path: str = ""
+    d1: dict[str, Any] | None,
+    d2: dict[str, Any] | None,
+    path: str = "",
 ) -> dict[str, Any]:
     """Recursively diffs two dictionaries."""
     d1 = d1 or {}
@@ -105,7 +107,9 @@ async def ingest_action_outcome(
 
 
 async def log_outcome_to_synapse(
-    payload: dict[str, Any], *, decision_id: str | None = None
+    payload: dict[str, Any],
+    *,
+    decision_id: str | None = None,
 ) -> None:
     """
     General-purpose logger to SYNAPSE_INGEST_OUTCOME for arbitrary

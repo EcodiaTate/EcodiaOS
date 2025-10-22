@@ -142,7 +142,8 @@ def _coerce_to_event(payload: dict[str, Any]) -> AxonEvent:
     payload.setdefault("source", "external.unspecified")
     payload.setdefault("t_observed", pytime.time())
     payload.setdefault(
-        "provenance", {"source": payload.get("source"), "status": "coerced_by_atune"}
+        "provenance",
+        {"source": payload.get("source"), "status": "coerced_by_atune"},
     )
     payload.setdefault("modality", "json" if isinstance(payload.get("parsed"), dict) else "text")
 
@@ -331,12 +332,12 @@ async def cognitive_cycle(
                             " ".join(
                                 e.parsed.get("text_blocks", [])
                                 if isinstance(e.parsed, dict)
-                                else []
-                            )
+                                else [],
+                            ),
                         )
                         for e in events
-                    ]
-                )
+                    ],
+                ),
             )
             if events
             else 0.0
@@ -446,7 +447,7 @@ async def cognitive_cycle(
 
         matched_schema = memory_store.match_event_to_schema(embedding)
         salience_priors: dict[str, float] = dict(
-            (matched_schema.salience_priors or {}) if matched_schema else {}
+            (matched_schema.salience_priors or {}) if matched_schema else {},
         )
         fae_priors: dict[str, float] = {}
         if matched_schema and getattr(matched_schema, "fae_utility_prior", None) is not None:
@@ -505,7 +506,7 @@ async def cognitive_cycle(
             REGISTRY.counter("atune.reflex." + kind).inc()
             if kind == "block":
                 salience_snapshots.append(
-                    {"event_id": ev.event_id, "scores": head_final, "pvals": pvals}
+                    {"event_id": ev.event_id, "scores": head_final, "pvals": pvals},
                 )
                 continue
 
@@ -516,7 +517,8 @@ async def cognitive_cycle(
             details[ev.event_id] = {"status": "escalated_unity_salience", "pvals": pvals}
             try:
                 reason_obj = reason_conformal_ood(
-                    pvals=pvals, alpha=float(per_head_conformal.alpha)
+                    pvals=pvals,
+                    alpha=float(per_head_conformal.alpha),
                 )
                 details[ev.event_id]["escalation_reason"] = reason_obj.model_dump()
                 payload = build_escalation_payload(
@@ -539,7 +541,7 @@ async def cognitive_cycle(
                 details[ev.event_id]["escalation_error"] = str(e)
 
             salience_snapshots.append(
-                {"event_id": ev.event_id, "scores": head_final, "pvals": pvals}
+                {"event_id": ev.event_id, "scores": head_final, "pvals": pvals},
             )
             continue
 
@@ -617,7 +619,7 @@ async def cognitive_cycle(
                         ENDPOINTS.ATUNE_ESCALATE,
                         json=payload,
                         headers={**headers_common, "x-budget-ms": "8000"},
-                    )
+                    ),
                 )
                 secl_bump("escalations_unity", 1)
             except Exception as e:
@@ -629,7 +631,7 @@ async def cognitive_cycle(
                     "scores": head_final,
                     "pvals": pvals,
                     "plan": deliberation_plan,
-                }
+                },
             )
             continue
 
@@ -646,7 +648,8 @@ async def cognitive_cycle(
                 reason_obj = reason_planner_decision(
                     salience_scores=head_final,
                     reason=deliberation_plan.get(
-                        "reason", "Planner determined event requires Unity deliberation."
+                        "reason",
+                        "Planner determined event requires Unity deliberation.",
                     ),
                 )
                 payload = build_escalation_payload(
@@ -661,7 +664,7 @@ async def cognitive_cycle(
                         ENDPOINTS.ATUNE_ESCALATE,
                         json=payload,
                         headers={**headers_common, "x-budget-ms": "8000"},
-                    )
+                    ),
                 )
                 secl_bump("escalations_unity", 1)
             except Exception as e:
@@ -674,12 +677,12 @@ async def cognitive_cycle(
                     "scores": head_final,
                     "pvals": pvals,
                     "plan": deliberation_plan,
-                }
+                },
             )
             continue
 
         want_search = deliberation_plan.get(
-            "mode"
+            "mode",
         ) == "enrich_with_search" and deliberation_plan.get("search_query")
         salience_snapshots.append(
             {
@@ -749,7 +752,7 @@ async def cognitive_cycle(
 
     try:
         price_per_cap = await HintsExtras().price_per_capability(
-            context={"decision_id": decision_id}
+            context={"decision_id": decision_id},
         )
         if isinstance(price_per_cap, dict) and bids:
             bids = scale_bid_costs(bids, price_per_cap)
@@ -792,7 +795,8 @@ async def cognitive_cycle(
 
         ev_id = w.source_event_id.replace("aife_", "")
         ev_snapshot = next(
-            (s for s in reversed(salience_snapshots) if s.get("event_id") == ev_id), None
+            (s for s in reversed(salience_snapshots) if s.get("event_id") == ev_id),
+            None,
         )
         head_pvals = (ev_snapshot or {}).get("pvals", {})
         trending_hosts = list(top_hosts) if top_hosts else []
@@ -894,7 +898,7 @@ async def cognitive_cycle(
                     secl_bump("ab_trials", 1)
 
                     live_u = float(
-                        (out.get("counterfactual_metrics") or {}).get("actual_utility", 0.0)
+                        (out.get("counterfactual_metrics") or {}).get("actual_utility", 0.0),
                     )
                     cand = [{"counterfactual_metrics": {"actual_utility": live_u}}]
                     if isinstance(ab_res.get("shadows"), list):

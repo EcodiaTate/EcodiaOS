@@ -38,7 +38,8 @@ async def start_agent_job(req: SimulaCodegenIn, response: Response) -> SimulaCod
         log.info("Fetching context dossier for target: %s", graph_fqn)
         try:
             dossier_response = await get_context_dossier(
-                target_fqname=graph_fqn, intent="implement"
+                target_fqname=graph_fqn,
+                intent="implement",
             )
             if dossier_response.get("status") == "success":
                 dossier = dossier_response.get("result", {}).get("dossier", {})

@@ -1,0 +1,29 @@
+- id: "simula.deliberation.auditor.v1"
+  version: "v1"
+
+  scope: "simula.deliberation.auditor"
+
+  identity:
+    # The agent name is dynamic, passed in the context by the invoker.
+    agent: "Simula.DeliberationAuditor"
+    persona_partial: "persona_simula_specialist"
+
+  context_lenses: []
+
+  partials:
+    - "persona_simula_specialist"
+    - "scl_context_block"
+    - "scl_auditor_output_contract"
+
+  outputs:
+    parse_mode: "strict_json"
+    schema:
+      type: object
+      required: ["approved", "reason"]
+      properties:
+        approved:
+          type: boolean
+          description: "True if the plan passes this specific audit, false otherwise."
+        reason:
+          type: string
+          description: "A concise, single-sentence justification for the decision."

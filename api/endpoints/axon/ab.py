@@ -33,7 +33,7 @@ async def run_ab(
                 "capability": intent.target_capability,
                 "results": trial,
                 "decision_id": x_decision_id,
-            }
+            },
         )
     except Exception:
         pass

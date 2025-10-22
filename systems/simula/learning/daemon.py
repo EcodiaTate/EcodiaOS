@@ -77,13 +77,13 @@ class SimulaDaemon:
         # Periodics
         self._tasks.append(asyncio.create_task(self._decay_periodic(), name="sim-daemon:decay"))
         self._tasks.append(
-            asyncio.create_task(self._validate_periodic(), name="sim-daemon:validate")
+            asyncio.create_task(self._validate_periodic(), name="sim-daemon:validate"),
         )
 
         # Optional harvester
         if self.cfg.auto_harvest_t1:
             self._tasks.append(
-                asyncio.create_task(self._harvest_periodic(), name="sim-daemon:harvest")
+                asyncio.create_task(self._harvest_periodic(), name="sim-daemon:harvest"),
             )
 
         # Graceful shutdown on SIGTERM/SIGINT (if running as a process)
@@ -178,7 +178,8 @@ class SimulaDaemon:
         while not self._stopping.is_set():
             try:
                 aid = await asyncio.wait_for(
-                    self._t1_to_t2.get(), timeout=self.cfg.t2_synth_interval_s
+                    self._t1_to_t2.get(),
+                    timeout=self.cfg.t2_synth_interval_s,
                 )
             except TimeoutError:
                 continue
@@ -209,7 +210,8 @@ class SimulaDaemon:
         while not self._stopping.is_set():
             try:
                 aid = await asyncio.wait_for(
-                    self._t2_to_t3.get(), timeout=self.cfg.t3_merge_interval_s
+                    self._t2_to_t3.get(),
+                    timeout=self.cfg.t3_merge_interval_s,
                 )
             except TimeoutError:
                 continue
@@ -222,7 +224,8 @@ class SimulaDaemon:
         Periodically apply time-decay to advice weights.
         """
         log.info(
-            "[SimulaDaemon] Decay periodic loop running (every %.1fs)", self.cfg.decay_interval_s
+            "[SimulaDaemon] Decay periodic loop running (every %.1fs)",
+            self.cfg.decay_interval_s,
         )
         while not self._stopping.is_set():
             try:

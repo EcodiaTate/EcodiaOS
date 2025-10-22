@@ -83,7 +83,9 @@ async def escalate(payload: AtuneEscalateRequest, request: Request) -> dict[str,
             InputRef(kind="text", value=f"Reason for escalation: {reason_text}"),
             InputRef(kind="doc", value=f"Predicted Utility: {payload.predicted_utility or 'N/A'}"),
             InputRef(
-                kind="graph_ref", value=payload.intent.intent_id, meta={"label": "AxonIntent"}
+                kind="graph_ref",
+                value=payload.intent.intent_id,
+                meta={"label": "AxonIntent"},
             ),
         ]
         if raw_reason_json is not None:

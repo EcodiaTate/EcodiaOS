@@ -166,7 +166,7 @@ const SynapseDashboard = () => {
           ]}
           rows={(tools?.tools ?? []).map((t) => ({
             name: <span style={{ fontFamily: 'monospace' }}>{t.name}</span>,
-            desc: (t.spec && (t.spec.description || t.spec.desc)) || '—',
+            desc: (t.spec && (t.spec.description || t.spec.desc)) || '-',
           }))}
         />
       </Card>
@@ -210,9 +210,9 @@ const SynapseDashboard = () => {
             ]}
             rows={leaderboard.map((arm) => ({
               arm_id: <span style={{ fontFamily: 'monospace' }}>{arm.arm_id}</span>,
-              mode: arm.mode ?? '—',
+              mode: arm.mode ?? '-',
               score: Number.isFinite(arm.score) ? arm.score.toFixed(2) : 'N/A',
-              tasks: arm.tasks ?? '—',
+              tasks: arm.tasks ?? '-',
             }))}
           />
         </>

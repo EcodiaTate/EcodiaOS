@@ -5,7 +5,13 @@ from dataclasses import asdict, dataclass
 from typing import Dict, List, Literal, Optional
 
 DriverStatus = Literal[
-    "pending_synthesis", "synthesizing", "testing", "shadow", "live", "retired", "synthesis_failed"
+    "pending_synthesis",
+    "synthesizing",
+    "testing",
+    "shadow",
+    "live",
+    "retired",
+    "synthesis_failed",
 ]
 
 
@@ -66,7 +72,10 @@ class DriverLifecycleManager:
 
         spec = DriverSpec(driver_name=driver_name, artifact_path=None)
         st = DriverState(
-            name=driver_name, status="pending_synthesis", spec=spec, synthesis_job_id=None
+            name=driver_name,
+            status="pending_synthesis",
+            spec=spec,
+            synthesis_job_id=None,
         )
         self._states[driver_name] = st
         return st
@@ -110,7 +119,9 @@ class DriverLifecycleManager:
         st = self._states.get(driver_name)
         if not st:
             st = DriverState(
-                name=driver_name, status="testing", spec=DriverSpec(driver_name=driver_name)
+                name=driver_name,
+                status="testing",
+                spec=DriverSpec(driver_name=driver_name),
             )
             self._states[driver_name] = st
         st.spec.artifact_path = artifact_path
@@ -128,7 +139,9 @@ class DriverLifecycleManager:
         st = self._states.get(driver_name)
         if not st:
             st = DriverState(
-                name=driver_name, status=new_status, spec=DriverSpec(driver_name=driver_name)
+                name=driver_name,
+                status=new_status,
+                spec=DriverSpec(driver_name=driver_name),
             )
             self._states[driver_name] = st
             return st

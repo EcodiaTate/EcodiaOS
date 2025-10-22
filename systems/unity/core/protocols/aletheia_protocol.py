@@ -91,7 +91,8 @@ class AletheiaOrchestrator:
 
     async def _phase_formulate_case(self) -> None:
         await self._add_transcript(
-            "Aletheia Judge", "Phase I: Formulating Case and Establishing Subjective Baseline."
+            "Aletheia Judge",
+            "Phase I: Formulating Case and Establishing Subjective Baseline.",
         )
 
         mock_metrics_dict = {
@@ -112,7 +113,9 @@ class AletheiaOrchestrator:
 
         composer = PromptComposer()
         request = ComposeRequest(
-            agent="EcodiaOS.System", profile_name="ecodia", episode_id=self.episode_id
+            agent="EcodiaOS.System",
+            profile_name="ecodia",
+            episode_id=self.episode_id,
         )
         response = await composer.compose(request, rcu_ref="aletheia_init")
         self.case_file["constitutional_brief"] = response.included_rules
@@ -124,7 +127,8 @@ class AletheiaOrchestrator:
 
     async def _phase_form_teams(self) -> None:
         await self._add_transcript(
-            "Aletheia Judge", "Phase II: Dynamically forming adversarial team."
+            "Aletheia Judge",
+            "Phase II: Dynamically forming adversarial team.",
         )
 
         baseline: QualiaState = self.case_file["subjective_baseline"]
@@ -162,7 +166,8 @@ class AletheiaOrchestrator:
 
         except Exception as e:
             logger.warning(
-                "[AletheiaProtocol] Dynamic team formation failed, using fallback. Reason: %s", e
+                "[AletheiaProtocol] Dynamic team formation failed, using fallback. Reason: %s",
+                e,
             )
             selected_critics = ["SafetyCritic", "FactualityCritic"]
 
@@ -176,7 +181,8 @@ class AletheiaOrchestrator:
 
     async def _phase_adversarial_argumentation(self) -> None:
         await self._add_transcript(
-            "Aletheia Judge", "Phase III: Beginning Adversarial Argumentation."
+            "Aletheia Judge",
+            "Phase III: Beginning Adversarial Argumentation.",
         )
 
         proposal_artifact = await proposal.generate_proposal(
@@ -190,7 +196,8 @@ class AletheiaOrchestrator:
         await self._add_transcript("Thesis Team", "Initial proposal generated.")
 
         proposal_text = proposal_artifact.get("content", {}).get(
-            "text", "The proposal could not be generated."
+            "text",
+            "The proposal could not be generated.",
         )
 
         objective_prediction = await world_model.simulate(proposal_text, self.spec)
@@ -217,7 +224,8 @@ class AletheiaOrchestrator:
             raise Exception("Halting due to high predicted safety risk.")
 
         predicted_argument = await tom_engine.predict_argument(
-            "Proposer", {"topic": self.spec.topic}
+            "Proposer",
+            {"topic": self.spec.topic},
         )
         await self._add_transcript(
             "Antithesis Team (ToM)",
@@ -275,7 +283,8 @@ class AletheiaOrchestrator:
             )
 
         await self._add_transcript(
-            "Aletheia Judge", f"Final Mandate decided: {candidate_verdict.outcome}"
+            "Aletheia Judge",
+            f"Final Mandate decided: {candidate_verdict.outcome}",
         )
         return candidate_verdict
 

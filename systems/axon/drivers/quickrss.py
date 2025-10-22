@@ -60,7 +60,7 @@ class RSSDriver(DriverInterface):
                         "link": (it.findtext("link") or "").strip(),
                         "pubDate": (it.findtext("pubDate") or "").strip(),
                         "description": (it.findtext("description") or "").strip(),
-                    }
+                    },
                 )
             # Atom
             if not items:
@@ -81,7 +81,7 @@ class RSSDriver(DriverInterface):
                             "summary": (
                                 it.findtext("{http://www.w3.org/2005/Atom}summary") or ""
                             ).strip(),
-                        }
+                        },
                     )
             return {"status": "ok", "count": len(items), "items": items}
         except Exception as e:

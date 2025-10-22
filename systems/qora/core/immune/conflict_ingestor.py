@@ -85,7 +85,7 @@ async def on_conflict_detected(payload: dict[str, Any]) -> None:
         sev = _normalize_severity(payload.get("severity"))
         if _should_print_once(conflict_id):
             print(
-                f"[Conflict Ingestor] Received conflict id={conflict_id} component={component} severity={sev}"
+                f"[Conflict Ingestor] Received conflict id={conflict_id} component={component} severity={sev}",
             )
         _LAST_PRINT_BY_ID[conflict_id] = now
 

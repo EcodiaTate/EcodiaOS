@@ -37,10 +37,10 @@ REG_PATH_LOCAL = os.getenv("AXON_FEEDS_LOCAL", "config/feeds.local.yml")
 
 # Safety guards to avoid unbounded loops when a source is extremely chatty
 MAX_EVENTS_PER_TICK = int(
-    os.getenv("AXON_SENSE_MAX_EVENTS", "1000")
+    os.getenv("AXON_SENSE_MAX_EVENTS", "1000"),
 )  # hard cap per tick (drivers + registry)
 MAX_REGISTRY_EVENTS_PER_TICK = int(
-    os.getenv("AXON_REGISTRY_MAX_PER_TICK", "500")
+    os.getenv("AXON_REGISTRY_MAX_PER_TICK", "500"),
 )  # sub-cap for registry path
 MAX_DRIVER_EVENTS_PER_DRIVER = int(os.getenv("AXON_DRIVER_MAX_PER_PULL", "500"))  # per-driver cap
 
@@ -84,7 +84,7 @@ def _emit_to_tap(ev) -> None:
     # Final fallback: log once, then noop
     if AXON_DEBUG and not _TAP_FIRST_FAILURE_LOGGED:
         print(
-            "[SenseLoop] no event tap available (expected event_tap.record(ev) or event_tap.tap(ev)); continuing without debug ring."
+            "[SenseLoop] no event tap available (expected event_tap.record(ev) or event_tap.tap(ev)); continuing without debug ring.",
         )
         _TAP_FIRST_FAILURE_LOGGED = True
 
@@ -156,7 +156,7 @@ async def _iter_registry_events() -> AsyncIterator:
                 ics = ingestor.reg.iter_enabled("ics")
                 mqtt = ingestor.reg.iter_enabled("mqtt")
                 print(
-                    f"[Registry] enabled rss={len(rss)} jsonfeed={len(jsf)} json={len(jsn)} csv={len(csv)} ics={len(ics)} mqtt={len(mqtt)}"
+                    f"[Registry] enabled rss={len(rss)} jsonfeed={len(jsf)} json={len(jsn)} csv={len(csv)} ics={len(ics)} mqtt={len(mqtt)}",
                 )
                 if rss:
                     preview = ", ".join(f"{s.id}→{(s.url or '')[:60]}" for s in rss[:3])
@@ -171,7 +171,7 @@ async def _iter_registry_events() -> AsyncIterator:
             if MAX_REGISTRY_EVENTS_PER_TICK and count >= MAX_REGISTRY_EVENTS_PER_TICK:
                 if AXON_DEBUG:
                     print(
-                        f"[SenseLoop] registry cap reached: {count} >= {MAX_REGISTRY_EVENTS_PER_TICK}"
+                        f"[SenseLoop] registry cap reached: {count} >= {MAX_REGISTRY_EVENTS_PER_TICK}",
                     )
                 break
     except Exception as e:
@@ -225,7 +225,7 @@ class SenseLoop:
                     if MAX_DRIVER_EVENTS_PER_DRIVER and per_driver >= MAX_DRIVER_EVENTS_PER_DRIVER:
                         if AXON_DEBUG:
                             print(
-                                f"[SenseLoop] per-driver cap reached for {name}: {per_driver} >= {MAX_DRIVER_EVENTS_PER_DRIVER}"
+                                f"[SenseLoop] per-driver cap reached for {name}: {per_driver} >= {MAX_DRIVER_EVENTS_PER_DRIVER}",
                             )
                         break
                     if remaining_budget <= 0:

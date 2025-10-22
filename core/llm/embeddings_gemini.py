@@ -174,7 +174,7 @@ async def _get_defaults(now: float | None = None) -> tuple[str, str, int]:
             raw_dims = int(
                 neo.get("dimensions")
                 if "dimensions" in neo
-                else os.getenv("EMBED_DIMENSIONS", MAX_DIMS)
+                else os.getenv("EMBED_DIMENSIONS", MAX_DIMS),
             )
         except Exception:
             raw_dims = MAX_DIMS
@@ -217,7 +217,10 @@ def _rest_embed_single(model: str, contents: str, task_type: str, dimensions: in
 
 
 def _rest_batch_embed(
-    model: str, texts: list[str], task_type: str, dimensions: int
+    model: str,
+    texts: list[str],
+    task_type: str,
+    dimensions: int,
 ) -> dict[str, Any]:
     import os
 
@@ -244,7 +247,8 @@ def _rest_batch_embed(
         resp = client.post(url, headers=headers, json=body)
         if resp.status_code != 200:
             _dbg_print(
-                1, f"[EMBED REST ERROR/BATCH] {resp.status_code} {_truncate(resp.text, 1200)}"
+                1,
+                f"[EMBED REST ERROR/BATCH] {resp.status_code} {_truncate(resp.text, 1200)}",
             )
             resp.raise_for_status()
         return resp.json()
@@ -352,7 +356,8 @@ async def _retry(coro_factory, *, retries: int = 3, base_delay: float = 0.5, jit
                 break
             delay = base_delay * (2**attempt) + (jitter if (attempt % 2 == 0) else jitter * 0.5)
             _dbg_print(
-                1, f"[EMBED RETRY] attempt={attempt + 1}/{retries} delay={delay:.2f}s err={e}"
+                1,
+                f"[EMBED RETRY] attempt={attempt + 1}/{retries} delay={delay:.2f}s err={e}",
             )
             await asyncio.sleep(delay)
             attempt += 1
@@ -395,7 +400,7 @@ async def get_embedding(
 
     if len(emb) != chosen_dims or chosen_dims != 3072:
         raise RuntimeError(
-            f"[EMBED ERROR] Expected 3072 dims, got {len(emb)} (requested {chosen_dims})"
+            f"[EMBED ERROR] Expected 3072 dims, got {len(emb)} (requested {chosen_dims})",
         )
 
     vec = _ensure_list(emb, name="embedding")
@@ -459,7 +464,7 @@ async def get_embeddings(
             vec = _ensure_list(_extract_single_values(res), name=f"embedding[{i}]")
             if len(vec) != chosen_dims or chosen_dims != 3072:
                 raise RuntimeError(
-                    f"[EMBED ERROR] Expected 3072 dims, got {len(vec)} (requested {chosen_dims}) at idx={i}"
+                    f"[EMBED ERROR] Expected 3072 dims, got {len(vec)} (requested {chosen_dims}) at idx={i}",
                 )
             out[i] = vec
             _dbg_print(2, f"[EMBED OK/BATCH] idx={i} len={len(vec)}")

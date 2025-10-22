@@ -176,7 +176,7 @@ async def generate_soul(req: GenerateSoulRequest):
                         'Return ONLY a JSON object like {"soul": "<exactly six words>"}. '
                         "No other keys, no prose, exactly six words."
                     ),
-                }
+                },
             )
 
             # Call the gateway (canonical)
@@ -200,12 +200,12 @@ async def generate_soul(req: GenerateSoulRequest):
             if _is_valid_soul(coerced):
                 generated_soul = coerced
                 print(
-                    f"[generate_soul] Coerced to six words on attempt {attempt + 1}: '{generated_soul}'"
+                    f"[generate_soul] Coerced to six words on attempt {attempt + 1}: '{generated_soul}'",
                 )
                 break
 
             print(
-                f"[generate_soul] WARN: Invalid soul received on attempt {attempt + 1}: '{soul_candidate}'"
+                f"[generate_soul] WARN: Invalid soul received on attempt {attempt + 1}: '{soul_candidate}'",
             )
 
         except Exception as e:
@@ -252,7 +252,8 @@ async def generate_soul(req: GenerateSoulRequest):
     except Exception as e:
         print(f"[generate_soul] Unhandled Exception during persistence: {e}")
         raise HTTPException(
-            status_code=500, detail="An internal error occurred during soul storage."
+            status_code=500,
+            detail="An internal error occurred during soul storage.",
         )
 
 

@@ -71,7 +71,9 @@ def _as_run_status(payload: dict[str, Any] | None, fallback: str = "unknown") ->
     status = str(payload.get("status") or fallback)
     summary = payload.get("summary")
     return RunStatus(
-        status=status, summary=summary if isinstance(summary, str) else None, details=payload
+        status=status,
+        summary=summary if isinstance(summary, str) else None,
+        details=payload,
     )
 
 
@@ -98,7 +100,9 @@ async def hygiene_check(req: HygieneRequest) -> HygieneResponse:
     tests_res = None
     if k_expr:
         tests_res = await _nscs.run_tests_k(
-            paths=["tests"], k_expr=k_expr, timeout_sec=req.timeout_sec
+            paths=["tests"],
+            k_expr=k_expr,
+            timeout_sec=req.timeout_sec,
         )
     if not tests_res or tests_res.get("status") != "success":
         tests_res = await _nscs.run_tests_xdist(paths=["tests"], timeout_sec=req.timeout_sec)
@@ -117,7 +121,8 @@ async def hygiene_check(req: HygieneRequest) -> HygieneResponse:
                 _ = await _nscs.apply_refactor(diff=diff_applied, verify_paths=["tests"])
                 static_res = await _nscs.static_check(paths=changed)
                 tests_res = await _nscs.run_tests_xdist(
-                    paths=["tests"], timeout_sec=req.timeout_sec
+                    paths=["tests"],
+                    timeout_sec=req.timeout_sec,
                 )
                 static_status = str(static_res.get("status", "unknown"))
                 tests_status = str(tests_res.get("status", "unknown"))

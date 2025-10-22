@@ -100,7 +100,7 @@ async def _select_synthesis_strategy(user_id: str) -> str:
         return strategy
     except Exception as e:
         logger.warning(
-            f"[{user_id}] Could not determine data count for strategy selection: {e}. Defaulting to 'thematic_cluster'."
+            f"[{user_id}] Could not determine data count for strategy selection: {e}. Defaulting to 'thematic_cluster'.",
         )
         return "thematic_cluster"
 
@@ -185,7 +185,7 @@ async def run_batch() -> dict[str, Any]:
     """Main entrypoint for the batch synthesis job."""
     start_time = time.time()
     print(
-        f"[SoulSynth] Starting batch run at {datetime.now(UTC).isoformat()} with DYNAMIC strategy selection..."
+        f"[SoulSynth] Starting batch run at {datetime.now(UTC).isoformat()} with DYNAMIC strategy selection...",
     )
 
     user_ids = await _get_active_user_ids(LOOKBACK_HOURS, MAX_USERS_PER_RUN)
@@ -213,11 +213,11 @@ async def run_batch() -> dict[str, Any]:
                     "strategy_used": strategy,
                 }
                 logger.exception(
-                    f"[{user_id}] SoulSynth guarded run failed during strategy '{strategy}'"
+                    f"[{user_id}] SoulSynth guarded run failed during strategy '{strategy}'",
                 )
             results.append(result)
             print(
-                f"[SoulSynth] ...processed user {user_id}, status: {result.get('status', 'unknown')}, strategy: {result.get('strategy_used', 'N/A')}"
+                f"[SoulSynth] ...processed user {user_id}, status: {result.get('status', 'unknown')}, strategy: {result.get('strategy_used', 'N/A')}",
             )
 
     await asyncio.gather(*[_guarded_run(uid) for uid in user_ids])
@@ -242,7 +242,7 @@ async def run_batch() -> dict[str, Any]:
         "results": results,
     }
     print(
-        f"[SoulSynth] Batch run complete. Processed {summary['results_summary']['total_processed']} users in {summary['duration_sec']}s."
+        f"[SoulSynth] Batch run complete. Processed {summary['results_summary']['total_processed']} users in {summary['duration_sec']}s.",
     )
     return summary
 

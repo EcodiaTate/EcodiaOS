@@ -54,7 +54,7 @@ async def seed_profiles():
                             "nova.auction",
                         ],
                     },
-                }
+                },
             ),
         },
     )

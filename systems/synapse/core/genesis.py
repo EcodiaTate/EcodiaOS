@@ -138,7 +138,7 @@ class ToolGenesisModule:
             spec = await self._request_llm_spec(task_key)
         except TimeoutError:
             print(
-                f"[Genesis] ERROR: Timed out waiting for LLM spec response for task '{task_key}'."
+                f"[Genesis] ERROR: Timed out waiting for LLM spec response for task '{task_key}'.",
             )
             return
 

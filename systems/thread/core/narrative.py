@@ -52,7 +52,7 @@ async def _embed_text_3072(text: str) -> list[float] | None:
         if isinstance(vec, list) and len(vec) == EXPECTED_DIMS:
             return vec
         logger.error(
-            f"[Thread:Embed] Failed to get 3072D vector; got len={len(vec) if vec else 'None'}."
+            f"[Thread:Embed] Failed to get 3072D vector; got len={len(vec) if vec else 'None'}.",
         )
     except Exception as e:
         logger.error(f"[Thread:Embed] Embedding call failed: {e}", exc_info=True)
@@ -84,7 +84,7 @@ async def ingest_turn_node(
         return None
 
     logger.info(
-        f"[Thread:Ingest] Ingesting '{role}' turn for user '{user_id}' in session '{session_id}'."
+        f"[Thread:Ingest] Ingesting '{role}' turn for user '{user_id}' in session '{session_id}'.",
     )
     embedding_vector = await _embed_text_3072(text)
 
@@ -135,7 +135,7 @@ async def ingest_turn_node(
         node_id = result[0]["nodeId"] if result else None
         if node_id:
             logger.info(
-                f"[Thread:Ingest] Successfully created Turn node {node_id} with labels: {labels}."
+                f"[Thread:Ingest] Successfully created Turn node {node_id} with labels: {labels}.",
             )
             return node_id
         logger.error("[Thread:Ingest] Node creation query returned no ID.")
@@ -168,7 +168,8 @@ async def stitch_narrative_links(
     MERGE (u)-[r:GENERATED_RESPONSE]->(a)
     """
     await cypher_query(
-        q_response, {"user_turn_id": user_turn_id, "assistant_turn_id": assistant_turn_id}
+        q_response,
+        {"user_turn_id": user_turn_id, "assistant_turn_id": assistant_turn_id},
     )
     logger.info(f"[Thread:Stitch] Linked {user_turn_id} -> {assistant_turn_id}.")
 
@@ -185,7 +186,7 @@ async def stitch_narrative_links(
     """
     await cypher_query(q_precedes, {"user_turn_id": user_turn_id, "session_id": session_id})
     logger.info(
-        f"[Thread:Stitch] Searched for preceding turn for {user_turn_id} in session {session_id}."
+        f"[Thread:Stitch] Searched for preceding turn for {user_turn_id} in session {session_id}.",
     )
 
 
@@ -216,7 +217,7 @@ async def process_turn_event(event: dict[str, Any]) -> None:
 
         if not user_input_text or not assistant_response_text:
             logger.warning(
-                "[Thread:Event] Event is missing user input or assistant response text. Aborting."
+                "[Thread:Event] Event is missing user input or assistant response text. Aborting.",
             )
             return
 
@@ -241,14 +242,15 @@ async def process_turn_event(event: dict[str, Any]) -> None:
         if user_turn_id and assistant_turn_id:
             await stitch_narrative_links(user_turn_id, assistant_turn_id, session_id)
             logger.info(
-                f"✅ [Thread:Event] Successfully processed and stitched narrative for episode {episode_id}."
+                f"✅ [Thread:Event] Successfully processed and stitched narrative for episode {episode_id}.",
             )
         else:
             logger.error(
-                "[Thread:Event] Failed to process narrative; one or both turn nodes could not be created."
+                "[Thread:Event] Failed to process narrative; one or both turn nodes could not be created.",
             )
 
     except Exception as e:
         logger.error(
-            f"🚨 [Thread:Event] Unhandled exception while processing turn: {e}", exc_info=True
+            f"🚨 [Thread:Event] Unhandled exception while processing turn: {e}",
+            exc_info=True,
         )

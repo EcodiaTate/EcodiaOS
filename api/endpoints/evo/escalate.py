@@ -67,7 +67,8 @@ async def escalate(
     # but not processed, which is not an error state.
     if _seen_recently(_spam_key(payload)):
         raise HTTPException(
-            status_code=202, detail={"ignored": "duplicate_request", "decision_id": decision_id}
+            status_code=202,
+            detail={"ignored": "duplicate_request", "decision_id": decision_id},
         )
 
     # Data Hydration & Validation

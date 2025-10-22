@@ -61,7 +61,7 @@ async def _embed_query(q: str | Sequence[str]) -> list[float]:
         # defensive: ensure consistent dims
         if len(v) != dim:
             raise RuntimeError(
-                f"[ADVICE] Inconsistent embedding dims; expected {dim}, got {len(v)}"
+                f"[ADVICE] Inconsistent embedding dims; expected {dim}, got {len(v)}",
             )
         for i in range(dim):
             acc[i] += v[i]
@@ -362,7 +362,8 @@ class AdviceEngine:
                 if not last_seen_ms:
                     return 1.0
                 days = max(
-                    0.0, (time.time() * 1000.0 - float(last_seen_ms)) / (1000.0 * 60 * 60 * 24)
+                    0.0,
+                    (time.time() * 1000.0 - float(last_seen_ms)) / (1000.0 * 60 * 60 * 24),
                 )
                 return 1.0 + min(0.2, 0.02 * (1.0 / (1.0 + days)))
             except Exception:
@@ -379,7 +380,9 @@ class AdviceEngine:
         return ranked[:k]
 
     async def retrieve_for_context(
-        self, ctx: dict[str, Any], k: int = TOPK_INJECT
+        self,
+        ctx: dict[str, Any],
+        k: int = TOPK_INJECT,
     ) -> dict[str, Any]:
         """
         Convenience for orchestrators/lenses: takes an SCL/Planner context.
@@ -390,7 +393,11 @@ class AdviceEngine:
         # Optional: allow callers to pass query hints: ctx["advice_query_hints"] = ["AST", "pytest -k ..."]
         hints = ctx.get("advice_query_hints") if isinstance(ctx, dict) else None
         items = await self.retrieve_for(
-            goal=goal, target_fqname=target, local_context=local, k=k, extra_queries=hints
+            goal=goal,
+            target_fqname=target,
+            local_context=local,
+            k=k,
+            extra_queries=hints,
         )
         return {
             "advice_items": items,
@@ -461,8 +468,11 @@ class AdviceEngine:
         await cypher_query(
             """
             MATCH (a:Advice)
-            WITH a, duration({millis: timestamp() - a.last_seen}).days AS days
-            SET a.weight = a.weight * pow(0.5, days / $hl)
+            WITH a,
+                duration({milliseconds: timestamp() - coalesce(a.last_seen, timestamp())}).days AS days
+            // 0.5^x = exp(x * log(0.5))
+            SET a.weight = coalesce(a.weight, 1.0) *
+                        exp( toFloat(days) / toFloat($hl) * log(0.5) )
             """,
             {"hl": HALF_LIFE_DAYS},
         )

@@ -61,6 +61,23 @@ def _strip_markdown_fences(text: str) -> str:
     return match.group(1).strip() if match else text.strip()
 
 
+# --- Registry helpers for bootstrap -----------------------------------------
+from systems.simula.code_sim.telemetry import get_tracked_tools as _get_tracked_tools
+
+
+def get_all_tool_arm_ids() -> list[str]:
+    """
+    Return fully-qualified PolicyArm IDs for every tracked Simula tool.
+    Used by the registry bootstrapper to compute the expected-ID set.
+    """
+    try:
+        tools = _get_tracked_tools() or {}
+        return [f"simula.agent.tools.{name}" for name in tools.keys()]
+    except Exception as e:
+        log.error("get_all_tool_arm_ids failed: %r", e, exc_info=True)
+        return []
+
+
 def _discover_functions(src: str) -> list[str]:
     """Parses source code to find top-level function definitions."""
     names: list[str] = []
@@ -145,10 +162,14 @@ async def propose_intelligent_patch(*, goal: str, objective: dict) -> dict[str, 
 
 
 @track_tool(
-    "edit_code_block", modes=["simula_planful", "code_generation", "refactoring", "debugging"]
+    "edit_code_block",
+    modes=["simula_planful", "code_generation", "refactoring", "debugging"],
 )
 async def edit_code_block(
-    *, file_path: str, block_identifier: str, new_code_block: str
+    *,
+    file_path: str,
+    block_identifier: str,
+    new_code_block: str,
 ) -> dict[str, Any]:
     """
     Surgically replaces a block of code within a file without rewriting the entire file.
@@ -264,7 +285,11 @@ async def ask_senior_architect(*, question: str, context: str) -> dict[str, Any]
 
 
 async def _reflect_and_revise_plan(
-    self, goal: str, executed_step: dict, outcome: dict, remaining_steps: list[dict]
+    self,
+    goal: str,
+    executed_step: dict,
+    outcome: dict,
+    remaining_steps: list[dict],
 ) -> list[dict]:
     """
     After a tool executes, this method makes a quick LLM call to decide if the plan is still valid.
@@ -284,7 +309,9 @@ async def _reflect_and_revise_plan(
         # Use a fast, cheap model for this decision
         llm_policy = {"model": "gpt-4o-mini", "temperature": 0.1}
         response = await call_llm_service(
-            prompt, agent_name="Simula.Reflector", policy_override=llm_policy
+            prompt,
+            agent_name="Simula.Reflector",
+            policy_override=llm_policy,
         )
         decision_obj = extract_json_flex(response.text)
 
@@ -301,7 +328,10 @@ async def _reflect_and_revise_plan(
 
 @track_tool("plan_and_critique_strategy", modes=["simula_planful", "planning", "reasoning"])
 async def plan_and_critique_strategy(
-    *, goal: str, dossier: dict, turn_history: list
+    *,
+    goal: str,
+    dossier: dict,
+    turn_history: list,
 ) -> dict[str, Any]:
     """
     Performs a two-step strategic deliberation: first, propose a plan, then critique it to find flaws.
@@ -352,7 +382,11 @@ async def plan_and_critique_strategy(
 
 @track_tool("create_pull_request", modes=["simula_planful", "vcs", "cortex"])
 async def create_pull_request(
-    repo_slug: str, title: str, head_branch: str, base_branch: str, body: str
+    repo_slug: str,
+    title: str,
+    head_branch: str,
+    base_branch: str,
+    body: str,
 ) -> dict[str, Any]:
     """
     [CORTEX TOOL] Creates a pull request on GitHub.
@@ -380,7 +414,12 @@ async def create_pull_request(
 
 @track_tool("record_recipe", modes=["simula_planful", "learning"])
 async def record_recipe(
-    *, goal: str, context_fqname: str, steps: list[str], success: bool, impact_hint: str = ""
+    *,
+    goal: str,
+    context_fqname: str,
+    steps: list[str],
+    success: bool,
+    impact_hint: str = "",
 ) -> dict[str, Any]:
     """
     Saves a successful or failed sequence of actions as a 'recipe' for future learning.
@@ -423,7 +462,9 @@ async def get_context_dossier(*, target_fqname: str, intent: str) -> dict[str, A
         intent: The reason for fetching the dossier (e.g., 'implement', 'refactor', 'debug').
     """
     return await _api_call(
-        "POST", "QORA_DOSSIER_BUILD", {"target_fqname": target_fqname, "intent": intent}
+        "POST",
+        "QORA_DOSSIER_BUILD",
+        {"target_fqname": target_fqname, "intent": intent},
     )
 
 
@@ -440,7 +481,9 @@ async def qora_semantic_search(*, query_text: str, top_k: int = 5) -> dict[str, 
         top_k: The maximum number of search results to return.
     """
     return await _api_call(
-        "POST", "QORA_SEMANTIC_SEARCH", {"query_text": query_text, "top_k": top_k}
+        "POST",
+        "QORA_SEMANTIC_SEARCH",
+        {"query_text": query_text, "top_k": top_k},
     )
 
 
@@ -526,7 +569,10 @@ async def write_file(*, path: str, content: str, append: bool = False) -> dict[s
 
 @track_tool("list_files", modes=["simula_planful", "file_system", "reasoning", "general"])
 async def list_files(
-    *, path: str = ".", recursive: bool = False, max_depth: int = 3
+    *,
+    path: str = ".",
+    recursive: bool = False,
+    max_depth: int = 3,
 ) -> dict[str, Any]:
     """
     Lists files and directories to explore the project structure.
@@ -662,7 +708,9 @@ async def static_check(*, paths: list[str] | None = None) -> dict[str, Any]:
 
 @track_tool("run_repair_engine", modes=["simula_planful", "code_generation", "debugging"])
 async def run_repair_engine(
-    *, paths: list[str] | None = None, timeout_sec: int = 600
+    *,
+    paths: list[str] | None = None,
+    timeout_sec: int = 600,
 ) -> dict[str, Any]:
     """
     Invokes the autonomous repair engine to attempt to fix failing tests.
@@ -683,7 +731,9 @@ async def run_repair_engine(
 
 @track_tool("run_tests_and_diagnose_failures", modes=["simula_planful", "testing", "debugging"])
 async def run_tests_and_diagnose_failures(
-    *, paths: list[str] | None = None, k_expr: str = ""
+    *,
+    paths: list[str] | None = None,
+    k_expr: str = "",
 ) -> dict[str, Any]:
     """
     Runs tests and, if they fail, parses the output to provide a structured diagnosis and suggests a root cause.
@@ -733,7 +783,11 @@ async def run_tests_and_diagnose_failures(
 
 @track_tool("open_pr", modes=["simula_planful", "vcs"])
 async def open_pr(
-    *, diff: str, title: str, evidence: dict | None = None, base: str = "main"
+    *,
+    diff: str,
+    title: str,
+    evidence: dict | None = None,
+    base: str = "main",
 ) -> dict:
     """
     Opens a new Pull Request (PR) in the version control system.
@@ -766,7 +820,11 @@ async def format_patch(*, paths: list[str]) -> dict:
 
 @track_tool("conventional_commit_message", modes=["simula_planful", "vcs"])
 async def conventional_commit_message(
-    *, commit_type: str, scope: str | None, subject: str, body: str | None
+    *,
+    commit_type: str,
+    scope: str | None,
+    subject: str,
+    body: str | None,
 ) -> dict[str, Any]:
     """
     Constructs a full Conventional Commits message from its component parts.
@@ -782,7 +840,10 @@ async def conventional_commit_message(
     return {
         "status": "success",
         "message": render_conventional_commit(
-            type_=commit_type, scope=scope, subject=subject, body=body
+            type_=commit_type,
+            scope=scope,
+            subject=subject,
+            body=body,
         ),
     }
 

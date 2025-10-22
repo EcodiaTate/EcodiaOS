@@ -53,7 +53,7 @@ class HallOfFamePromoter:
 
         if not arm_stats:
             logger.info(
-                "[HallOfFame] No arms meet the minimum trial count for promotion analysis. Ending cycle."
+                "[HallOfFame] No arms meet the minimum trial count for promotion analysis. Ending cycle.",
             )
             return
 
@@ -80,7 +80,7 @@ class HallOfFamePromoter:
             )
 
             logger.info(
-                f"[HallOfFame] Mode '{mode}' has a promotion reward threshold of {reward_threshold:.4f}."
+                f"[HallOfFame] Mode '{mode}' has a promotion reward threshold of {reward_threshold:.4f}.",
             )
 
             # Find all arms in this mode that exceed the threshold.
@@ -108,7 +108,7 @@ class HallOfFamePromoter:
             await cypher_query(query_promote, {"arms": promotable_arms})
             promoted_ids = [arm["arm_id"] for arm in promotable_arms]
             logger.info(
-                f"[HallOfFame] Successfully promoted {len(promotable_arms)} arms: {promoted_ids}"
+                f"[HallOfFame] Successfully promoted {len(promotable_arms)} arms: {promoted_ids}",
             )
         except Exception as e:
             logger.error(f"[HallOfFame] Failed to persist promotions to the graph: {e}")

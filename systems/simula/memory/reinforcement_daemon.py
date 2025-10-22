@@ -26,7 +26,7 @@ class ReinforcementDaemon:
     def __init__(self, poll_interval_seconds: int | None = None):
         self.synapse = SynapseClient()
         self.poll_interval = poll_interval_seconds or int(
-            os.getenv("MDO_REINFORCEMENT_POLL_SEC", DEFAULT_POLL_SEC)
+            os.getenv("MDO_REINFORCEMENT_POLL_SEC", DEFAULT_POLL_SEC),
         )
         self.running = False
 

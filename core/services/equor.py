@@ -20,7 +20,11 @@ class EquorClient:
     """
 
     async def _request(
-        self, method: str, path: str, json: dict | None = None, headers: dict | None = None
+        self,
+        method: str,
+        path: str,
+        json: dict | None = None,
+        headers: dict | None = None,
     ) -> Any:
         """A consolidated, robust HTTP request helper."""
         http = await get_http_client()
@@ -62,7 +66,9 @@ class EquorClient:
         )
 
         data = await self._request(
-            "POST", ENDPOINTS.EQUOR_COMPOSE, json=payload.model_dump(mode="json")
+            "POST",
+            ENDPOINTS.EQUOR_COMPOSE,
+            json=payload.model_dump(mode="json"),
         )
         return ComposeResponse.model_validate(data)
 
@@ -72,7 +78,9 @@ class EquorClient:
         """
         # The /attest endpoint expects the Attestation model directly.
         return await self._request(
-            "POST", ENDPOINTS.EQUOR_ATTEST, json=attestation.model_dump(mode="json")
+            "POST",
+            ENDPOINTS.EQUOR_ATTEST,
+            json=attestation.model_dump(mode="json"),
         )
 
     async def run_invariant_audit(self) -> list[InvariantCheckResult]:

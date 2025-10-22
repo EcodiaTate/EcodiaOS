@@ -26,7 +26,9 @@ class ContractsEngine:
     """
 
     def __init__(
-        self, pre: Iterable[PreRule] | None = None, post: Iterable[PostRule] | None = None
+        self,
+        pre: Iterable[PreRule] | None = None,
+        post: Iterable[PostRule] | None = None,
     ) -> None:
         self._pre = list(pre or [])
         self._post = list(post or [])

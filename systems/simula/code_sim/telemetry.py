@@ -26,12 +26,21 @@ _current_job: contextvars.ContextVar[str | None] = contextvars.ContextVar(
 
 # MODIFIED: The registry now stores metadata (like modes) for each tool.
 _TOOL_REGISTRY: dict[str, dict[str, Any]] = {}
+_ALIAS_INDEX: dict[str, str] = {}  # alias -> canonical tool name
 
 
 def get_tracked_tools() -> dict[str, dict[str, Any]]:
-    """Returns the full tool registry, including metadata like modes."""
     return _TOOL_REGISTRY
 
+def resolve_tool(name_or_alias: str) -> str | None:
+    """
+    Return the canonical tool name for an exact registered name or alias.
+    """
+    if not name_or_alias:
+        return None
+    if name_or_alias in _TOOL_REGISTRY:
+        return name_or_alias
+    return _ALIAS_INDEX.get(name_or_alias)
 
 def _now_iso() -> str:
     return _dt.datetime.now(tz=_dt.UTC).isoformat()
@@ -235,7 +244,9 @@ class with_job_context:
 def track_tool(
     tool_name: str,
     modes: list[str] | None = None,
+    aliases: list[str] | None = None,
 ) -> Callable:
+
     """
     A decorator to register a tool for Simula's use and wrap it with telemetry.
 
@@ -244,18 +255,23 @@ def track_tool(
         modes: A list of operational modes (e.g., 'code_analysis', 'file_system')
                this tool is relevant for. Defaults to ['general'].
     """
+    def _register(canonical: str, fn_wrapped: Callable[..., Any]):
+            _TOOL_REGISTRY[canonical] = {
+                "func": fn_wrapped,
+                "modes": modes or ["general"],
+                "aliases": list(aliases or []),
+            }
+            # index aliases for reverse lookup
+            for a in aliases or []:
+                if a and a != canonical:
+                    _ALIAS_INDEX[a] = canonical
 
     def decorator(fn: Callable[..., Any]) -> Callable[..., Any]:
         if inspect.iscoroutinefunction(fn):
-
             @wraps(fn)
             async def async_wrapper(*args, **kwargs):
                 t0 = time.perf_counter()
-                telemetry.tool_event(
-                    "start",
-                    tool_name,
-                    args={"argc": len(args), "keys": list(kwargs.keys())},
-                )
+                telemetry.tool_event("start", tool_name, args={"argc": len(args), "keys": list(kwargs.keys())})
                 try:
                     res = await fn(*args, **kwargs)
                     telemetry.tool_event("end", tool_name, result=res, ok=True, started_ms=t0)
@@ -263,23 +279,13 @@ def track_tool(
                 except Exception as e:
                     telemetry.tool_event("end", tool_name, ok=False, err=repr(e), started_ms=t0)
                     raise
-
-            # Register the executable wrapper with its metadata
-            _TOOL_REGISTRY[tool_name] = {
-                "func": async_wrapper,
-                "modes": modes or ["general"],
-            }
+            _register(tool_name, async_wrapper)
             return async_wrapper
         else:
-
             @wraps(fn)
             def sync_wrapper(*args, **kwargs):
                 t0 = time.perf_counter()
-                telemetry.tool_event(
-                    "start",
-                    tool_name,
-                    args={"argc": len(args), "keys": list(kwargs.keys())},
-                )
+                telemetry.tool_event("start", tool_name, args={"argc": len(args), "keys": list(kwargs.keys())})
                 try:
                     res = fn(*args, **kwargs)
                     telemetry.tool_event("end", tool_name, result=res, ok=True, started_ms=t0)
@@ -287,12 +293,7 @@ def track_tool(
                 except Exception as e:
                     telemetry.tool_event("end", tool_name, ok=False, err=repr(e), started_ms=t0)
                     raise
-
-            # Register the executable wrapper with its metadata
-            _TOOL_REGISTRY[tool_name] = {
-                "func": sync_wrapper,
-                "modes": modes or ["general"],
-            }
+            _register(tool_name, sync_wrapper)
             return sync_wrapper
 
     return decorator

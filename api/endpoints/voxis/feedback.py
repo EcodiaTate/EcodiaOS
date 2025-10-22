@@ -66,11 +66,14 @@ async def log_feedback(
         row = rows[0] if rows else {}
         if not row:
             logger.warning(
-                f"[VOXIS FEEDBACK] Episode '{req.episode_id}' not found. Cannot log feedback."
+                f"[VOXIS FEEDBACK] Episode '{req.episode_id}' not found. Cannot log feedback.",
             )
             # Return a different response for clarity if episode not found
             return FeedbackResponse(
-                status="error", message="Episode ID not found.", routed=False, task_key=None
+                status="error",
+                message="Episode ID not found.",
+                routed=False,
+                task_key=None,
             )
 
         episode_task_key = row.get("task_key") or DEFAULT_TASK_KEY
@@ -79,7 +82,7 @@ async def log_feedback(
 
         if not chosen_arm_id:
             logger.warning(
-                f"[VOXIS FEEDBACK] No arm_id could be resolved for episode '{req.episode_id}'; learning signal will be episode-only."
+                f"[VOXIS FEEDBACK] No arm_id could be resolved for episode '{req.episode_id}'; learning signal will be episode-only.",
             )
 
         # --- 3) Build final metrics payload ---

@@ -129,7 +129,10 @@ class BaseSession:
         return out.get("returncode", 1) == 0, out
 
     async def run_pytest_select(
-        self, paths: list[str], k_expr: str, timeout: int = 900
+        self,
+        paths: list[str],
+        k_expr: str,
+        timeout: int = 900,
     ) -> tuple[bool, dict[str, Any]]:
         await self._ensure_tool("pytest", "pytest==8.2.0")
         cmd = [self.python_exe, "-m", "pytest", "-q", "--maxfail=1", *paths]
@@ -139,7 +142,10 @@ class BaseSession:
         return out.get("returncode", 1) == 0, out
 
     async def run_pytest_xdist(
-        self, paths: list[str], nprocs: str = "auto", timeout: int = 900
+        self,
+        paths: list[str],
+        nprocs: str = "auto",
+        timeout: int = 900,
     ) -> tuple[bool, dict[str, Any]]:
         await self._ensure_tool("pytest_xdist", "pytest-xdist")
         cmd = [self.python_exe, "-m", "pytest", "-q", f"-n={nprocs}", *paths]
@@ -243,7 +249,8 @@ class DockerSession(BaseSession):
         )
         try:
             stdout_b, stderr_b = await asyncio.wait_for(
-                proc.communicate(), timeout=timeout or self.cfg.timeout_sec
+                proc.communicate(),
+                timeout=timeout or self.cfg.timeout_sec,
             )
         except TimeoutError:
             proc.kill()
@@ -279,7 +286,8 @@ class LocalSession(BaseSession):
         )
         try:
             stdout_b, stderr_b = await asyncio.wait_for(
-                proc.communicate(), timeout=timeout or self.cfg.timeout_sec
+                proc.communicate(),
+                timeout=timeout or self.cfg.timeout_sec,
             )
         except TimeoutError:
             proc.kill()

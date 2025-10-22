@@ -19,8 +19,11 @@ def create_seed_policy_graph(name: str) -> dict:
         id=f"pg::{name}",
         nodes=[
             PolicyNode(
-                id="prompt", type="prompt", model="gpt-3.5-turbo", params={"temperature": 0.15}
-            )
+                id="prompt",
+                type="prompt",
+                model="gpt-3.5-turbo",
+                params={"temperature": 0.15},
+            ),
         ],
         edges=[],
         meta={"seeded": True, "arm": name},

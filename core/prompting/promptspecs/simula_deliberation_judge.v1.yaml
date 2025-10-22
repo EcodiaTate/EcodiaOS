@@ -7,12 +7,14 @@
     agent: "Simula.Judge"
     persona_partial: "persona_simula_guardrails"
 
+  # Judge also sees advice + tool surface to validate allowlist conformance in any revision
   context_lenses:
-    - "lens_simula_advice_preplan"   
+    - "lens_get_tools"
+    - "lens_simula_advice_preplan"
 
   partials:
     - "persona_simula_guardrails"
-    - "advice_injection_guardrails"    # reinforce during approval/revision
+    - "advice_injection_guardrails"  # reinforce during approval/revision
     - "scl_judge_system_rules"
     - "scl_judge_context_block"
     - "scl_output_contract_judgement"
@@ -35,9 +37,3 @@
             scratchpad: { type: string }
             plan: { type: array, items: { type: object } }
             final_synthesis_prompt: { type: string }
-
-
-
-
-
-

@@ -1,3 +1,4 @@
+# core/prompting/promptspecs/simula_deliberation_planner.v1.yaml
 - id: "simula.deliberation.planner.v1"
   version: "v1"
   scope: "simula.deliberation.planner"
@@ -5,13 +6,15 @@
   identity:
     agent: "Simula.Planner"
 
+  # Ensure the planner sees both the advice and the concrete tool surface
   context_lenses:
     - "lens_get_tools"
-    - "lens_simula_advice_preplan"    
+    - "lens_simula_advice_preplan"
+
   partials:
     - "persona_simula_guardrails"
     - "advice_injection_guardrails"
-    - "scl_planner_system_rules"
+    - "scl_planner_system_rules"   # includes the “use only injected tools” mandate
     - "scl_context_block"
     - "scl_output_contract_planning"
     - "scl_planner_user_block"

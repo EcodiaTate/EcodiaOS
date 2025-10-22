@@ -78,6 +78,7 @@ async def receive_attestation(
         raise
     except Exception as e:
         logger.exception(
-            "Failed to persist attestation run_id=%s", getattr(attestation, "run_id", "<none>")
+            "Failed to persist attestation run_id=%s",
+            getattr(attestation, "run_id", "<none>"),
         )
         raise HTTPException(status_code=500, detail=f"Could not persist attestation: {e}")

@@ -12,7 +12,12 @@ ToolFn = Callable[[dict[str, Any]], Awaitable[dict[str, Any]]]
 
 class Tool:
     def __init__(
-        self, name: str, desc: str, schema: dict[str, Any], fn: ToolFn, timeout_s: float = 15.0
+        self,
+        name: str,
+        desc: str,
+        schema: dict[str, Any],
+        fn: ToolFn,
+        timeout_s: float = 15.0,
     ):
         self.name = name
         self.desc = desc
@@ -76,7 +81,10 @@ class VoxisAgent:
         tools = self.tools.list_specs()
 
         thought = await self.llm.complete(
-            messages=msgs, tools=tools, tool_choice="auto", stream=False
+            messages=msgs,
+            tools=tools,
+            tool_choice="auto",
+            stream=False,
         )
 
         # Loop until the model returns a final answer
@@ -99,7 +107,10 @@ class VoxisAgent:
                 {"role": "tool", "tool_call_id": tool_call_id, "content": json.dumps(outcome)},
             ]
             thought = await self.llm.complete(
-                messages=msgs, tools=tools, tool_choice="auto", stream=False
+                messages=msgs,
+                tools=tools,
+                tool_choice="auto",
+                stream=False,
             )
 
         return getattr(thought, "text", "")

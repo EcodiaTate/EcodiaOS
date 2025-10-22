@@ -52,7 +52,9 @@ class EvoEngine:
         return self.conflicts.batch(conflicts)
 
     async def run_cycle(
-        self, conflict_ids: list[ConflictID], budget_ms: int | None = None
+        self,
+        conflict_ids: list[ConflictID],
+        budget_ms: int | None = None,
     ) -> dict[str, Any]:
         """
         Runs a full cognitive cycle for a set of conflicts.
@@ -80,7 +82,9 @@ class EvoEngine:
         return {"status": "escalated_to_nova", "result": esc_result.model_dump()}
 
     async def escalate(
-        self, request: EscalationRequest, report: ObviousnessReport
+        self,
+        request: EscalationRequest,
+        report: ObviousnessReport,
     ) -> EscalationResult:
         """
         Orchestrates the escalation of a non-obvious conflict to the Nova market,
@@ -93,7 +97,8 @@ class EvoEngine:
             # GOVERNANCE: Verify policy attestation with Equor before taking action.
             # This is a placeholder for a real policy check.
             is_attested = await self.router.verify_policy_attestation(
-                ["evo_can_escalate"], decision_id
+                ["evo_can_escalate"],
+                decision_id,
             )
             if not is_attested:
                 raise RuntimeError("Escalation failed: Policy attestation denied by Equor.")

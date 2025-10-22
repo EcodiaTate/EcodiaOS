@@ -22,7 +22,8 @@ def _normalize_path_string(p: str | Path) -> str:
 def _git_root_cwd() -> str | None:
     try:
         out = subprocess.check_output(
-            ["git", "rev-parse", "--show-toplevel"], stderr=subprocess.DEVNULL
+            ["git", "rev-parse", "--show-toplevel"],
+            stderr=subprocess.DEVNULL,
         )
         return _normalize_path_string(out.decode().strip())
     except Exception:
@@ -53,7 +54,7 @@ class SandboxSettings(BaseSettings):
             "bandit==1.7.9",
             "pytest-xdist",
             "black",
-        ]
+        ],
     )
 
 

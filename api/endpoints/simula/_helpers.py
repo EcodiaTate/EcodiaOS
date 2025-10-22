@@ -46,7 +46,8 @@ def _guess_symbol_from_file(path: str, spec: str) -> str | None:
 
 
 def _derive_target_fqn(
-    targets: list[SimulaCodegenTarget], spec: str
+    targets: list[SimulaCodegenTarget],
+    spec: str,
 ) -> tuple[str | None, str | None, str | None]:
     if not targets:
         return None, None, None

@@ -23,7 +23,8 @@ def reason_conformal_ood(pvals: dict[str, float], alpha: float) -> EscalationRea
     # serialization errors downstream if numpy floats are passed in.
     sanitized_pvals = {k: float(v) for k, v in pvals.items()}
     return EscalationReason(
-        kind="conformal_ood", detail={"pvals": sanitized_pvals, "alpha": float(alpha)}
+        kind="conformal_ood",
+        detail={"pvals": sanitized_pvals, "alpha": float(alpha)},
     )
 
 

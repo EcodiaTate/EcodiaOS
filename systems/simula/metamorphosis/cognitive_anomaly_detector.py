@@ -21,7 +21,7 @@ MAX_EVENT_HISTORY = int(os.getenv("MDO_MAX_EVENT_HISTORY", "100"))
 ANOMALY_PATTERNS = {
     "REPEATED_PLAN_REJECTION": {
         "threshold": int(
-            os.getenv("MDO_PLAN_REJECTION_THRESHOLD", "3")
+            os.getenv("MDO_PLAN_REJECTION_THRESHOLD", "3"),
         ),  # 3 rejections for the same reason
         "meta_goal_template": (
             "My deliberation process is consistently failing to produce an approved plan for tasks "
@@ -53,7 +53,8 @@ class CognitiveAnomalyDetector:
         self.redis_client = redis.from_url(redis_url, decode_responses=True)
         self.running = False
         self.repo_url = os.getenv(
-            "GIT_REPO_URL", "https://github.com/YourOrg/EcodiaOS.git"
+            "GIT_REPO_URL",
+            "https://github.com/YourOrg/EcodiaOS.git",
         )  # IMPORTANT: Configure this env var
 
     async def _listen_for_events(self):
@@ -68,7 +69,9 @@ class CognitiveAnomalyDetector:
                 # Blocking read; returns as soon as there's at least one new message
                 # Note: count=1 keeps wakeups frequent; tune if you want batch processing
                 events = await self.redis_client.xread(
-                    {EVENT_STREAM_KEY: last_id}, block=0, count=1
+                    {EVENT_STREAM_KEY: last_id},
+                    block=0,
+                    count=1,
                 )
                 for stream, messages in events:
                     for message_id, event_data in messages:
@@ -98,7 +101,8 @@ class CognitiveAnomalyDetector:
             pattern = ANOMALY_PATTERNS["REPEATED_PLAN_REJECTION"]
             if count >= pattern["threshold"]:
                 log.warning(
-                    "[Cortex] Anomaly Detected: Repeated Plan Rejection (Reason: %s)", reason
+                    "[Cortex] Anomaly Detected: Repeated Plan Rejection (Reason: %s)",
+                    reason,
                 )
                 meta_goal = pattern["meta_goal_template"].format(
                     target_fqname=(last_rejection_event or {}).get("target_fqname", "N/A"),

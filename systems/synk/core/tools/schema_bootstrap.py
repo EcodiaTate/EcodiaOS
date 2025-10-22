@@ -79,7 +79,10 @@ async def _ensure_vector_indexes() -> None:
     """Create vector indexes using the shared helper (driverless)."""
     await create_vector_index(label="Event", prop="vector_gemini", dims=3072, sim="cosine")
     await create_vector_index(
-        label="Cluster", prop="cluster_vector_gemini", dims=3072, sim="cosine"
+        label="Cluster",
+        prop="cluster_vector_gemini",
+        dims=3072,
+        sim="cosine",
     )
     await create_vector_index(label="Deliberation", prop="embedding", dims=3072, sim="cosine")
 

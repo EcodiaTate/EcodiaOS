@@ -21,7 +21,8 @@ class DeliberationSpec(BaseModel):
     """
 
     triggering_event_id: str | None = Field(
-        None, description="The ID of the event from Atune that triggered this deliberation."
+        None,
+        description="The ID of the event from Atune that triggered this deliberation.",
     )
     topic: str = Field(..., description="A concise, human-readable topic for the deliberation.")
     goal: Literal[

@@ -72,7 +72,7 @@ async def add_relationship(
 
     if not src_label or not dst_label or not src_match.get("match") or not dst_match.get("match"):
         raise ValueError(
-            "add_relationship requires a label and a match property for both source and destination."
+            "add_relationship requires a label and a match property for both source and destination.",
         )
 
     src_key = list(src_match["match"].keys())[0]
@@ -427,13 +427,16 @@ async def create_conflict_node(
             "x-budget-ms": str(data.get("budget_ms", 4000)),
         }
         resp = await post_internal(
-            ENDPOINTS.EVO_ESCALATE, json=evo_payload, headers=headers, timeout=10.0
+            ENDPOINTS.EVO_ESCALATE,
+            json=evo_payload,
+            headers=headers,
+            timeout=10.0,
         )
         resp.raise_for_status()
         print(f"[Synk] ✅ Evo patrol successfully notified of conflict {conflict_cid}.")
     except Exception as e:
         print(
-            f"[Synk] ⚠️ WARNING: Failed to notify Evo patrol for conflict {conflict_cid}. Error: {e}"
+            f"[Synk] ⚠️ WARNING: Failed to notify Evo patrol for conflict {conflict_cid}. Error: {e}",
         )
 
     return conflict_node

@@ -28,7 +28,7 @@ def generate():
                 types.Part.from_text(
                     text="""Read aloud in a warm, welcoming tone
 Speaker 1: Hello! We're excited to show you our native speech capabilities
-Speaker 2: Where you can direct a voice, create ralistic dialog, and so much more. Edit these placeholders to get started."""
+Speaker 2: Where you can direct a voice, create ralistic dialog, and so much more. Edit these placeholders to get started.""",
                 ),
             ],
         ),

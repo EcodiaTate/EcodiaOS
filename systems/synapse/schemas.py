@@ -34,7 +34,8 @@ class TaskContext(BaseModel):
     model_config = ConfigDict(extra="allow")  # Pydantic v2 style
 
     task_key: str = Field(
-        ..., description="Stable identifier for the task, e.g., 'simula_code_evolution'."
+        ...,
+        description="Stable identifier for the task, e.g., 'simula_code_evolution'.",
     )
     goal: str = Field(..., description="The natural language objective of the task.")
     risk_level: Literal["low", "medium", "high"] = Field(
@@ -71,7 +72,8 @@ class Candidate(BaseModel):
 
     id: str = Field(..., description="A unique identifier for this candidate.")
     content: dict[str, Any] = Field(
-        ..., description="The candidate payload, e.g., a tool spec or code diff."
+        ...,
+        description="The candidate payload, e.g., a tool spec or code diff.",
     )
 
 

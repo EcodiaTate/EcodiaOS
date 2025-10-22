@@ -50,7 +50,7 @@ class RedisResultStore(AbstractResultStore):
             logger.info("Redis connection successful.")
         except Exception:
             logger.exception(
-                "Failed to connect to Redis. The application may not function correctly."
+                "Failed to connect to Redis. The application may not function correctly.",
             )
             self._redis = None
 
@@ -94,7 +94,7 @@ class InMemoryResultStore(AbstractResultStore):
 
     async def initialize(self):
         logger.warning(
-            "Using IN-MEMORY result store. This is not suitable for production or multi-worker setups."
+            "Using IN-MEMORY result store. This is not suitable for production or multi-worker setups.",
         )
 
     async def close(self):

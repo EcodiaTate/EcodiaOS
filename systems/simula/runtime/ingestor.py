@@ -39,7 +39,9 @@ def _spec_to_json_schema(func: Any) -> dict[str, Any]:
     if func.__doc__:
         # A more robust regex to find the 'Args:' section
         args_section_match = re.search(
-            r"Args:\n(.*?)(Returns:|Raises:|\Z)", func.__doc__, re.DOTALL
+            r"Args:\n(.*?)(Returns:|Raises:|\Z)",
+            func.__doc__,
+            re.DOTALL,
         )
         if args_section_match:
             param_regex = re.compile(r"^\s*(\w+)\s*:\s*(.*)", re.MULTILINE)
@@ -132,7 +134,7 @@ async def synchronize_simula_tool_catalog() -> None:
 
     if not tools_with_meta:
         logger.error(
-            "🔥 CRITICAL: Tool registry is empty. Ensure agent_tools.py is imported and decorators are running."
+            "🔥 CRITICAL: Tool registry is empty. Ensure agent_tools.py is imported and decorators are running.",
         )
         return
 
@@ -167,7 +169,7 @@ async def synchronize_simula_tool_catalog() -> None:
                 "parameters": json.dumps(parameters_schema),
                 "modes": modes,  # MODIFIED: Add modes to the node properties
                 "returns": json.dumps(
-                    {"type": "object", "description": "The result of the tool execution."}
+                    {"type": "object", "description": "The result of the tool execution."},
                 ),
                 "safety": 1.0,
             }
@@ -207,7 +209,7 @@ async def synchronize_simula_tool_catalog() -> None:
             logger.error(f"🔥 FAILED to upsert SimulaTool '{tool_name}': {e}", exc_info=True)
 
     print(
-        f"✅ Simula Tool Catalog synchronized. Updated: {updated_count}, Total: {len(tools_with_meta)}"
+        f"✅ Simula Tool Catalog synchronized. Updated: {updated_count}, Total: {len(tools_with_meta)}",
     )
 
 

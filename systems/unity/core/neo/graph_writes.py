@@ -24,7 +24,9 @@ def _jsonable(obj: Any) -> Any:
 
 
 async def create_deliberation_node(
-    episode_id: str, spec: DeliberationSpec, rcu_start_ref: str
+    episode_id: str,
+    spec: DeliberationSpec,
+    rcu_start_ref: str,
 ) -> str:
     """Creates the main Deliberation node in the graph."""
     deliberation_id = f"delib_{uuid.uuid4().hex}"
@@ -59,7 +61,9 @@ async def annotate_deliberation(deliberation_id: str, **fields: Any) -> None:
     for key, value in fields.items():
         if isinstance(value, dict):
             sanitized_fields[key] = json.dumps(
-                _jsonable(value), separators=(",", ":"), ensure_ascii=False
+                _jsonable(value),
+                separators=(",", ":"),
+                ensure_ascii=False,
             )
         else:
             sanitized_fields[key] = value

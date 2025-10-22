@@ -254,11 +254,15 @@ class DeliberationConclusion(BaseModel):
     """The synthesized outcome of a Unity Room deliberation."""
 
     text: str = Field(
-        ..., description="The final, synthesized conclusion or resolution from the deliberation."
+        ...,
+        description="The final, synthesized conclusion or resolution from the deliberation.",
     )
     confidence: float = Field(..., ge=0, le=1, description="The confidence in this conclusion.")
     agreement_level: float = Field(
-        ..., ge=0, le=1, description="A measure of consensus among participating agents."
+        ...,
+        ge=0,
+        le=1,
+        description="A measure of consensus among participating agents.",
     )
 
 
@@ -269,20 +273,25 @@ class UnityDeliberationCompleteEvent(BaseModel):
     """
 
     deliberation_episode_id: str = Field(
-        ..., description="The unique ID for the Unity deliberation session."
+        ...,
+        description="The unique ID for the Unity deliberation session.",
     )
     triggering_event_id: str = Field(
-        ..., description="The ID of the event that Atune originally escalated."
+        ...,
+        description="The ID of the event that Atune originally escalated.",
     )
     triggering_source: str = Field(
-        ..., description="The source of the original event (e.g., 'EcodiaOS.Voxis')."
+        ...,
+        description="The source of the original event (e.g., 'EcodiaOS.Voxis').",
     )
     topic: str = Field(..., description="A human-readable summary of the deliberation's subject.")
     participating_agents: list[str] = Field(
-        ..., description="A list of the agent names that participated in the debate."
+        ...,
+        description="A list of the agent names that participated in the debate.",
     )
     conclusion: DeliberationConclusion = Field(
-        ..., description="The final, resolved outcome of the deliberation."
+        ...,
+        description="The final, resolved outcome of the deliberation.",
     )
 
 
@@ -295,10 +304,12 @@ class AtuneIdentityReflectionRequest(BaseModel):
 
     decision_id: str = Field(..., description="The Atune decision ID for tracing.")
     triggering_event: CanonicalEvent = Field(
-        ..., description="The canonicalized event that triggered the reflection."
+        ...,
+        description="The canonicalized event that triggered the reflection.",
     )
     salience_scores: dict[str, Any] = Field(
-        ..., description="The full salience vector from all Atune heads for this event."
+        ...,
+        description="The full salience vector from all Atune heads for this event.",
     )
 
     # Add this class alongside the other models like Facet, Profile, etc.
@@ -313,17 +324,20 @@ class EcodiaCoreIdentity(BaseModel):
     id: NodeID = Field(..., description="The unique ID for this version of the core identity.")
     version: int = Field(..., ge=1, description="A monotonically increasing version number.")
     narrative_summary: str = Field(
-        ..., description="A first-person narrative of the system's understanding of itself."
+        ...,
+        description="A first-person narrative of the system's understanding of itself.",
     )
     core_directives: list[str] = Field(
-        ..., description="The fundamental, non-negotiable principles of operation."
+        ...,
+        description="The fundamental, non-negotiable principles of operation.",
     )
     current_stance: dict[str, Any] = Field(
         default_factory=dict,
         description="Key-value pairs representing the system's current stance on various topics.",
     )
     supersedes: NodeID | None = Field(
-        None, description="The ID of the core identity version this one replaces."
+        None,
+        description="The ID of the core identity version this one replaces.",
     )
     synthesis_trace_id: str = Field(
         ...,

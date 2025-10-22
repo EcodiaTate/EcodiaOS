@@ -2,9 +2,11 @@
 # --- FINAL VERSION WITH ORCHESTRATOR WORKFLOW SCHEMAS (FULL & CORRECTED) ---
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
-from typing import Any, List, Literal
+from typing import Any, Dict, List, Literal, Optional
 
+import yaml
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -20,21 +22,23 @@ from pydantic import (
 ParseMode = Literal["strict_json", "tolerant", "auto_repair"]
 
 # +++ FIX: Add all new and existing lenses to this Literal list.
-# This is the master list that Pydantic uses to validate the `context_lenses`
-# field in all of your PromptSpec YAML files.
+# This is the master list Pydantic uses to validate `context_lenses`
+# in all PromptSpec YAML files.
 LensName = Literal[
-    # Original Lenses
+    # Legacy/other lenses (kept for forward-compat; no-ops if not present)
     "equor.identity",
     "atune.salience",
     "affect",
     "retrieval.semantic",
     "event.canonical",
     "tools.catalog",
+    "ecodia.self_concept",
+    # Simula lenses (actively used)
     "lens_get_tools",
     "lens_simula_advice_preplan",
+    # (reserved, not currently used)
     "lens_simula_advice_postplan",
-    "ecodia.self_concept",
-    # Added New Facet Lenses
+    # Facets (safe to ignore if not wired)
     "facets.affective",
     "facets.ethical",
     "facets.philosophical",
@@ -118,14 +122,100 @@ class PromptSpec(BaseModel):
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Orchestrator Workflow Schemas (Moved here to prevent circular imports)
+# Orchestrator Workflow Schemas (kept here to prevent circular imports)
 # ──────────────────────────────────────────────────────────────────────────────
 
 
 @dataclass
 class OrchestratorResponse:
-    """The structured output from building a prompt, ready for an LLM gateway."""
+    """Structured output from building a prompt, ready for the gateway."""
 
     messages: list[dict[str, str]]
     provider_overrides: dict[str, Any]
     provenance: dict[str, Any]
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Spec loading / registry
+# ──────────────────────────────────────────────────────────────────────────────
+
+_SPEC_CACHE: dict[str, dict[str, Any]] = {}
+
+SUPPORTED_PARSE_MODES = {"strict_json", "auto_repair", "tolerant"}
+
+# NOTE: simula.main.planning is deprecated and intentionally excluded.
+DEFAULT_SPEC_PATHS = [
+    "core/prompting/promptspecs/simula_deliberation_planner.v1.yaml",
+    "core/prompting/promptspecs/simula_deliberation_red_team.v1.yaml",
+    "core/prompting/promptspecs/simula_deliberation_judge.v1.yaml",
+    "core/prompting/promptspecs/simula_utility_scorer.v1.yaml",
+]
+
+
+def _load_yaml_file(path: str) -> list[dict]:
+    with open(path, encoding="utf-8") as f:
+        docs = list(yaml.safe_load_all(f))
+        # Support either a single doc that is a list, or multi-doc
+        if len(docs) == 1 and isinstance(docs[0], list):
+            return docs[0]
+        # Flatten multi-doc streams into a list of dicts
+        out: list[dict] = []
+        for d in docs:
+            if isinstance(d, list):
+                out.extend(d)
+            elif isinstance(d, dict):
+                out.append(d)
+        return out
+
+
+def _validate_spec_dict(sp: dict) -> None:
+    # Required top-level keys in your YAMLs
+    for key in ("id", "version", "scope", "identity", "partials", "outputs"):
+        if key not in sp:
+            raise ValueError(f"PromptSpec missing required key: {key} (id={sp.get('id')})")
+
+    # identity
+    ident = sp.get("identity") or {}
+    if "agent" not in ident:
+        raise ValueError(f"PromptSpec.identity.agent missing (id={sp['id']})")
+
+    # parse_mode sanity
+    pmode = (sp.get("outputs", {}).get("parse_mode") or "strict_json").strip()
+    if pmode not in SUPPORTED_PARSE_MODES:
+        raise ValueError(f"Unsupported parse_mode '{pmode}' in spec id={sp['id']}")
+
+    # optional schema (planner/red-team/judge have schemas; scorer is tolerant)
+    # we don't force presence; gateway handles tolerant/auto_repair parsing.
+
+
+def preload_prompt_specs(paths: list[str] | None = None) -> None:
+    """Call once at process boot (idempotent)."""
+    _SPEC_CACHE.clear()
+    for p in paths or DEFAULT_SPEC_PATHS:
+        if not os.path.exists(p):
+            continue
+        try:
+            for sp in _load_yaml_file(p):
+                _validate_spec_dict(sp)
+                # We store raw dicts because the builder expects dict access;
+                # If you want Pydantic instances, validate with PromptSpec(**sp)
+                _SPEC_CACHE[sp["scope"]] = sp
+        except Exception as e:
+            # Fail fast but keep the error clear on which file was bad.
+            raise RuntimeError(f"Failed loading spec file '{p}': {e}") from e
+
+
+def get_spec_by_scope(scope: str) -> dict:
+    """Return the raw spec dict for a given scope (build_prompt expects dict)."""
+    if not _SPEC_CACHE:
+        preload_prompt_specs()
+    sp = _SPEC_CACHE.get(scope)
+    if not sp:
+        raise KeyError(f"No PromptSpec registered for scope='{scope}'")
+    return sp
+
+
+def list_specs() -> list[str]:
+    if not _SPEC_CACHE:
+        preload_prompt_specs()
+    return sorted(_SPEC_CACHE.keys())

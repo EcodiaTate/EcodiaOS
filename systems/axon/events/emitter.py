@@ -31,7 +31,9 @@ async def emit_followups(events: list[dict[str, Any]], decision_id: str | None =
     try:
         if len(events) == 1 and hasattr(ENDPOINTS, "ATUNE_ROUTE"):
             resp = await client.post(
-                getattr(ENDPOINTS, "ATUNE_ROUTE"), json=events[0], headers=headers
+                getattr(ENDPOINTS, "ATUNE_ROUTE"),
+                json=events[0],
+                headers=headers,
             )
             if _DEBUG:
                 print(f"[Emitter] POST {getattr(ENDPOINTS, 'ATUNE_ROUTE')} → {resp.status_code}")
@@ -44,7 +46,7 @@ async def emit_followups(events: list[dict[str, Any]], decision_id: str | None =
                 )
                 if _DEBUG:
                     print(
-                        f"[Emitter] POST {getattr(ENDPOINTS, 'ATUNE_COGNITIVE_CYCLE')} → {resp.status_code}"
+                        f"[Emitter] POST {getattr(ENDPOINTS, 'ATUNE_COGNITIVE_CYCLE')} → {resp.status_code}",
                     )
             else:
                 for ev in events:

@@ -89,26 +89,29 @@ async def _exec_tool_call(step: dict[str, Any], ctx: dict[str, Any]) -> Any:
         raise RuntimeError(f"Driver '{driver_name}' has no endpoint '{endpoint}'")
 
     _log.info(
-        f"[Executor] tool.call driver='{driver_name}' endpoint='{endpoint}' params_keys={list(params.keys())}"
+        f"[Executor] tool.call driver='{driver_name}' endpoint='{endpoint}' params_keys={list(params.keys())}",
     )
     try:
         # Endpoint is expected to be an async callable on the driver
         coro = getattr(driver, endpoint)
         result = await coro(params)
         _metric_inc(
-            "tools_call_total", {"driver": driver_name, "endpoint": endpoint, "status": "ok"}
+            "tools_call_total",
+            {"driver": driver_name, "endpoint": endpoint, "status": "ok"},
         )
     except asyncio.CancelledError:
         _metric_inc(
-            "tools_call_total", {"driver": driver_name, "endpoint": endpoint, "status": "cancelled"}
+            "tools_call_total",
+            {"driver": driver_name, "endpoint": endpoint, "status": "cancelled"},
         )
         raise
     except Exception as e:
         _metric_inc(
-            "tools_call_total", {"driver": driver_name, "endpoint": endpoint, "status": "error"}
+            "tools_call_total",
+            {"driver": driver_name, "endpoint": endpoint, "status": "error"},
         )
         _log.exception(
-            f"[Executor] tool.call failed driver='{driver_name}' endpoint='{endpoint}': {e}"
+            f"[Executor] tool.call failed driver='{driver_name}' endpoint='{endpoint}': {e}",
         )
         raise
 
@@ -119,7 +122,7 @@ async def _exec_tool_call(step: dict[str, Any], ctx: dict[str, Any]) -> Any:
             "endpoint": endpoint,
             "params": params,
             "result": result,
-        }
+        },
     )
     return result
 
@@ -159,7 +162,8 @@ async def execute_step(step: dict[str, Any], ctx: dict[str, Any]) -> Any:
 
 
 async def execute_plan(
-    plan: list[dict[str, Any]], ctx: dict[str, Any] | None = None
+    plan: list[dict[str, Any]],
+    ctx: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """
     Execute a list of plan steps sequentially.

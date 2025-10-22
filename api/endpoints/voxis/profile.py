@@ -18,7 +18,8 @@ profile_router = APIRouter(tags=["voxis-profile"])
 class ProfileConsentRequest(BaseModel):
     user_id: str = Field(..., description="The user's unique identifier.")
     profile_upserts: list[dict[str, Any]] = Field(
-        ..., description="The raw profile_upserts object from the planner."
+        ...,
+        description="The raw profile_upserts object from the planner.",
     )
 
 
@@ -35,7 +36,8 @@ async def handle_profile_consent(req: ProfileConsentRequest):
     """
     if not req.user_id or req.user_id in ("user_anon", "unknown"):
         raise HTTPException(
-            status_code=400, detail="A valid user_id is required to update a profile."
+            status_code=400,
+            detail="A valid user_id is required to update a profile.",
         )
 
     try:

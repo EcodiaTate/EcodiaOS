@@ -1,0 +1,20 @@
+{"type": "tool_start", "name": "get_context_dossier", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-14T03:42:08.920180+00:00"}
+{"type": "tool_end", "name": "get_context_dossier", "ok": true, "err": null, "extra": {}, "duration_ms": 387.9438250005478, "result": {"_redacted": true}, "ts": "2025-10-14T03:42:09.308074+00:00"}
+{"type": "tool_start", "name": "memory_read", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-14T03:42:09.411224+00:00"}
+{"type": "tool_end", "name": "memory_read", "ok": true, "err": null, "extra": {}, "duration_ms": 28.05787499892176, "result": {"_redacted": true}, "ts": "2025-10-14T03:42:09.439273+00:00"}
+{"type": "tool_start", "name": "get_context_dossier", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-14T04:54:21.369885+00:00"}
+{"type": "tool_end", "name": "get_context_dossier", "ok": true, "err": null, "extra": {}, "duration_ms": 356.3782710007217, "result": {"_redacted": true}, "ts": "2025-10-14T04:54:21.726303+00:00"}
+{"type": "tool_start", "name": "memory_read", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-14T04:54:21.790563+00:00"}
+{"type": "tool_end", "name": "memory_read", "ok": true, "err": null, "extra": {}, "duration_ms": 21.496541001397418, "result": {"_redacted": true}, "ts": "2025-10-14T04:54:21.812048+00:00"}
+{"type": "tool_start", "name": "get_context_dossier", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-14T04:57:30.892901+00:00"}
+{"type": "tool_end", "name": "get_context_dossier", "ok": true, "err": null, "extra": {}, "duration_ms": 376.52948499817285, "result": {"_redacted": true}, "ts": "2025-10-14T04:57:31.269435+00:00"}
+{"type": "tool_start", "name": "memory_read", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-14T04:57:31.335086+00:00"}
+{"type": "tool_end", "name": "memory_read", "ok": true, "err": null, "extra": {}, "duration_ms": 21.00562299892772, "result": {"_redacted": true}, "ts": "2025-10-14T04:57:31.356083+00:00"}
+{"type": "tool_start", "name": "get_context_dossier", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-14T05:11:16.910654+00:00"}
+{"type": "tool_end", "name": "get_context_dossier", "ok": true, "err": null, "extra": {}, "duration_ms": 397.30609599791933, "result": {"_redacted": true}, "ts": "2025-10-14T05:11:17.307945+00:00"}
+{"type": "tool_start", "name": "memory_read", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-14T05:11:17.372888+00:00"}
+{"type": "tool_end", "name": "memory_read", "ok": true, "err": null, "extra": {}, "duration_ms": 25.637551003455883, "result": {"_redacted": true}, "ts": "2025-10-14T05:11:17.398518+00:00"}
+{"type": "tool_start", "name": "get_context_dossier", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-14T05:38:21.083179+00:00"}
+{"type": "tool_end", "name": "get_context_dossier", "ok": true, "err": null, "extra": {}, "duration_ms": 383.6751830021967, "result": {"_redacted": true}, "ts": "2025-10-14T05:38:21.466802+00:00"}
+{"type": "tool_start", "name": "memory_read", "ok": null, "err": null, "extra": {}, "args": {"_redacted": true}, "ts": "2025-10-14T05:38:21.523013+00:00"}
+{"type": "tool_end", "name": "memory_read", "ok": true, "err": null, "extra": {}, "duration_ms": 23.74275699912687, "result": {"_redacted": true}, "ts": "2025-10-14T05:38:21.546747+00:00"}

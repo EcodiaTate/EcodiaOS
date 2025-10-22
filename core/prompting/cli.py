@@ -48,7 +48,7 @@ def cmd_render(args: argparse.Namespace) -> int:
             scope=args.scope,
             context=ctx,
             summary=summary,
-        )
+        ),
     )
 
     out_payload = {
@@ -59,7 +59,8 @@ def cmd_render(args: argparse.Namespace) -> int:
 
     if args.out:
         Path(args.out).write_text(
-            json.dumps(out_payload, ensure_ascii=False, indent=2), encoding="utf-8"
+            json.dumps(out_payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
         )
     else:
         print(json.dumps(out_payload, ensure_ascii=False, indent=2))

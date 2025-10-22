@@ -29,7 +29,9 @@ class RouterService:
         return dict(r.json() or {})
 
     async def publish_attention_bid(
-        self, event: dict[str, Any], decision_id: str
+        self,
+        event: dict[str, Any],
+        decision_id: str,
     ) -> dict[str, Any]:
         """Publishes a scorecard or other artifact to Atune's event route."""
         http = await get_http_client()

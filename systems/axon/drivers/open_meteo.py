@@ -57,7 +57,7 @@ class HourlyArgs(CommonArgs):
             "weather_code",
             "wind_speed_10m",
             "cloud_cover",
-        ]
+        ],
     )
 
 
@@ -73,7 +73,7 @@ class DailyArgs(CommonArgs):
             "weather_code",
             "sunrise",
             "sunset",
-        ]
+        ],
     )
 
 
@@ -87,7 +87,7 @@ class RadiationArgs(CommonArgs):
             "direct_normal_irradiance",
             "diffuse_radiation",
             "global_tilted_irradiance",
-        ]
+        ],
     )
     # Optional geometry for tilted-plane calc (Open-Meteo supports tilt/azimuth=nan for trackers)
     tilt: float | None = None
@@ -160,7 +160,9 @@ class OpenMeteo(DriverInterface):
         )
 
     async def _resolve_coords(
-        self, s: aiohttp.ClientSession, args: CommonArgs
+        self,
+        s: aiohttp.ClientSession,
+        args: CommonArgs,
     ) -> tuple[GeoResult, float, float]:
         if args.latitude is not None and args.longitude is not None:
             # "Synthetic" GeoResult when lat/lon is provided
@@ -193,7 +195,10 @@ class OpenMeteo(DriverInterface):
             q["current"] = "temperature_2m,weather_code,wind_speed_10m"
 
     async def _fetch(
-        self, s: aiohttp.ClientSession, url: str, query: dict[str, Any]
+        self,
+        s: aiohttp.ClientSession,
+        url: str,
+        query: dict[str, Any],
     ) -> dict[str, Any]:
         resp = await s.get(url, params=query)
         resp.raise_for_status()

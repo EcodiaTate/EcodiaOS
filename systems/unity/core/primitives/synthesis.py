@@ -19,7 +19,7 @@ async def synthesize_verdict(
     """
     if qualia_state:
         print(
-            f"[Synthesis] Performing state-aware synthesis. Current dissonance: {qualia_state.manifold_coordinates[0]:.4f}"
+            f"[Synthesis] Performing state-aware synthesis. Current dissonance: {qualia_state.manifold_coordinates[0]:.4f}",
         )
 
     adjudicator = Adjudicator()

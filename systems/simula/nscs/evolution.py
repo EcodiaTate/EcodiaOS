@@ -79,7 +79,8 @@ async def execute_code_evolution(*, goal: str, objective: dict) -> dict[str, Any
     try:
         main_target = objective.get("target_fqname", ".")
         dossier_result = await qora_client.get_dossier(
-            target_fqname=main_target, intent="implement"
+            target_fqname=main_target,
+            intent="implement",
         )
         ctx.update_dossier(dossier_result)
         logger.info("Successfully assembled dossier for target: %s", main_target)

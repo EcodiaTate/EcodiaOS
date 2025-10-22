@@ -17,7 +17,7 @@ from core.prompting.registry import get_registry
 from core.prompting.runtime import (
     LLMResponse,
     RenderedPrompt,
-    _ensure_jinja_env,  # Import the function that provides the correct loader
+    _ensure_jinja_env,  # loader provider for partials
     parse_and_validate,
     render_prompt,
 )
@@ -26,11 +26,10 @@ from core.prompting.spec import OrchestratorResponse, PromptSpec
 # --- Other Core Imports needed for restored functions ---
 from core.utils.llm_gateway_client import call_llm_service
 
+
 # -------------------------------------------------------------------
 # Helpers
 # -------------------------------------------------------------------
-
-
 def _dig(ctx: Mapping[str, Any], *keys, default=None):
     for k in keys:
         if k in ctx and ctx[k] is not None:
@@ -46,7 +45,6 @@ def _normalize_strategy_arm(ctx: dict[str, Any]) -> None:
     Accepts: missing, string, dict (w/ or w/o arm_id).
     Also looks into ctx['context_vars'] / ctx['extras'] if needed.
     """
-
     nested_sources = []
     for k in ("context_vars", "extras"):
         v = ctx.get(k)
@@ -55,7 +53,6 @@ def _normalize_strategy_arm(ctx: dict[str, Any]) -> None:
 
     # 1) Find a candidate id
     candidate_id = None
-
     if isinstance(ctx.get("strategy_arm"), str):
         candidate_id = ctx["strategy_arm"]
     elif isinstance(ctx.get("strategy_arm"), dict):
@@ -197,7 +194,7 @@ LENS_REGISTRY = {
     "facets.operational": lenses.lens_operational_facets,
     "facets.compliance": lenses.lens_compliance_facets,
     "facets.affective": lenses.lens_affective_facets,
-    # advice retrieval — register BOTH spellings
+    # advice retrieval
     "lens_simula_advice_preplan": lenses.lens_simula_advice_preplan,
     "lens_simula_advice_postplan": lenses.lens_simula_advice_postplan,
 }
@@ -220,18 +217,17 @@ async def _run_lens(lens_key: str, spec: PromptSpec, ctx: dict[str, Any]) -> dic
         return await fn(ctx.get(lens_key.split(".")[-1]))
     if lens_key in ("tools.catalog", "lens_get_tools"):
         return await fn(ctx)
-
-    # advice lenses (underscore)
     if lens_key in ("lens_simula_advice_preplan", "lens_simula_advice_postplan"):
         return await fn(ctx)
 
+    # default pass None for simple lenses
     return await fn(None)
 
 
 def _render_partials(partial_names: list[str], context: dict[str, Any]) -> dict[str, str]:
     """Renders a list of partial templates using the shared YAML-backed environment."""
     env = _ensure_jinja_env()
-  
+
     # Lift commonly-used fields to top-level so partials can reference them directly.
     mem = context.get("memory")
     if mem is None and isinstance(context.get("metadata"), dict):
@@ -244,19 +240,19 @@ def _render_partials(partial_names: list[str], context: dict[str, Any]) -> dict[
         "goal": context.get("goal"),
         "dossier": context.get("dossier", {}),
         "spec": context.get("spec"),
-        # NEW: SCL context fields for new partials
+        # SCL context fields for new partials
         "file_cards": context.get("file_cards"),
         "tool_hints": context.get("tool_hints"),
         "history_summary": context.get("history_summary"),
         # normalized fields most partials expect:
         "strategy_arm": context.get("strategy_arm"),
         "strategy_arm_id": context.get("strategy_arm_id"),
-        # NEW: expose advice directly for injection partials
+        # expose advice directly for injection partials
         "advice_items": context.get("advice_items"),
+        "advice_meta": context.get("advice_meta"),
         # Make these available at top-level for partials that reference {{ memory }} / {{ metadata }}
         "memory": mem or {},
         "metadata": meta,
-        "advice_meta": context.get("advice_meta"),
         # full context (power users can read from this if needed)
         "context": context,
     }
@@ -326,15 +322,13 @@ def _filter_tools_for_intent(tools_ctx: dict[str, Any], user_input: str) -> dict
 # -------------------------------------------------------------------
 # Public API
 # -------------------------------------------------------------------
-
-
 async def build_prompt(
     scope: str,
     context: dict[str, Any],
     summary: str = "",
     *,
     stage: str = "plan-1",
-    mode: str | None = None,  # MODIFIED: Accept mode parameter
+    mode: str | None = None,  # Accept mode parameter
 ) -> OrchestratorResponse:
     """
     Builds a prompt using policy guidance already present in the context.
@@ -343,15 +337,18 @@ async def build_prompt(
     spec = _resolve_spec(scope)
     final_context = dict(context or {})
     final_context["spec"] = spec  # Make spec available to partials
+
     # Normalize memory to a top-level field for templates that expect it.
     if "memory" not in final_context and isinstance(final_context.get("metadata"), dict):
         if "memory" in final_context["metadata"]:
             final_context["memory"] = final_context["metadata"]["memory"]
-    # MODIFIED: Inject the mode into the context so that mode-aware lenses like
-    # `lens_get_tools` can use it for filtering.
+
+    # Inject the mode into the context so that mode-aware lenses like `lens_get_tools`
+    # can use it for filtering.
     if mode:
         final_context["allowed_modes"] = [mode]
 
+    # Policy hints (provider settings)
     policy_hints: dict[str, Any] = final_context.get("selected_policy_hints", {})
     provider_params = _extract_policy_params(policy_hints, spec)
 
@@ -364,6 +361,7 @@ async def build_prompt(
     if "tools.catalog" not in spec.context_lenses and "lens_get_tools" not in spec.context_lenses:
         tools_ctx = await lenses.lens_tools_catalog(final_context)
         _deep_merge(final_context, tools_ctx)
+        final_context["_lenses_applied"] = True
 
     # Intent bucketing
     user_in = (
@@ -384,11 +382,17 @@ async def build_prompt(
     # Normalize strategy_arm for partials
     _normalize_strategy_arm(final_context)
 
-    # Render partials (now includes advice_* in template context)
-    if spec.partials:
-        final_context["partials"] = _render_partials(spec.partials, final_context)
+    # Render partials — ensure safety partials (spec.safety.partials) are applied first
+    if getattr(spec, "safety", None) and getattr(spec.safety, "partials", None):
+        safety_partials = _render_partials(spec.safety.partials, final_context)
+        final_context.setdefault("partials", {}).update(safety_partials)
 
-    # Provenance
+    if spec.partials:
+        rendered_partials = _render_partials(spec.partials, final_context)
+        # Merge/override into the same "partials" namespace
+        final_context.setdefault("partials", {}).update(rendered_partials)
+
+    # Provenance / metadata
     final_context.setdefault("metadata", {})["stage"] = stage
     final_context["metadata"]["intent_bucket"] = intent
 
@@ -431,8 +435,6 @@ async def build_prompt(
 # ============================================================================
 # == WORKFLOWS (Restored) ==
 # ============================================================================
-
-
 async def run_voxis_synthesis(context: dict[str, Any]) -> str:
     """This workflow logic should eventually be moved to a Voxis-specific service."""
     scope = "voxis.synthesis.v1"
@@ -581,34 +583,10 @@ async def plan_deliberation(
 
     if not parsed_plan:
         # Tolerant fallback: coerce JSON from raw text
-        obj = {}
-        try:
-            if isinstance(llm_response.json, dict):
-                obj = llm_response.json
-            elif isinstance(llm_response.json, list) and llm_response.json:
-                obj = llm_response.json[0]
-            elif isinstance(llm_response.text, str) and llm_response.text.strip():
-                t = llm_response.text.strip()
-                if t.startswith("```"):
-                    t = t.strip("`")
-                    if t[:4].lower() == "json":
-                        t = t[4:]
-                obj = json.loads(t)
-        except Exception:
-            obj = {}
+        obj = _coerce_json_from_llm(llm_response)
 
         # Validate minimal contract
-        def _validate(obj_: dict[str, Any]) -> tuple[bool, str]:
-            mode = obj_.get("mode")
-            if mode not in ("enrich_with_search", "escalate_to_unity", "discard"):
-                return False, "invalid or missing 'mode'"
-            if mode == "enrich_with_search" and not obj_.get("search_query"):
-                return False, "'search_query' required when mode == enrich_with_search"
-            if mode in ("escalate_to_unity", "discard") and not obj_.get("reason"):
-                return False, "'reason' required when mode in {escalate_to_unity, discard}"
-            return True, ""
-
-        ok, err = _validate(obj)
+        ok, err = _validate_atune_choice(obj)
         if ok:
             final_plan = obj
         else:
@@ -624,5 +602,8 @@ async def plan_deliberation(
         final_plan = parsed_plan
 
     return _attach_whytrace(
-        final_plan, prompt_response, llm_response, json.dumps(notes)
+        final_plan,
+        prompt_response,
+        llm_response,
+        json.dumps(notes),
     ), episode_id

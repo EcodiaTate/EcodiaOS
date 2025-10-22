@@ -1,5 +1,5 @@
 # systems/synapse/core/registry.py
-# COMPLETE REPLACEMENT - HOF-AWARE + DYNAMIC ARMS, NO ensure_cold_start
+# COMPLETE REPLACEMENT - HOF-AWARE + DYNAMIC ARMS, BASE.* IDS, MODE='generic'
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import logging
 import os
 import threading
 from collections.abc import Iterable
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 from core.utils.neo.cypher_query import cypher_query
 from systems.synapse.policy.policy_dsl import PolicyGraph
@@ -75,6 +75,18 @@ def _is_dynamic_id(arm_id: str) -> bool:
     return isinstance(arm_id, str) and arm_id.startswith("dyn::")
 
 
+def _alias_arm_id(arm_id: str) -> str:
+    """
+    Normalize legacy 'generic.*' IDs to the canonical 'base.*' namespace.
+    The 'mode' for base.* arms remains 'generic'.
+    """
+    if not isinstance(arm_id, str):
+        return arm_id
+    if arm_id.startswith("generic."):
+        return "base." + arm_id[len("generic.") :]
+    return arm_id
+
+
 # ---------- core classes ----------
 
 
@@ -82,7 +94,11 @@ class PolicyArm:
     __slots__ = ("id", "policy_graph", "mode", "bandit_head")
 
     def __init__(
-        self, arm_id: str, policy_graph: PolicyGraph, mode: str, bandit_head: NeuralLinearBanditHead
+        self,
+        arm_id: str,
+        policy_graph: PolicyGraph,
+        mode: str,
+        bandit_head: NeuralLinearBanditHead,
     ):
         if not arm_id:
             raise ValueError("PolicyArm requires a non-empty arm_id.")
@@ -116,12 +132,13 @@ class ArmRegistry:
     async def initialize(self) -> None:
         print("[ArmRegistry] Initializing and hydrating all PolicyArms from graph...")
 
+        # We accept either p.id or legacy p.arm_id; canonical is p.id.
         query_arms = """
         MATCH (p:PolicyArm)
         RETURN
-          coalesce(p.arm_id, p.id)    AS arm_id,
-          p.policy_graph              AS policy_graph,
-          coalesce(p.mode, 'generic') AS mode,
+          coalesce(p.id, p.arm_id)     AS arm_id,
+          p.policy_graph               AS policy_graph,
+          coalesce(p.mode, 'generic')  AS mode,
           p.A AS A, p.A_shape AS A_shape,
           p.b AS b, p.b_shape AS b_shape
         """
@@ -144,6 +161,8 @@ class ArmRegistry:
         for row in hof_rows:
             aid, mode = row.get("arm_id"), row.get("mode") or "generic"
             if aid and mode:
+                # Apply alias here as well so HOF references align with canonical IDs.
+                aid = _alias_arm_id(aid)
                 new_hof_arms.setdefault(mode, set()).add(aid)
 
         new_arms: dict[str, PolicyArm] = {}
@@ -151,15 +170,17 @@ class ArmRegistry:
         dimensions = getattr(neural_linear_manager, "dimensions", 64)
 
         for row in arm_rows:
-            arm_id = row.get("arm_id")
+            raw_id = row.get("arm_id")
             graph_raw = row.get("policy_graph")
             mode = row.get("mode") or "generic"
-            if not arm_id or not graph_raw:
+            if not raw_id or not graph_raw:
                 continue
+
+            arm_id = _alias_arm_id(raw_id)
             try:
                 pg = _coerce_policy_graph(graph_raw)
                 initial_state = None
-                if all(row.get(k) for k in ["A", "A_shape", "b", "b_shape"]):
+                if all(row.get(k) is not None for k in ["A", "A_shape", "b", "b_shape"]):
                     initial_state = {
                         "A": row["A"],
                         "A_shape": row["A_shape"],
@@ -182,16 +203,16 @@ class ArmRegistry:
         total_hof = sum(len(s) for s in self._hall_of_fame_arms.values())
         mode_counts = {mode: len(arms) for mode, arms in self._by_mode.items()}
         print(
-            f"[ArmRegistry] Initialization complete. Loaded {total_loaded} arms ({total_hof} in Hall of Fame). Mode distribution: {mode_counts}"
+            f"[ArmRegistry] Initialization complete. Loaded {total_loaded} arms ({total_hof} in Hall of Fame). Mode distribution: {mode_counts}",
         )
 
     async def reload(self) -> None:
         await self.initialize()
 
     def get_arm(self, arm_id: str) -> PolicyArm | None:
+        arm_id = _alias_arm_id(arm_id)
         with self._lock:
-            arm = self._arms.get(arm_id)
-        return arm
+            return self._arms.get(arm_id)
 
     def get_policy_arm(self, arm_id: str) -> PolicyArm | None:
         return self.get_arm(arm_id)
@@ -219,6 +240,8 @@ class ArmRegistry:
     ) -> PolicyArm:
         if not arm_id:
             raise ValueError("arm_id is required")
+
+        arm_id = _alias_arm_id(arm_id)
         pg = (
             _coerce_policy_graph(policy_graph)
             if policy_graph
@@ -237,9 +260,11 @@ class ArmRegistry:
             try:
                 await cypher_query(
                     """
-                    MERGE (p:PolicyArm {arm_id: $id})
-                    ON CREATE SET p.mode = $mode, p.policy_graph = $graph
-                    ON MATCH  SET p.mode = coalesce(p.mode, $mode), p.policy_graph = coalesce(p.policy_graph, $graph)
+                    MERGE (p:PolicyArm {id: $id})
+                    ON CREATE SET p.arm_id = $id, p.mode = $mode, p.policy_graph = $graph
+                    ON MATCH  SET p.arm_id = coalesce(p.arm_id, $id),
+                                p.mode = coalesce(p.mode, $mode),
+                                p.policy_graph = coalesce(p.policy_graph, $graph)
                     """,
                     {"id": arm_id, "mode": mode, "graph": pg.model_dump(mode="json")},
                 )
@@ -248,17 +273,24 @@ class ArmRegistry:
 
         return arm
 
-    async def get_or_register_dynamic_arm(self, arm_id: str, *, mode: str = "generic") -> PolicyArm:
+    async def get_or_register_dynamic_arm(
+        self, arm_id: str, *, mode: str = "generic",
+    ) -> PolicyArm | None:
+        arm_id = _alias_arm_id(arm_id)
         arm = self.get_arm(arm_id)
         if arm:
             return arm
         if _is_dynamic_id(arm_id):
             return await self.register_dynamic_arm(
-                arm_id, mode=mode, policy_graph=None, persist=False
+                arm_id, mode=mode, policy_graph=None, persist=False,
             )
         return None
 
     async def get_safe_fallback_arm(self, mode: str | None = None) -> PolicyArm:
+        """
+        Return a safe fallback (no dangerous effects) if one exists, otherwise create/persist
+        a single canonical fallback: base.safe_fallback (mode='generic').
+        """
         with self._lock:
             if mode:
                 for arm in self._by_mode.get(mode, []):
@@ -269,31 +301,47 @@ class ArmRegistry:
                     if arm.is_safe_fallback:
                         return arm
 
+        # Create canonical safe fallback as base.safe_fallback (mode='generic')
         try:
-            arm_id = "generic.safe_fallback"
+            arm_id = "base.safe_fallback"
             pg = _create_noop_policy_graph(arm_id)
             dimensions = getattr(neural_linear_manager, "dimensions", 64)
             head = NeuralLinearBanditHead(arm_id, dimensions, initial_state=None)
-            ephemeral = PolicyArm(arm_id=arm_id, policy_graph=pg, mode="generic", bandit_head=head)
-            with self._lock:
-                self._arms[ephemeral.id] = ephemeral
-                self._by_mode.setdefault(ephemeral.mode, []).append(ephemeral)
-            logger.warning("[ArmRegistry] Created ephemeral '%s' safe fallback.", arm_id)
-            return ephemeral
-        except Exception as e:
-            logger.error(
-                "[ArmRegistry] FAILED to create ephemeral safe fallback: %r", e, exc_info=True
-            )
+            fallback = PolicyArm(arm_id=arm_id, policy_graph=pg, mode="generic", bandit_head=head)
 
-            class _Shim:
-                pass
+            with self._lock:
+                self._arms[fallback.id] = fallback
+                self._by_mode.setdefault(fallback.mode, []).append(fallback)
+
+            try:
+                await cypher_query(
+                    """
+                    MERGE (p:PolicyArm {id: $id})
+                    ON CREATE SET p.arm_id = $id, p.mode = $mode, p.policy_graph = $graph
+                    ON MATCH  SET p.mode = coalesce(p.mode, $mode),
+                                p.policy_graph = coalesce(p.policy_graph, $graph)
+                    """,
+                    {"id": arm_id, "mode": "generic", "graph": pg.model_dump(mode="json")},
+                )
+            except Exception as e:
+                logger.warning("[ArmRegistry] Persisting safe fallback '%s' failed: %r", arm_id, e)
+
+            logger.warning("[ArmRegistry] Using canonical safe fallback '%s'.", arm_id)
+            return fallback
+
+        except Exception as e:
+            logger.error("[ArmRegistry] FAILED to create safe fallback: %r", e, exc_info=True)
+
+            # last-resort in-memory shim (still canonical id)
+            class _Shim: ...
 
             shim = _Shim()
-            shim.id = "generic.safe_fallback"
+            shim.id = "base.safe_fallback"
             shim.mode = "generic"
             shim.policy_graph = _create_noop_policy_graph(shim.id)
             shim.bandit_head = NeuralLinearBanditHead(
-                shim.id, getattr(neural_linear_manager, "dimensions", 64)
+                shim.id,
+                getattr(neural_linear_manager, "dimensions", 64),
             )
             return shim
 

@@ -138,7 +138,7 @@ async def _bootstrap_heavy(app: FastAPI) -> None:
         t = _tick("start")
         if SKIP_ENSURE:
             logger.warning(
-                "[Bootstrap] SKIPPING ensure_schema() and seed_initial_flags() (ECODIA_SKIP_ENSURE=1)."
+                "[Bootstrap] SKIPPING ensure_schema() and seed_initial_flags() (ECODIA_SKIP_ENSURE=1).",
             )
         else:
             await ensure_schema()
@@ -333,7 +333,10 @@ def ready():
 
 governed_dependency = Depends(constitutional_preamble)
 app.include_router(
-    simula_router, prefix="/simula", tags=["simula"], dependencies=[governed_dependency]
+    simula_router,
+    prefix="/simula",
+    tags=["simula"],
+    dependencies=[governed_dependency],
 )
 app.include_router(nova_router, prefix="/nova", tags=["nova"], dependencies=[governed_dependency])
 app.include_router(evo_router, prefix="/evo", tags=["evo"], dependencies=[governed_dependency])

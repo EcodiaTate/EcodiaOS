@@ -55,7 +55,9 @@ class DriverRegistry:
         # attribute-like (e.g., Pydantic model)
         if actions is None:
             actions = getattr(desc, "supported_actions", None) or getattr(
-                desc, "capabilities", None
+                desc,
+                "capabilities",
+                None,
             )
 
         if actions is None:
@@ -114,7 +116,7 @@ class DriverRegistry:
         if not caps:
             print(
                 f"[DriverRegistry] WARN: No capabilities discovered for '{driver_name}'. "
-                f"Add supported_actions in describe() or set .capabilities on the driver."
+                f"Add supported_actions in describe() or set .capabilities on the driver.",
             )
 
         self._rebuild_capability_map_for_driver(driver_name, caps)
@@ -134,7 +136,7 @@ class DriverRegistry:
         caps = self._map_capabilities(driver_name, driver)
         print(
             f"[DriverRegistry] Registered driver: '{driver_name}' "
-            f"(status: {status}) caps={caps or '[]'}"
+            f"(status: {status}) caps={caps or '[]'}",
         )
 
     def unregister(self, driver_name: str) -> None:
@@ -165,7 +167,8 @@ class DriverRegistry:
             # prefer describe() values for visibility
             try:
                 caps = self._safe_get_supported_actions(
-                    drv.describe(), getattr(drv, "capabilities", [])
+                    drv.describe(),
+                    getattr(drv, "capabilities", []),
                 )
             except Exception:
                 caps = getattr(drv, "capabilities", []) or self._introspect_callable_caps(drv)

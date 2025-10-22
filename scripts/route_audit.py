@@ -62,7 +62,7 @@ def audit_route_bodies(app) -> None:
                             r.endpoint.__name__,
                             typ_name,
                             "NOT a BaseModel",
-                        )
+                        ),
                     )
                 break
             else:
@@ -75,7 +75,7 @@ def audit_route_bodies(app) -> None:
                             r.endpoint.__name__,
                             typ_name,
                             "Annotation not a class",
-                        )
+                        ),
                     )
                 break
 

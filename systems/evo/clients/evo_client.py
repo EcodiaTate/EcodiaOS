@@ -32,7 +32,8 @@ class EvoConflictClient:
             response = await client.post(ENDPOINTS.EVO_CONFLICTS_CREATE, json=conflict_payload)
             response.raise_for_status()
             logger.info(
-                "Successfully reported conflict to Evo: %s", conflict_payload.get("conflict_id")
+                "Successfully reported conflict to Evo: %s",
+                conflict_payload.get("conflict_id"),
             )
             return response.json()
         except Exception:

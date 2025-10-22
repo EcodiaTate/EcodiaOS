@@ -6,7 +6,11 @@ logger = logging.getLogger(__name__)
 
 
 async def _smart_tool_invoke(
-    self, tool_name: str, tool_function, params: dict, timeout: float | None
+    self,
+    tool_name: str,
+    tool_function,
+    params: dict,
+    timeout: float | None,
 ):
     """
     Call tools robustly:

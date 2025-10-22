@@ -34,7 +34,11 @@ class SynapseClient:
     """
 
     async def _request(
-        self, method: str, path: str, json: dict | None = None, headers: dict | None = None
+        self,
+        method: str,
+        path: str,
+        json: dict | None = None,
+        headers: dict | None = None,
     ) -> dict[str, Any]:
         """A consolidated, robust HTTP request helper."""
         http = await get_http_client()
@@ -58,12 +62,16 @@ class SynapseClient:
     # --- Core Task Selection ---
 
     async def select_arm(
-        self, task_ctx: TaskContext, candidates: list[Candidate] | None = None
+        self,
+        task_ctx: TaskContext,
+        candidates: list[Candidate] | None = None,
     ) -> SelectArmResponse:
         """Selects the best arm for a given task context and candidate set."""
         payload = SelectArmRequest(task_ctx=task_ctx, candidates=candidates or [])
         data = await self._request(
-            "POST", ENDPOINTS.SYNAPSE_SELECT_OR_PLAN, json=payload.model_dump()
+            "POST",
+            ENDPOINTS.SYNAPSE_SELECT_OR_PLAN,
+            json=payload.model_dump(),
         )
         return SelectArmResponse.model_validate(data)
 
@@ -83,7 +91,9 @@ class SynapseClient:
         return await self.select_arm(ctx, candidates=cands)
 
     async def continue_option(
-        self, episode_id: str, last_step_outcome: dict[str, Any]
+        self,
+        episode_id: str,
+        last_step_outcome: dict[str, Any],
     ) -> ContinueResponse:
         """Continues the execution of a multi-step skill (Option)."""
         req = ContinueRequest(episode_id=episode_id, last_step_outcome=last_step_outcome)
@@ -91,7 +101,10 @@ class SynapseClient:
         return ContinueResponse.model_validate(data)
 
     async def repair_skill_step(
-        self, episode_id: str, failed_step_index: int, error_observation: dict[str, Any]
+        self,
+        episode_id: str,
+        failed_step_index: int,
+        error_observation: dict[str, Any],
     ) -> RepairResponse:
         """Generates a repair action for a failed step in a skill."""
         req = RepairRequest(
@@ -135,12 +148,17 @@ class SynapseClient:
         return LogOutcomeResponse.model_validate(data)
 
     async def ingest_preference(
-        self, winner: str, loser: str, source: str | None = None
+        self,
+        winner: str,
+        loser: str,
+        source: str | None = None,
     ) -> dict[str, Any]:
         """Ingests a pairwise preference between two arms."""
         req = PreferenceIngest(winner=winner, loser=loser, source=source)
         return await self._request(
-            "POST", ENDPOINTS.SYNAPSE_INGEST_PREFERENCE, json=req.model_dump()
+            "POST",
+            ENDPOINTS.SYNAPSE_INGEST_PREFERENCE,
+            json=req.model_dump(),
         )
 
     # --- Governance / Registry ---
@@ -148,7 +166,9 @@ class SynapseClient:
     async def submit_upgrade_proposal(self, proposal: PatchProposal) -> dict[str, Any]:
         """Submits a self-upgrade proposal to the Governor."""
         return await self._request(
-            "POST", ENDPOINTS.SYNAPSE_GOVERNOR_SUBMIT, json=proposal.model_dump()
+            "POST",
+            ENDPOINTS.SYNAPSE_GOVERNOR_SUBMIT,
+            json=proposal.model_dump(),
         )
 
     async def reload_registry(self) -> dict[str, Any]:

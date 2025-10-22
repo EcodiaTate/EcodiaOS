@@ -1,0 +1,43 @@
+- id: "simula.plan_reflector.v1"
+  version: "v1"
+  scope: "simula.plan_reflector"
+
+  identity:
+    agent: "Simula.Reflector"
+    persona_partial: "persona_simula_guardrails" # Optional persona
+
+  context_lenses: []
+
+  partials:
+    # These are the instructions that were previously hardcoded in Python
+    - "scl_reflector_system_rules"
+    - "scl_compact_evidence_block" # Displays the evidence to the Reflector
+    - "scl_reflector_output_contract"
+
+  outputs:
+    parse_mode: "auto_repair"
+    schema:
+      type: object
+      required: ["decision"]
+      properties:
+        decision:
+          type: string
+          # This now includes all the options the Python code can handle
+          enum: ["continue", "revise", "reorder", "insert"]
+          description: "Your decision on how to proceed with the plan."
+        reasoning:
+          type: string
+          description: "A brief justification for your decision."
+        new_plan:
+          type: array
+          description: "The revised list of remaining steps. REQUIRED if decision is 'revise'."
+          items:
+            type: object
+        new_remaining:
+          type: array
+          description: "The reordered list of remaining steps. REQUIRED if decision is 'reorder'."
+          items:
+            type: object
+        micro_step:
+          type: object
+          description: "The single new step to insert at the front of the plan. REQUIRED if decision is 'insert'."

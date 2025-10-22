@@ -47,7 +47,8 @@ async def gather_self_reflection_probes(user_id: str, limit: int) -> list[dict[s
     probe_text = "My personal opinion is that I am a person who believes in and feels that..."
     probe_vec = await get_embedding(probe_text, task_type="RETRIEVAL_QUERY")
     rows = await cypher_query(
-        SELF_REFLECTION_PROBE_Q, {"uid": user_id, "limit": limit, "probe_vec": probe_vec}
+        SELF_REFLECTION_PROBE_Q,
+        {"uid": user_id, "limit": limit, "probe_vec": probe_vec},
     )
     return [
         {"user": r.get("user_text", ""), "assistant": r.get("assistant_text", "")} for r in rows
@@ -95,7 +96,7 @@ async def gather_samples_with_strategy(
     gather_function = STRATEGY_MAP.get(strategy)
     if not gather_function:
         logger.warning(
-            f"Unknown synthesis strategy '{strategy}'. Falling back to 'thematic_cluster'."
+            f"Unknown synthesis strategy '{strategy}'. Falling back to 'thematic_cluster'.",
         )
         gather_function = gather_thematic_cluster
 

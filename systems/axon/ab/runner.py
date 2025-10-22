@@ -60,14 +60,18 @@ async def run_ab_trial(intent: AxonIntent, *, decision_id: str | None = None) ->
                     "latency_ms": lat,
                     "counterfactual_metrics": res.counterfactual_metrics,
                     "outputs": res.outputs,
-                }
+                },
             )
             # score uplift vs twin; send to Synapse ingest_outcome
             upl = res.counterfactual_metrics.get(
-                "actual_utility", 0.0
+                "actual_utility",
+                0.0,
             ) - twin_res.counterfactual_metrics.get("predicted_utility", 0.0)
             cards.update_scorecard(
-                name, was_successful=(res.status == "ok"), latency_ms=lat, uplift=upl
+                name,
+                was_successful=(res.status == "ok"),
+                latency_ms=lat,
+                uplift=upl,
             )
             await ingest_action_outcome(
                 intent=sh_intent,
@@ -79,7 +83,7 @@ async def run_ab_trial(intent: AxonIntent, *, decision_id: str | None = None) ->
         except Exception as e:
             lat = (time.perf_counter() - t1) * 1000.0
             out["shadows"].append(
-                {"driver": name, "status": "fail", "latency_ms": lat, "error": str(e)}
+                {"driver": name, "status": "fail", "latency_ms": lat, "error": str(e)},
             )
             cards.update_scorecard(name, was_successful=False, latency_ms=lat, uplift=0.0)
             try:

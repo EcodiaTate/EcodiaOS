@@ -7,6 +7,7 @@ import asyncio
 import json
 import logging
 import os
+from collections.abc import Iterable
 from typing import Any, Dict, List, Optional
 
 import httpx
@@ -94,7 +95,7 @@ class SynapseClient:
                     timeout=timeout_cfg,
                 )
 
-                # Retry on ANY 503, regardless of body (hot reloads / rebootstrap can flip this briefly)
+                # Retry on ANY 503 (hot reloads / bootstrap)
                 if res.status_code == 503 and attempt < retries - 1:
                     await asyncio.sleep(backoff_base * (attempt + 1))
                     continue
@@ -102,13 +103,6 @@ class SynapseClient:
                 res.raise_for_status()
                 if not res.content:
                     raise httpx.ReadTimeout("No response body.")
-                return res.json()
-
-                res.raise_for_status()
-
-                if not res.content:
-                    raise httpx.ReadTimeout("No response body.")
-
                 return res.json()
 
             except (httpx.ReadTimeout, httpx.ConnectTimeout) as e:
@@ -138,8 +132,6 @@ class SynapseClient:
 
             except Exception as e:
                 last_exc = e
-                # Unexpected errors: log richly and do not retry unless attempts left and it's clearly transient
-                # (Keep behavior simple: we only auto-retry the explicit cases above.)
                 logger.error(
                     "[SynapseClient] CRITICAL ERROR %s %s: %s",
                     method,
@@ -149,7 +141,6 @@ class SynapseClient:
                 )
                 raise
 
-        # If we exhausted retries on timeout cases, log once more with detail
         logger.error(
             "[SynapseClient] Exhausted retries for %s %s :: %s",
             method,
@@ -167,15 +158,66 @@ class SynapseClient:
         candidates: list[Candidate],
         *,
         headers: dict[str, str] | None = None,
+        exclude_prefixes: Iterable[str] = ("dyn::", "reflex::"),
+        max_retries: int = int(os.getenv("SIMULA_MAX_STATIC_RETRIES", "3")),
+        backoff_s: float = float(os.getenv("SIMULA_STATIC_RETRY_BACKOFF_S", "0.25")),
     ) -> SelectArmResponse:
         """
-        Preferred entrypoint for all decisions:
-        returns either a persisted PolicyArm selection or a dynamic plan (dyn:: arm).
+        Preferred entrypoint for all decisions.
+        GUARANTEES: returns a **static** policy arm (filters out dynamic arms locally).
+
+        - Sends a best-effort hint to the server via task_ctx.metadata['arm_id_exclude_prefixes'].
+        - Retries client-side if the server still returns an excluded arm id.
         """
-        payload = SelectArmRequest(task_ctx=task_ctx, candidates=candidates)
+        # Non-destructive metadata augmentation
+        md = dict(task_ctx.metadata or {})
+        md.setdefault("arm_id_exclude_prefixes", list(exclude_prefixes))
+        safe_ctx = TaskContext(task_key=task_ctx.task_key, goal=task_ctx.goal, metadata=md)
+
         path = getattr(ENDPOINTS, "SYNAPSE_SELECT_OR_PLAN", "/synapse/select_or_plan")
-        data = await self._request("POST", path, json_payload=payload, headers=headers)
-        return SelectArmResponse.model_validate(data)
+        last_err: Exception | None = None
+
+        for attempt in range(1, max_retries + 1):
+            try:
+                payload = SelectArmRequest(task_ctx=safe_ctx, candidates=candidates)
+                data = await self._request("POST", path, json_payload=payload, headers=headers)
+                sel = SelectArmResponse.model_validate(data)
+
+                arm_id = (sel.champion_arm.arm_id or "").strip()
+                if any(arm_id.startswith(pref) for pref in exclude_prefixes):
+                    logger.warning(
+                        "[SynapseClient] Rejected dynamic arm '%s' (attempt %d/%d)",
+                        arm_id,
+                        attempt,
+                        max_retries,
+                    )
+                    if attempt < max_retries:
+                        await asyncio.sleep(backoff_s)
+                        continue
+                    # Exhausted
+                    raise RuntimeError(
+                        f"Synapse returned only dynamic arms after {max_retries} attempt(s). "
+                        f"Last arm: {arm_id or '—'}",
+                    )
+
+                # OK: static arm
+                return sel
+
+            except Exception as e:
+                last_err = e
+                if attempt < max_retries:
+                    await asyncio.sleep(backoff_s)
+                    continue
+                logger.error(
+                    "[SynapseClient] select_or_plan failed after %d attempts: %r",
+                    attempt,
+                    e,
+                    exc_info=True,
+                )
+                raise RuntimeError(
+                    f"Synapse did not return a static strategy after {max_retries} attempt(s). "
+                    f"Last error: {repr(last_err) if last_err else '—'}",
+                )
 
     # ===== Semantic Validation / Modeling =====
 
@@ -210,7 +252,8 @@ class SynapseClient:
         """
         if "chosen_arm_id" not in metrics and "arm_id" not in metrics:
             logger.warning(
-                "[SynapseClient] 'chosen_arm_id' missing in metrics for episode %s.", episode_id
+                "[SynapseClient] 'chosen_arm_id' missing in metrics for episode %s.",
+                episode_id,
             )
 
         payload = LogOutcomeRequest(

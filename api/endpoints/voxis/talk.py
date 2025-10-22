@@ -228,7 +228,7 @@ async def voxis_talk_history(
                     "role": r.get("role"),
                     "content": r.get("content") or "",
                     "created_at": created_at,
-                }
+                },
             )
 
         return JSONResponse(status_code=200, content=messages)
