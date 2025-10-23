@@ -552,7 +552,7 @@ export default function TalkOverlay() {
   // --- render ---------------------------------------------------------------
 
   return (
-    <div className="talk-root absolute inset-0 z-40 flex flex-col bg-transparent isolate font-[var(--font-primary)]" aria-live="polite">
+    <div className="talk-root absolute inset-0 z-40 flex flex-col bg-transparent isolate font-(--font-primary)" aria-live="polite">
       {/* Ambient: soft vignette + faint grid to match overlays */}
       <div className="talk-ambient" aria-hidden="true">
         <div className="talk-vignette" />

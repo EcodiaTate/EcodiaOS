@@ -44,10 +44,8 @@ export default function BootOverlay() {
   const [policyOpenedAt, setPolicyOpenedAt] = useState<number | null>(null);
   const [accepted, setAccepted] = useState(false);
 
-  // Only render when we're in boot mode
   if (mode !== "boot") return null;
 
-  // Read cookie + prior acceptance on mount
   useEffect(() => {
     const opened = getCookie(`ecodiaPrivacyOpenAt:${PRIVACY_VERSION}`);
     setPolicyOpenedAt(opened ? Number(opened) : null);
@@ -57,7 +55,6 @@ export default function BootOverlay() {
     }
   }, [setMode]);
 
-  // Is the policy considered "freshly opened"?
   const canAccept = useMemo(() => {
     if (!policyOpenedAt) return false;
     return Date.now() - policyOpenedAt <= POLICY_FRESH_MS;
@@ -65,7 +62,6 @@ export default function BootOverlay() {
 
   const handleOpenPolicy = useCallback(() => {
     window.open(POLICY_BRIDGE, "_blank", "noopener,noreferrer");
-    // Poll cookie briefly in case they come back quickly
     let tries = 0;
     const id = setInterval(() => {
       const opened = getCookie(`ecodiaPrivacyOpenAt:${PRIVACY_VERSION}`);
@@ -73,7 +69,7 @@ export default function BootOverlay() {
         setPolicyOpenedAt(Number(opened));
         clearInterval(id);
       }
-      if (++tries > 60) clearInterval(id); // stop after ~60s
+      if (++tries > 60) clearInterval(id);
     }, 1000);
   }, []);
 
@@ -94,11 +90,14 @@ export default function BootOverlay() {
       aria-labelledby="boot-title"
       aria-describedby="boot-desc boot-privacy"
     >
-      {/* Ambient layer: soft vignette + grid */}
-      <div className="absolute inset-0 -z-10 mix-blend-multiply pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(1200px_600px_at_center,rgba(255,255,255,0.28),transparent_65%)]" />
-        <div className="absolute inset-10 rounded-[28px] border border-white/30 [mask:linear-gradient(#000,transparent)]" />
-        <div className="absolute inset-0 opacity-[0.06] [background:linear-gradient(to_right,transparent_49.5%,rgba(0,0,0,0.55)_50%,transparent_50.5%),linear-gradient(to_bottom,transparent_49.5%,rgba(0,0,0,0.55)_50%,transparent_50.5%)] [background-size:40px_40px]" />
+      {/* Base: solid dark backdrop */}
+      <div className="absolute inset-0 bg-[#0b1310]" aria-hidden="true" />
+
+      {/* Ambient layer: optional vignette + grid on top of the solid base */}
+      <div className="absolute inset-0 -z-10 pointer-events-none" aria-hidden="true">
+        <div className="absolute inset-0 bg-[radial-gradient(1200px_600px_at_center,rgba(255,255,255,0.10),transparent_65%)]" />
+        <div className="absolute inset-10 rounded-[28px] border border-white/10 [mask:linear-gradient(#000,transparent)]" />
+        <div className="absolute inset-0 opacity-[0.05] [background:linear-gradient(to_right,transparent_49.5%,rgba(255,255,255,0.2)_50%,transparent_50.5%),linear-gradient(to_bottom,transparent_49.5%,rgba(255,255,255,0.2)_50%,transparent_50.5%)] [background-size:40px_40px]" />
       </div>
 
       <div
@@ -122,7 +121,7 @@ export default function BootOverlay() {
           </h1>
         </header>
 
-        <div className="mt-2 space-y-3 text-[clamp(14.5px,2.3vw,16px)] leading-[1.45] text-[#163323]">
+        <div className="mt-2 space-y-3 text-[clamp(14.5px,2.3vw,16px)] leading-[1.45] text-[#e6f1eb]">
           <p id="boot-desc">
             This experience includes <strong>rapid visual effects</strong> and <strong>flashing lights</strong>.
             If you’re sensitive to such visuals (including epilepsy), please proceed with caution.
@@ -134,14 +133,11 @@ export default function BootOverlay() {
         </div>
 
         <div className="mt-5 flex items-center justify-center gap-3 text-[14px]">
-          <button
-            onClick={handleOpenPolicy}
-            className="boot-link"
-          >
+          <button onClick={handleOpenPolicy} className="boot-link">
             Open Privacy Policy
           </button>
-          <span aria-hidden className="text-[#1a3b2b]/30">•</span>
-          <span className="text-[#1a3b2b]/70">
+          <span aria-hidden className="text-white/30">•</span>
+          <span className="text-white/70">
             {policyOpenedAt
               ? "Policy opened. You can accept below."
               : "You must open the policy before you can accept."}
@@ -160,10 +156,6 @@ export default function BootOverlay() {
             {canAccept ? "I have read and accept the policy" : "Open the policy to enable this"}
           </button>
         </div>
-
-        <p className="mt-3 text-[12.5px] text-[#1a3b2b]/60 text-center">
-          Once you open the policy, you’ll have {Math.floor(POLICY_FRESH_MS / 60000)} minutes to accept.
-        </p>
       </div>
     </div>
   );

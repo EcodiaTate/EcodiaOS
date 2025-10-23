@@ -43,8 +43,19 @@ export default function HubOverlay() {
           <div className="hub-border" aria-hidden="true" />
           <div className="hub-shine" aria-hidden="true" />
 
-          <header className="hub-header">
-            <div className="hub-icon" aria-hidden>✺</div>
+          {/* HEADER — image smaller, circular, centered */}
+          <header className="hub-header text-center flex flex-col items-center">
+            <img
+              src="/assets/button.png"
+              alt="Ecodia"
+              className="
+                mx-auto mb-5
+                size-16             
+                rounded-full
+                object-cover
+                ring-2 ring-white/40 shadow-lg
+              "
+            />
             <h1 className="hub-title">Explore</h1>
             <p className="hub-sub">Choose how you want to meet the mind</p>
           </header>
@@ -67,11 +78,6 @@ export default function HubOverlay() {
               <span className="hub-btnGlow" aria-hidden />
               Guide Ecodia
             </button>
-          </div>
-
-          {/* Optional: quick links strip (feel free to remove) */}
-          <div className="hub-strip" aria-hidden="true">
-            <span className="hub-dot" /> sunrise channel • presence online • v0.9.2
           </div>
         </div>
       </section>

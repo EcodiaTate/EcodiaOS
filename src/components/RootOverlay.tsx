@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useModeStore } from '@/stores/useModeStore'
 import { BackToEcodiaButton } from '@/components/ui'
-
+import {SignInWithEcodiaButton} from "@/components/auth/SignInWithEcodiaButton"
 /** Sunrise Solarpunk palette (mirrors canvas vibe) */
 const PALETTE = {
   mint: '#7fd069',
@@ -92,7 +92,7 @@ export default function RootOverlay() {
       <div className="absolute inset-0 pointer-events-none mix-blend-multiply">
         <div className="absolute inset-0 bg-[radial-gradient(1200px_600px_at_center,rgba(255,255,255,0.30),transparent_65%)]" />
         <div className="absolute inset-8 rounded-[28px] border border-white/30 [mask:linear-gradient(#000,transparent)]" />
-        <div className="absolute inset-0 opacity-[0.07] [background:linear-gradient(to_right,transparent_49.5%,rgba(0,0,0,0.6)_50%,transparent_50.5%),linear-gradient(to_bottom,transparent_49.5%,rgba(0,0,0,0.6)_50%,transparent_50.5%)] [background-size:40px_40px]" />
+        <div className="absolute inset-0 opacity-[0.07] [background:linear-gradient(to_right,transparent_49.5%,rgba(0,0,0,0.6)_50%,transparent_50.5%),linear-gradient(to_bottom,transparent_49.5%,rgba(0,0,0,0.6)_50%,transparent_50.5%)] background-size:40px_40px" />
       </div>
 
       {/* Root Panel */}
@@ -117,29 +117,8 @@ export default function RootOverlay() {
           <p className="ec-lead">{subtitle}</p>
 
           <div className="ec-actions" aria-label="Primary actions">
-            <button
-              onClick={() => setMode('constellation')}
-              className="ec-btn"
-              aria-label="Meet Ecodia"
-            >
-              <span className="ec-btn__glow" aria-hidden />
-              Meet Ecodia
-            </button>
 
-            <button
-              onClick={() => setMode('return')}
-              className="ec-btn ec-btn--secondary"
-              aria-label={hasSoul ? 'Continue with my soul' : 'I am returning'}
-              title={hasSoul ? 'We found a previous session' : 'Return with a saved soul'}
-            >
-              <span className="ec-btn__glow" aria-hidden />
-              {hasSoul ? 'Continue with my soul' : 'I’m Returning'}
-            </button>
-          </div>
-
-          {/* Status strip (low-key eco-tech vibe) */}
-          <div className="ec-strip" aria-live="polite">
-            <span className="ec-dot" /> sunrise channel • bio-sync nominal • v0.9.2
+           <SignInWithEcodiaButton/>
           </div>
         </div>
       </section>

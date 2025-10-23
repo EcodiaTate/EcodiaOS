@@ -1,25 +1,32 @@
-import './globals.css'
-import { Inter, Fjalla_One } from 'next/font/google'
-import React from 'react'
+// app/layout.tsx
+import "./globals.css";
+import { Inter, Fjalla_One } from "next/font/google";
+import React from "react";
+import Providers from "./Providers";
 
 const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-secondary',
-  display: 'swap',
-})
+  subsets: ["latin"],
+  variable: "--font-secondary",
+  display: "swap",
+});
 
 const fjalla = Fjalla_One({
-  subsets: ['latin'],
-  weight: '400',
-  variable: '--font-display',
-  display: 'swap',
-})
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-display",
+  display: "swap",
+});
 
-export const metadata = { title: 'EcodiaOS', description: 'Speak to the soul of Ecodia' }
+export const metadata = {
+  title: "EcodiaOS",
+  description: "Mind of the Future",
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const suppress =
-    process.env.NODE_ENV !== 'production' ? { suppressHydrationWarning: true } : {}
+    process.env.NODE_ENV !== "production"
+      ? { suppressHydrationWarning: true }
+      : {};
 
   return (
     <html
@@ -28,11 +35,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       {...suppress}
     >
       <body
-        className="h-dvh overflow-hidden bg-[var(--background)] text-[var(--foreground)] font-[var(--font-body)] touch-manipulation"
+        className="h-dvh overflow-hidden bg-(--background) text-(--foreground) font-(--font-body) touch-manipulation"
         {...suppress}
       >
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
-  )
+  );
 }

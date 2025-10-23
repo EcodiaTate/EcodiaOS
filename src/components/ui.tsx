@@ -1,6 +1,7 @@
 'use client'
 
 import { useModeStore } from '@/stores/useModeStore'
+import { ECODIA_URL } from '@/lib/env';
 
 interface Props {
   className?: string
@@ -36,7 +37,7 @@ export function BackToHubButton({ className = '' }: Props) {
       onClick={() => setMode('hub')}
       aria-label="Back to Hub"
       title="Back to Hub"
-      className={`absolute top-4 left-4 z-20 h-9 min-w-[2.25rem] px-3 text-sm ${ecBtnBase} ${ecGrad} ${className}`}
+      className={`absolute top-4 left-4 z-20 h-9 min-w-2.25rem px-3 text-sm ${ecBtnBase} ${ecGrad} ${className}`}
     >
       ←
     </button>
@@ -51,7 +52,7 @@ export function BackToRootButton({ className = '' }: Props) {
       onClick={() => setMode('root')}
       aria-label="Back to Home"
       title="Back to Home"
-      className={`absolute top-4 left-4 z-20 h-9 min-w-[2.25rem] px-3 text-sm ${ecBtnBase} ${ecGrad} ${className}`}
+      className={`absolute top-4 left-4 z-20 h-9 min-w-2.25rem px-3 text-sm ${ecBtnBase} ${ecGrad} ${className}`}
     >
       ←
     </button>
@@ -85,9 +86,9 @@ export function BackToEcodiaButton({ className = '' }: { className?: string }) {
                    focus-visible:ring-2 focus-visible:ring-[#7FD069]/60"
       >
         <img
-          src="/assets/ecodia-dark.png"
+          src="/assets/button.png"
           alt="Ecodia"
-          className="w-full h-full rounded-[0.65rem] object-contain"
+          className="w-full h-full rounded-2rem object-contain"
         />
       </button>
 
@@ -102,6 +103,8 @@ export function BackToEcodiaButton({ className = '' }: { className?: string }) {
     </div>
   )
 }
+
+
 
 
 /* 🌗 Theme Toggle - dark-only app: keep export to avoid import errors (renders nothing) */

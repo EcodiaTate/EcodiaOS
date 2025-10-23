@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type Mode = 'boot' | 'hub' | 'root' | 'constellation' | 'return' | 'talk' | 'guide'
+export type Mode = 'boot' | 'hub' | 'root' | 'constellation' | 'login' | 'talk' | 'guide'
 
 export interface CameraTarget {
   position: [number, number, number]
@@ -23,7 +23,7 @@ const defaultCameraTargets: Record<Mode, CameraTarget> = {
   hub: { position: [0, 0, 6000], lookAt: [0, 0, 0], useOrbit: true, allowUserControl: false },
   root: { position: [0, 0, 7500], lookAt: [0, 0, 0], useOrbit: true, allowUserControl: false },
   constellation: { position: [0, 0, 4500], lookAt: [0, 0, 0], useOrbit: false, allowUserControl: true },
-  return: { position: [0, 0, 7000], lookAt: [0, 0, 0], useOrbit: true, allowUserControl: false },
+  login: { position: [0, 0, 7000], lookAt: [0, 0, 0], useOrbit: true, allowUserControl: false },
   talk: { position: [0, 0, 4900], lookAt: [0, 0, 0], useOrbit: true, allowUserControl: false },
   guide: { position: [600, 0, 6000], lookAt: [0, 0, 0], useOrbit: true, allowUserControl: false },
 }
