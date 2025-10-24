@@ -3,7 +3,7 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 const API_BASE = (process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080').replace(/\/+$/, '')
-const BACKEND_PATH = '/voxis/talk/history'
+const BACKEND_PATH = '/alive/talk/history'
 const TIMEOUT_MS = 15000
 
 export async function GET(req: NextRequest) {

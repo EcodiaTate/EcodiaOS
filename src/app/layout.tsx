@@ -18,7 +18,7 @@ const fjalla = Fjalla_One({
 });
 
 export const metadata = {
-  title: "EcodiaOS",
+  title: "Ecodia Alive",
   description: "Mind of the Future",
 };
 

@@ -1,11 +1,11 @@
-// src/app/api/voxis/feedback/route.ts
+// src/app/api/alive/feedback/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 const API_BASE = (process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080').replace(/\/+$/, '')
-const BACKEND_PATH = '/voxis/feedback'
+const BACKEND_PATH = '/alive/feedback'
 const TIMEOUT_MS = 15000
 
 export async function POST(req: NextRequest) {

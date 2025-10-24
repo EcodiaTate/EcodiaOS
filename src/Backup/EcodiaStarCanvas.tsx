@@ -149,7 +149,7 @@ export default function EcodiaStarCanvas() {
     setGeneratedSoul(null);
 
     try {
-      const response = await fetch('/api/voxis/generate-soul', {
+      const response = await fetch('/api/alive/generate-soul', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ words: selectedWords }),

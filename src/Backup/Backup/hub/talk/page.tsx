@@ -33,7 +33,7 @@ export default function TalkPage() {
   useEffect(() => {
     async function fetchMood() {
       try {
-        const res = await fetch(`http://localhost:8000/voxis/interface_mood`)
+        const res = await fetch(`http://localhost:8000/alive/interface_mood`)
         const data = await res.json()
         setMoodVars({
           bgColor: data.bgColor || '#060a07',
@@ -62,7 +62,7 @@ export default function TalkPage() {
     setLoading(true)
 
     try {
-      const res = await fetch('http://localhost:8000/voxis/talk', {
+      const res = await fetch('http://localhost:8000/alive/talk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

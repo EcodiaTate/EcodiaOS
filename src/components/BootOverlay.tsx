@@ -84,7 +84,7 @@ export default function BootOverlay() {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] text-[#0e1511] flex items-center justify-center pointer-events-auto"
+      className="fixed inset-0 z-9999 text-[#0e1511] flex items-center justify-center pointer-events-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="boot-title"
@@ -97,7 +97,7 @@ export default function BootOverlay() {
       <div className="absolute inset-0 -z-10 pointer-events-none" aria-hidden="true">
         <div className="absolute inset-0 bg-[radial-gradient(1200px_600px_at_center,rgba(255,255,255,0.10),transparent_65%)]" />
         <div className="absolute inset-10 rounded-[28px] border border-white/10 [mask:linear-gradient(#000,transparent)]" />
-        <div className="absolute inset-0 opacity-[0.05] [background:linear-gradient(to_right,transparent_49.5%,rgba(255,255,255,0.2)_50%,transparent_50.5%),linear-gradient(to_bottom,transparent_49.5%,rgba(255,255,255,0.2)_50%,transparent_50.5%)] [background-size:40px_40px]" />
+        <div className="absolute inset-0 opacity-[0.05] [background:linear-gradient(to_right,transparent_49.5%,rgba(255,255,255,0.2)_50%,transparent_50.5%),linear-gradient(to_bottom,transparent_49.5%,rgba(255,255,255,0.2)_50%,transparent_50.5%)] background-size:40px_40px" />
       </div>
 
       <div

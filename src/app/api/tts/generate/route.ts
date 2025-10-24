@@ -5,7 +5,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const API_BASE = (process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080').replace(/\/+$/, '');
-const BACKEND_PATH = '/voxis/tts/synthesize';
+const BACKEND_PATH = '/alive/tts/synthesize';
 const TIMEOUT_MS = 20000;
 
 export async function POST(req: NextRequest) {
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (e: any) {
     const msg = e?.name === 'AbortError' ? 'Upstream timeout' : (e?.message || 'Server error');
-    console.error('[API Proxy /voxis/tts/synthesize] Error:', e);
+    console.error('[API Proxy /alive/tts/synthesize] Error:', e);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     const body = await request.json()
 
     // The endpoint we created in Python
-    const apiRes = await fetch(`${API_URL}/voxis/profile/consent`, {
+    const apiRes = await fetch(`${API_URL}/alive/profile/consent`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

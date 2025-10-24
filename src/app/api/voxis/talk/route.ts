@@ -1,11 +1,11 @@
-// src/app/api/voxis/talk/route.ts
+// src/app/api/alive/talk/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const API_BASE = (process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080').replace(/\/+$/, '');
-const BACKEND_PATH = '/voxis/talk';
+const BACKEND_PATH = '/alive/talk';
 const TIMEOUT_MS = 20000;
 
 function pickResultId(req: NextRequest, params?: { slug?: string[] }) {
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
       : new NextResponse(String(data), { status: upstream.status, headers: { 'content-type': contentType } });
   } catch (e: any) {
     const msg = e?.name === 'AbortError' ? 'Upstream timeout' : (e?.message || 'Server error');
-    console.error('[API Proxy POST /voxis/talk] Error:', e);
+    console.error('[API Proxy POST /alive/talk] Error:', e);
     return NextResponse.json({ error: msg }, { status: 502 });
   }
 }
@@ -106,7 +106,7 @@ export async function GET(req: NextRequest, ctx?: { params?: { slug?: string[] }
       : new NextResponse(String(data), { status: upstream.status, headers: { 'content-type': contentType } });
   } catch (e: any) {
     const msg = e?.name === 'AbortError' ? 'Upstream timeout' : (e?.message || 'Server error');
-    console.error('[API Proxy GET /voxis/talk] Error:', e);
+    console.error('[API Proxy GET /alive/talk] Error:', e);
     return NextResponse.json({ error: msg }, { status: 502 });
   }
 }

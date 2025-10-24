@@ -72,7 +72,7 @@ export default function RootOverlay() {
 
   if (mode !== 'root') return null
 
-  const title = useBioGlitch('EcodiaOS', 26, 20)
+  const title = useBioGlitch('Ecodia Alive', 26, 20)
   const subtitle = useBioGlitch('The mind of the future', 26, 18)
   const panelRef = usePointerParallax()
 
@@ -110,7 +110,7 @@ export default function RootOverlay() {
           <div className="ec-shine pointer-events-none" aria-hidden="true" />
 
           <h1 className="ec-title">
-            <span className="sr-only">EcodiaOS</span>
+            <span className="sr-only">Ecodia </span>
             <span aria-hidden>{title}</span>
           </h1>
 

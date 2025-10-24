@@ -17,7 +17,7 @@ export default function ClientPage() {
     // Persist + set mode
     try {
       // Set localStorage first, just in case
-      localStorage.setItem("voxis_mode", desiredMode);
+      localStorage.setItem("alive_mode", desiredMode);
     } catch {}
     
     // Set the in-memory store state. This is the crucial part.

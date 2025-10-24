@@ -1,4 +1,4 @@
-// src/lib/auth-options.ts (VOXIS)
+// src/lib/auth-options.ts (ALIVE)
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
@@ -6,7 +6,7 @@ import GoogleProvider from "next-auth/providers/google";
 const RAW_API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const API_BASE = RAW_API_BASE.replace(/\/+$/, "");
-const SITE_NAME: "voxis" = "voxis";
+const SITE_NAME: "alive" = "alive";
 
 function normalizeEmail(email?: string | null): string | null {
   if (!email) return null;
@@ -17,7 +17,7 @@ function normalizeEmail(email?: string | null): string | null {
 
 // Matches UpsertAccountIn on the backend
 async function upsertAccountToNeo(params: {
-  site: "voxis";
+  site: "alive";
   uid: string;
   provider?: string | null;
   subject?: string | null;

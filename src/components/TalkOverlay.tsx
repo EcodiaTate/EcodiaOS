@@ -197,7 +197,7 @@ export default function TalkOverlay() {
       historyAbortRef.current = new AbortController()
 
       try {
-        const res = await fetch(`/api/voxis/history?${params.toString()}`, {
+        const res = await fetch(`/api/alive/history?${params.toString()}`, {
           cache: 'no-store',
           signal: historyAbortRef.current.signal,
         })
@@ -371,7 +371,7 @@ export default function TalkOverlay() {
       const ctrl = new AbortController()
       talkAbortRef.current = ctrl
 
-      const initialRes = await fetch('/api/voxis/talk', {
+      const initialRes = await fetch('/api/alive/talk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -402,7 +402,7 @@ export default function TalkOverlay() {
           let attempt = 0
           while (Date.now() < deadline) {
             if (ctrl.signal.aborted) throw new Error('Request aborted')
-            const pollRes = await fetch(`/api/voxis/talk?result_id=${decision_id}`, { cache: 'no-store', signal: ctrl.signal })
+            const pollRes = await fetch(`/api/alive/talk?result_id=${decision_id}`, { cache: 'no-store', signal: ctrl.signal })
             if (pollRes.status === 200) return pollRes.json()
             if (pollRes.status === 202) {
               try {
@@ -536,7 +536,7 @@ export default function TalkOverlay() {
 
     const idempotencyKey = `${episode_id}::${utility}`
     try {
-      const res = await fetch('/api/voxis/feedback', {
+      const res = await fetch('/api/alive/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },
         body: JSON.stringify({ episode_id, arm_id, chosen_arm_id: arm_id, utility, meta: { source: 'overlay_button' } }),
@@ -644,7 +644,7 @@ export default function TalkOverlay() {
   async function handleConsentAccept(upsert: ProfileUpsert) {
     setConsentRequest(null)
     try {
-      const res = await fetch('/api/voxis/profile/consent', {
+      const res = await fetch('/api/alive/profile/consent', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: resolvedUserId, profile_upserts: [upsert.raw_data] }),
       })

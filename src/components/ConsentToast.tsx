@@ -76,7 +76,7 @@ export const ConsentToast: React.FC<ConsentToastProps> = ({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 16, scale: 0.98 }}
           transition={{ duration: 0.28, ease: 'easeOut' }}
-          className={`fixed z-[9997] ${posClass} pointer-events-auto`}
+          className={`fixed z-9997 ${posClass} pointer-events-auto`}
         >
           <div className="ec-toast">
             {/* energy seam */}
